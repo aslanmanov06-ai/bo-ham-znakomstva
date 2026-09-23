@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master, "feature/**"]
+  pull_request:
+
+# Новый push в ту же ветку отменяет прошлую сборку — macOS-минуты дорогие.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode
+        run: |
+          # Xcode 26 — чтобы собрать Liquid Glass (SDK iOS 26); без него — последний Xcode 16, стекло заменят материалы.
+          XCODE=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          [ -n "$XCODE" ] || XCODE=$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      # Проект лежит в git ради клонирования из Xcode — он не должен отставать от project.yml.
+      - name: Проект совпадает с project.yml
+        run: git diff --exit-code -- OrzuApp.xcodeproj OrzuApp/Info.plist
+      - name: Кеш SPM-пакетов
+        uses: actions/cache@v4
+        with:
+          path: .spm
+          key: spm-${{ hashFiles('project.yml') }}
+      # Подпись не нужна: цель — проверить, что проект компилируется, и прогнать unit-тесты.
+      - name: Сборка и тесты
+        run: |
+          set -o pipefail
+          SIM_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k,v in sorted(d.items(), reverse=True) if "iOS" in k for x in v if x["name"].startswith("iPhone")))')
+          xcodebuild test \
+            -project OrzuApp.xcodeproj \
+            -scheme OrzuApp \
+            -destination "id=$SIM_ID" \
+            -clonedSourcePackagesDirPath .spm \
+            -skipMacroValidation \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log | grep -E "error:|warning: .*(OrzuApp/)|Test Suite|Executed|\*\* (BUILD|TEST)" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" build.log
+      - name: Лог сборки
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-log
+          path: build.log

@@ -1,0 +1,102 @@
+name: OrzuApp
+options:
+  bundleIdPrefix: com.orzuapp
+packages:
+  # Swift-пакет — stasel/WebRTC (сборки Google WebRTC). stasel/WebRTC-iOS — демо-приложение автора, тегов там нет.
+  # Каждый релиз WebRTC — новая мажорная версия, поэтому from: "120.0.0" резолвится только в 120.x:
+  # код звонков написан под M120. Переход на свежую версию — отдельной задачей со сборкой и проверкой звонков.
+  WebRTC:
+    url: https://github.com/stasel/WebRTC
+    from: "120.0.0"
+  # Вход через Google: официальный SDK (окно входа, PKCE, получение ID-токена).
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "8.0.0"
+targets:
+  OrzuApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - OrzuApp
+    dependencies:
+      - package: WebRTC
+        product: WebRTC
+      - package: GoogleSignIn
+        product: GoogleSignIn
+    settings:
+      base:
+        # Google Cloud Console → Credentials → OAuth client ID типа iOS (bundle id com.orzuapp.messenger).
+        # REVERSED — тот же id задом наперёд («com.googleusercontent.apps.…»): схема, по которой Google возвращает в приложение.
+        # Пусто — кнопка «Войти через Google» не показывается. Этот же client ID нужен backend в GOOGLE_CLIENT_IDS.
+        GOOGLE_IOS_CLIENT_ID: "690572679681-1c0us20qredokgjto3krkkepmob50op8.apps.googleusercontent.com"
+        GOOGLE_REVERSED_CLIENT_ID: "com.googleusercontent.apps.690572679681-1c0us20qredokgjto3krkkepmob50op8"
+        PRODUCT_BUNDLE_IDENTIFIER: com.orzuapp.messenger
+        # Assets.xcassets: фирменный гранатовый цвет (кнопки, пузыри сообщений) и иконка 1024×1024 со светлым и тёмным вариантом.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        PRODUCT_NAME: OrzuApp
+        SWIFT_VERSION: "5.9"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "Бо Хам"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        # Микрофон/камера — для звонков, голосовых и видеосообщений.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Нужен доступ к микрофону для звонков, голосовых и видеосообщений"
+        INFOPLIST_KEY_NSCameraUsageDescription: "Нужен доступ к камере для видеозвонков и видеосообщений"
+        # Знакомства: расстояние до анкет в ленте и геопозиция в тревоге SOS. Только когда приложение открыто.
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS"
+        # Фото и видео для анкеты выбираются системным пикером (PhotosPicker) — доступ ко всей библиотеке не нужен.
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Доступ к фото нужен, чтобы добавить фото и видео в анкету и отправить их в чат"
+    # voip — PushKit будит приложение ради входящего звонка (CallKit), audio — звук звонка при заблокированном экране,
+    # remote-notification — доставка обычных push. Остальные ключи Info.plist генерирует Xcode (GENERATE_INFOPLIST_FILE).
+    info:
+      path: OrzuApp/Info.plist
+      properties:
+        UIBackgroundModes: [voip, audio, remote-notification]
+        # Фирменные шрифты (SIL OFL, лицензии рядом): Unbounded — заголовки, Onest — текст.
+        UIAppFonts:
+          - Unbounded-Medium.ttf
+          - Unbounded-SemiBold.ttf
+          - Unbounded-Bold.ttf
+          - Onest-Regular.ttf
+          - Onest-Medium.ttf
+          - Onest-SemiBold.ttf
+          - Onest-Bold.ttf
+        GIDClientID: $(GOOGLE_IOS_CLIENT_ID)
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: [$(GOOGLE_REVERSED_CLIENT_ID)]
+    # Push на реальном устройстве требует платный Apple Developer-аккаунт; для Симулятора подпись не проверяется.
+    entitlements:
+      path: OrzuApp/OrzuApp.entitlements
+      properties:
+        aps-environment: development
+    # AppConfig.apiBaseURL указывает на https-домен с валидным сертификатом, а ATS не блокирует
+    # http://localhost для отладки через SSH-туннель — исключение здесь не нужно. Если решите
+    # открыть backend по обычному http на внешнем IP/домене без TLS, верните сюда
+    # info.properties.NSAppTransportSecurity.NSAllowsArbitraryLoads: true.
+  # Unit-тесты чистой логики (декодирование, шифрование E2E) — запускаются в Симуляторе, в том числе в CI.
+  OrzuAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - OrzuAppTests
+    dependencies:
+      - target: OrzuApp
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"
+schemes:
+  OrzuApp:
+    build:
+      targets:
+        OrzuApp: all
+    test:
+      targets:
+        - OrzuAppTests

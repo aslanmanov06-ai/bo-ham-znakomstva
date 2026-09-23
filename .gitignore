@@ -1,0 +1,8 @@
+# OrzuApp.xcodeproj и OrzuApp/Info.plist хранятся в git, чтобы проект клонировался прямо из Xcode.
+# Их генерирует XcodeGen из project.yml: после правки project.yml — `xcodegen generate` и коммит.
+xcuserdata/
+DerivedData/
+.swiftpm/
+.build/
+.spm/
+build.log
