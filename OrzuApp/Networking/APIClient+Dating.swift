@@ -12,6 +12,12 @@ enum ServerErrorCode {
     static let chatRequestRequired = "CHAT_REQUEST_REQUIRED"
     /// Без анкеты с фото нельзя искать людей, писать незнакомым и знакомиться.
     static let profileRequired = "PROFILE_REQUIRED"
+    /// Регистрация: на эту почту уже заведён аккаунт.
+    static let emailTaken = "EMAIL_TAKEN"
+    /// Регистрация: username уже занят.
+    static let usernameTaken = "USERNAME_TAKEN"
+    /// Код на эту почту отправлен меньше минуты назад и ещё действует.
+    static let codeAlreadySent = "CODE_ALREADY_SENT"
 }
 
 /// Запросы знакомств, безопасности, жалоб и правил сообщества. Вынесены из APIClient.swift, чтобы

@@ -297,3 +297,36 @@ struct AppField<Input: View>: View {
         .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
     }
 }
+
+/// Поле с подписью сверху и пояснением снизу — формы регистрации. Ошибка заменяет пояснение и красит рамку.
+struct LabeledAppField<Input: View>: View {
+    let title: String
+    var hint: String?
+    var error: String?
+    @ViewBuilder var field: Input
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.app(.footnote))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+            field
+                .font(.app(.callout))
+                .padding(.horizontal, 16)
+                .frame(height: 50)
+                .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(error == nil ? Color.appLine : Color.red, lineWidth: 1)
+                )
+            if let note = error ?? hint {
+                Text(note)
+                    .font(.app(.caption))
+                    .foregroundStyle(error == nil ? Color.secondary : Color.red)
+                    .padding(.leading, 4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}

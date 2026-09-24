@@ -64,8 +64,15 @@ actor APIClient {
 
     // MARK: - Public API
 
-    func register(username: String, displayName: String, password: String) async throws -> AuthResponse {
-        let body = ["username": username, "displayName": displayName, "password": password]
+    /// Первый шаг регистрации: сервер шлёт 6-значный код на почту. Занятые почта и username отклоняются
+    /// сразу — ServerErrorCode.emailTaken / .usernameTaken.
+    func requestRegistrationCode(email: String, username: String) async throws {
+        let body = ["email": email, "username": username]
+        let _: EmptyResponse = try await request(path: "/auth/register/code", method: "POST", body: body, authorized: false)
+    }
+
+    func register(username: String, displayName: String, password: String, email: String, code: String) async throws -> AuthResponse {
+        let body = ["username": username, "displayName": displayName, "password": password, "email": email, "code": code]
         let response: AuthResponse = try await request(path: "/auth/register", method: "POST", body: body, authorized: false)
         TokenStore.shared.save(tokens: response.tokens)
         return response
@@ -86,8 +93,16 @@ actor APIClient {
         return response
     }
 
-    func completeGoogleRegistration(registrationToken: String, username: String, displayName: String) async throws -> AuthResponse {
-        let body = ["registrationToken": registrationToken, "username": username, "displayName": displayName]
+    /// Код уходит на почту из Google; `email` сервер учитывает, только если Google почту не передал.
+    func requestGoogleRegistrationCode(registrationToken: String, username: String, email: String?) async throws {
+        var body = ["registrationToken": registrationToken, "username": username]
+        body["email"] = email
+        let _: EmptyResponse = try await request(path: "/auth/google/register/code", method: "POST", body: body, authorized: false)
+    }
+
+    func completeGoogleRegistration(registrationToken: String, username: String, displayName: String, email: String?, code: String) async throws -> AuthResponse {
+        var body = ["registrationToken": registrationToken, "username": username, "displayName": displayName, "code": code]
+        body["email"] = email
         let response: AuthResponse = try await request(path: "/auth/google/register", method: "POST", body: body, authorized: false)
         TokenStore.shared.save(tokens: response.tokens)
         return response

@@ -104,11 +104,18 @@ final class AuthViewModel: ObservableObject {
         Task { await AttachmentLoader.shared.removeAll() }
     }
 
-    func register(username: String, displayName: String, password: String) async {
-        await run {
-            let response = try await APIClient.shared.register(username: username, displayName: displayName, password: password)
-            self.didAuthenticate(response.user)
-        }
+    // Шаги регистрации бросают ошибки, а не пишут их в errorMessage: экран формы и экран кода показывают их у себя
+    // (занятую почту — под полем почты, неверный код — под ячейками).
+
+    func requestRegistrationCode(email: String, username: String) async throws {
+        try await APIClient.shared.requestRegistrationCode(email: email, username: username)
+    }
+
+    func register(username: String, displayName: String, password: String, email: String, code: String) async throws {
+        let response = try await APIClient.shared.register(
+            username: username, displayName: displayName, password: password, email: email, code: code
+        )
+        didAuthenticate(response.user)
     }
 
     func login(username: String, password: String) async {
@@ -130,15 +137,19 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func completeGoogleRegistration(username: String, displayName: String) async {
-        guard let registration = pendingGoogleRegistration else { return }
-        await run {
-            let response = try await APIClient.shared.completeGoogleRegistration(
-                registrationToken: registration.registrationToken, username: username, displayName: displayName
-            )
-            self.pendingGoogleRegistration = nil
-            self.didAuthenticate(response.user)
-        }
+    /// `email` — только если Google почту не передал; иначе код уходит на почту из Google.
+    func requestGoogleRegistrationCode(_ registration: GoogleRegistration, username: String, email: String?) async throws {
+        try await APIClient.shared.requestGoogleRegistrationCode(
+            registrationToken: registration.registrationToken, username: username, email: email
+        )
+    }
+
+    func completeGoogleRegistration(_ registration: GoogleRegistration, username: String, displayName: String, email: String?, code: String) async throws {
+        let response = try await APIClient.shared.completeGoogleRegistration(
+            registrationToken: registration.registrationToken, username: username, displayName: displayName, email: email, code: code
+        )
+        pendingGoogleRegistration = nil
+        didAuthenticate(response.user)
     }
 
     func logout() async {

@@ -60,6 +60,7 @@
 		5155872B13CD29BBB8CD51AB /* SecretChatCryptoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA26A16BA91387BCED19DBE /* SecretChatCryptoTests.swift */; };
 		53167CFF67989C5FECA215FD /* DatingBrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 414BF1E83FD2FBE91ADFBB79 /* DatingBrowseView.swift */; };
 		55F090A8378FBD4E1E6540DB /* MediaMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A9595DEB13CEBA0DB4AAA6 /* MediaMessageTests.swift */; };
+		5952D3AF92A913C3E89559EF /* EmailCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D18274BBB612E554469D55 /* EmailCodeView.swift */; };
 		59774C1B4B055E6FDDBA38F5 /* MessageStatusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB576C1C502A31D33EB7583A /* MessageStatusTests.swift */; };
 		655DE1878249D89694C1B232 /* Unbounded-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C983D9BF59DF1C013F938B47 /* Unbounded-Medium.ttf */; };
 		66D08C9774F354BEB3D63DB0 /* ISO8601CodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5658D580C0346281C2C97338 /* ISO8601CodingTests.swift */; };
@@ -210,6 +211,7 @@
 		739248B839FE10422BFD8734 /* AccountRemovalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountRemovalView.swift; sourceTree = "<group>"; };
 		73E7CD73423455096BBB0114 /* ForwardPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForwardPickerView.swift; sourceTree = "<group>"; };
 		744A61C49A8BDDB112999B42 /* Presence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presence.swift; sourceTree = "<group>"; };
+		75D18274BBB612E554469D55 /* EmailCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailCodeView.swift; sourceTree = "<group>"; };
 		77530A50A68F3251CA0DC4A7 /* MyProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyProfileView.swift; sourceTree = "<group>"; };
 		7BB2B296E3CD7064AAB6E822 /* WebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketClient.swift; sourceTree = "<group>"; };
 		80102AFA05181C0EEF0B35B3 /* RTCVideoRenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTCVideoRenderView.swift; sourceTree = "<group>"; };
@@ -472,6 +474,7 @@
 				5E5DCDE8B7AEDFA7D6AD73E5 /* ChatRequestViews.swift */,
 				BA914C8A547B1FCAC0A18042 /* ChatView.swift */,
 				83621C866709838B967A6374 /* ComposerBar.swift */,
+				75D18274BBB612E554469D55 /* EmailCodeView.swift */,
 				73E7CD73423455096BBB0114 /* ForwardPickerView.swift */,
 				C9245E5C0BA5676E5F934EBE /* Glass.swift */,
 				A427C9565656FD8343F23790 /* GoogleRegistrationView.swift */,
@@ -716,6 +719,7 @@
 				14A171E945014149FB20E654 /* DatingViewModel.swift in Sources */,
 				43B5BDB5FA0413282B997DC6 /* DiskStore.swift in Sources */,
 				1A15BB7A73132FC1BBB893AD /* E2EKeyStore.swift in Sources */,
+				5952D3AF92A913C3E89559EF /* EmailCodeView.swift in Sources */,
 				C08D2EF5836160F2D6A720DF /* ForwardPickerView.swift in Sources */,
 				1DA2535D2EE82F57254567A2 /* Glass.swift in Sources */,
 				1F7AB3AEBDB834C0C49A5ABB /* GoogleAuth.swift in Sources */,
