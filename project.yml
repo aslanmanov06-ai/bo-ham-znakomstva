@@ -47,7 +47,7 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         # Микрофон/камера — для звонков, голосовых и видеосообщений.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Нужен доступ к микрофону для звонков, голосовых и видеосообщений"
-        INFOPLIST_KEY_NSCameraUsageDescription: "Нужен доступ к камере для видеозвонков и видеосообщений"
+        INFOPLIST_KEY_NSCameraUsageDescription: "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты"
         # Знакомства: расстояние до анкет в ленте и геопозиция в тревоге SOS. Только когда приложение открыто.
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS"
         # Фото и видео для анкеты выбираются системным пикером (PhotosPicker) — доступ ко всей библиотеке не нужен.

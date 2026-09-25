@@ -1,4 +1,3 @@
-import PhotosUI
 import SwiftUI
 import UIKit
 
@@ -8,7 +7,7 @@ struct SelfieVerificationView: View {
     @ObservedObject var dating: DatingViewModel
 
     @Environment(\.dismiss) private var dismiss
-    @State private var item: PhotosPickerItem?
+    @State private var showCamera = false
     @State private var isSending = false
     @State private var errorMessage: String?
 
@@ -63,9 +62,9 @@ struct SelfieVerificationView: View {
                 Button("Закрыть") { dismiss() }
             }
         }
-        .onChange(of: item) { _, selected in
-            guard let selected else { return }
-            submit(selected)
+        .fullScreenCover(isPresented: $showCamera) {
+            SelfieCamera { submit($0) }
+                .ignoresSafeArea()
         }
         .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
             Button("Ок") { errorMessage = nil }
@@ -126,9 +125,9 @@ struct SelfieVerificationView: View {
                 Button("Позже") { dismiss() }
             }
         }
-        .onChange(of: item) { _, selected in
-            guard let selected else { return }
-            submit(selected)
+        .fullScreenCover(isPresented: $showCamera) {
+            SelfieCamera { submit($0) }
+                .ignoresSafeArea()
         }
         .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
             Button("Ок") { errorMessage = nil }
@@ -137,9 +136,9 @@ struct SelfieVerificationView: View {
         }
     }
 
-    /// Выбор селфи из фото телефона: камера в приложении пока не встроена.
+    /// Селфи только с камеры, прямо сейчас: выбрать фото из галереи нельзя.
     private var selfiePicker: some View {
-        PhotosPicker(selection: $item, matching: .images) {
+        Button(action: openCamera) {
             HStack(spacing: 8) {
                 if isSending {
                     ProgressView()
@@ -147,7 +146,7 @@ struct SelfieVerificationView: View {
                 } else {
                     Image(systemName: "camera.fill")
                 }
-                Text(isSending ? "Отправляем…" : "Выбрать селфи")
+                Text(isSending ? "Отправляем…" : "Сделать селфи")
             }
             .font(.app(.headline))
             .foregroundStyle(.white)
@@ -158,6 +157,21 @@ struct SelfieVerificationView: View {
         }
         .buttonStyle(PressableButtonStyle())
         .disabled(isSending)
+    }
+
+    private func openCamera() {
+        guard SelfieCamera.isAvailable else {
+            errorMessage = "На этом устройстве нет фронтальной камеры — пройдите проверку с iPhone"
+            return
+        }
+        Task {
+            do {
+                try await SelfieCamera.ensureAccess()
+                showCamera = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     /// Значок есть, но модератор попросил новое селфи — и оно ещё не отправлено.
@@ -266,21 +280,14 @@ struct SelfieVerificationView: View {
         return latest?.rejectReason ?? "Селфи отклонено — попробуйте ещё раз"
     }
 
-    private func submit(_ selected: PhotosPickerItem) {
+    private func submit(_ image: UIImage) {
+        guard let jpeg = image.downscaled(maxDimension: maxSelfieDimension).jpegData(compressionQuality: 0.85) else {
+            errorMessage = "Не удалось сохранить снимок — попробуйте ещё раз"
+            return
+        }
         isSending = true
         Task {
-            defer {
-                isSending = false
-                item = nil
-            }
-            guard
-                let data = try? await selected.loadTransferable(type: Data.self),
-                let image = UIImage(data: data),
-                let jpeg = image.downscaled(maxDimension: maxSelfieDimension).jpegData(compressionQuality: 0.85)
-            else {
-                errorMessage = "Не удалось прочитать фото"
-                return
-            }
+            defer { isSending = false }
             do {
                 let attachment = try await APIClient.shared.uploadAttachment(data: jpeg, fileName: "selfie.jpg", mimeType: "image/jpeg")
                 _ = try await APIClient.shared.submitSelfie(attachmentId: attachment.id)

@@ -91,6 +91,7 @@
 		8E08EAE541FB2F40374E0D09 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97078AA3AD66A528CA54B91B /* SettingsView.swift */; };
 		9046964E87EF3ABBCAECCFD4 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = FFE294F0934433382D11C22F /* WebRTC */; };
 		928F5F8CFBBEBCFD1AD892D2 /* SelfieVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4DDF5F1B85DE81963ECF985 /* SelfieVerificationView.swift */; };
+		2072FA872E19BE127639385B /* SelfieCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7204F86BECD2A2391C9D1E /* SelfieCamera.swift */; };
 		9304284B35191D81B6729EFE /* RussianPluralTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6EA47663811E0E14F03131 /* RussianPluralTests.swift */; };
 		935295587096649B81937F53 /* MediaRecordingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC62CF66B93BFFFA7FC75E49 /* MediaRecordingViews.swift */; };
 		93CDE28EFB4B4FBE121F0ACC /* OFL-Unbounded.txt in Resources */ = {isa = PBXBuildFile; fileRef = A6E7F6511EE96702E1FCC1E7 /* OFL-Unbounded.txt */; };
@@ -263,6 +264,7 @@
 		C01B872E6F19303DEAA8F7B5 /* VideoNoteCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoNoteCamera.swift; sourceTree = "<group>"; };
 		C442DE4DA38334A22F59DB65 /* ChatFeaturesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFeaturesTests.swift; sourceTree = "<group>"; };
 		C4DDF5F1B85DE81963ECF985 /* SelfieVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfieVerificationView.swift; sourceTree = "<group>"; };
+		EB7204F86BECD2A2391C9D1E /* SelfieCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfieCamera.swift; sourceTree = "<group>"; };
 		C515A45CE89E5A502EDA5AD5 /* AttachmentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentLoader.swift; sourceTree = "<group>"; };
 		C8248365125DDE38C78865DC /* ChatRequestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatRequestTests.swift; sourceTree = "<group>"; };
 		C9245E5C0BA5676E5F934EBE /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
@@ -344,6 +346,7 @@
 				4F7D819029003B5F21BCFE3C /* SafetyAlertsViewModel.swift */,
 				CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */,
 				C4DDF5F1B85DE81963ECF985 /* SelfieVerificationView.swift */,
+				EB7204F86BECD2A2391C9D1E /* SelfieCamera.swift */,
 				EDFE0F801D1A7286093DA957 /* SosAlertView.swift */,
 			);
 			path = Dating;
@@ -771,6 +774,7 @@
 				F41DDB6AE0A2B326B073CA0A /* SafetyView.swift in Sources */,
 				76EB63882A77D037E058A894 /* SecretChatCrypto.swift in Sources */,
 				928F5F8CFBBEBCFD1AD892D2 /* SelfieVerificationView.swift in Sources */,
+				2072FA872E19BE127639385B /* SelfieCamera.swift in Sources */,
 				AFB2A0287590222C44B104FB /* SessionsView.swift in Sources */,
 				8E08EAE541FB2F40374E0D09 /* SettingsView.swift in Sources */,
 				F0088FC6DF643A0A0E029C10 /* SettingsViewModel.swift in Sources */,
@@ -928,7 +932,7 @@
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.690572679681-1c0us20qredokgjto3krkkepmob50op8";
 				INFOPLIST_FILE = OrzuApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Бо Хам";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков и видеосообщений";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Нужен доступ к микрофону для звонков, голосовых и видеосообщений";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Доступ к фото нужен, чтобы добавить фото и видео в анкету и отправить их в чат";
@@ -962,7 +966,7 @@
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.690572679681-1c0us20qredokgjto3krkkepmob50op8";
 				INFOPLIST_FILE = OrzuApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Бо Хам";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков и видеосообщений";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Нужен доступ к микрофону для звонков, голосовых и видеосообщений";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Доступ к фото нужен, чтобы добавить фото и видео в анкету и отправить их в чат";
