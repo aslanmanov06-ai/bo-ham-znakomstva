@@ -27,11 +27,20 @@ struct ChatListView: View {
     @State private var isSearchingUsers = false
     /// Переписка с тем, с кем чата ещё нет: первое сообщение уйдёт запросом.
     @State private var pendingPerson: User?
+    /// Вкладка «Удалённые»: чаты удалённых пар, только для чтения, отдельно от обычных.
+    @State private var showDeleted = false
 
     var body: some View {
         NavigationStack {
             List {
-                if searchNeedle.isEmpty && viewModel.incomingRequestsCount > 0 {
+                if searchNeedle.isEmpty {
+                    ChatTabs(showDeleted: $showDeleted, deletedCount: viewModel.chats.filter(\.isClosed).count)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 6, trailing: 16))
+                }
+
+                if searchNeedle.isEmpty && !showDeleted && viewModel.incomingRequestsCount > 0 {
                     Button { activeSheet = .requests } label: {
                         RequestsCard(count: viewModel.incomingRequestsCount)
                     }
@@ -41,7 +50,7 @@ struct ChatListView: View {
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 10, trailing: 16))
                 }
 
-                ForEach(filteredChats) { chat in
+                ForEach(visibleChats) { chat in
                     Button {
                         openedChat = chat
                     } label: {
@@ -60,11 +69,22 @@ struct ChatListView: View {
                     }
                     .swipeActions(edge: .trailing) {
                         if chat.canDelete {
-                            Button(role: .destructive) { chatPendingDeletion = chat } label: { Label("Удалить", systemImage: "trash") }
+                            Button(role: .destructive) { chatPendingDeletion = chat } label: {
+                                Label(chat.isClosed ? "Убрать" : "Удалить", systemImage: "trash")
+                            }
                         }
                         Button { chatPendingClear = chat } label: { Label("Очистить", systemImage: "eraser") }
                             .tint(.gray)
                     }
+                }
+
+                if searchNeedle.isEmpty && showDeleted {
+                    Text("Чаты пар, которые удалили вы или вас. Писать в них нельзя, переписка хранится 30 дней — чтобы можно было пожаловаться.")
+                        .font(.app(.caption))
+                        .foregroundStyle(.secondary)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 10, leading: 24, bottom: 10, trailing: 24))
                 }
 
                 if !searchNeedle.isEmpty && (!newPeople.isEmpty || userSearchError != nil) {
@@ -109,18 +129,20 @@ struct ChatListView: View {
                 presenting: chatPendingClear
             ) { chat in
                 Button("Очистить у себя", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: false) } }
-                // Очистить у всех сервер разрешает только в личном и секретном чате.
-                if chat.canDelete {
+                // Очистить у всех сервер разрешает только в личном и секретном чате, и не в чате удалённой пары.
+                if chat.canDelete && !chat.isClosed {
                     Button("Очистить у обоих", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: true) } }
                 }
             }
             .confirmationDialog(
-                "Удалить чат вместе с перепиской у вас и у собеседника?",
+                chatPendingDeletion?.isClosed == true
+                    ? "Убрать чат у себя? У собеседника он останется, пока не истечёт срок хранения."
+                    : "Удалить чат вместе с перепиской у вас и у собеседника?",
                 isPresented: Binding(get: { chatPendingDeletion != nil }, set: { if !$0 { chatPendingDeletion = nil } }),
                 titleVisibility: .visible,
                 presenting: chatPendingDeletion
             ) { chat in
-                Button("Удалить чат", role: .destructive) { Task { await viewModel.delete(chat) } }
+                Button(chat.isClosed ? "Убрать у себя" : "Удалить чат", role: .destructive) { Task { await viewModel.delete(chat) } }
             }
             .alert("Ошибка", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
                 Button("Ок") { viewModel.errorMessage = nil }
@@ -254,6 +276,12 @@ struct ChatListView: View {
         }
     }
 
+    /// В поиске — все найденные чаты; без поиска — вкладка «Все» без удалённых пар или «Удалённые» только с ними.
+    private var visibleChats: [Chat] {
+        guard searchNeedle.isEmpty else { return filteredChats }
+        return filteredChats.filter { $0.isClosed == showDeleted }
+    }
+
     /// Найденные на сервере люди без тех, с кем личный чат уже есть в списке выше.
     private var newPeople: [User] {
         let peerIds = Set(filteredChats.filter { $0.type == .direct }.compactMap { $0.peer?.id })
@@ -371,7 +399,12 @@ private struct ChatRow: View {
                         Text(Self.timeLabel(for: date)).font(.app(.footnote)).foregroundStyle(.secondary)
                     }
                 }
-                if let preview = chat.lastMessage?.previewText, !preview.isEmpty {
+                if chat.isClosed {
+                    Label(closedSubtitle, systemImage: "lock")
+                        .font(.app(.subheadline))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                } else if let preview = chat.lastMessage?.previewText, !preview.isEmpty {
                     Text(preview).font(.app(.subheadline)).foregroundStyle(.secondary).lineLimit(2)
                 } else if let username = chat.username {
                     Text("@\(username)").font(.app(.subheadline)).foregroundStyle(.secondary)
@@ -380,6 +413,11 @@ private struct ChatRow: View {
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
+    }
+
+    private var closedSubtitle: String {
+        guard let deletesAt = chat.deletesAt else { return "Пара удалена" }
+        return "Пара удалена · исчезнет \(deletesAt.formatted(.dateTime.day().month(.abbreviated)))"
     }
 
     /// Сегодня — время, в этом году — день и месяц, раньше — полная дата (как в «Сообщениях»).
@@ -406,5 +444,48 @@ struct BotBadge: View {
             .padding(.vertical, 1)
             .background(Color.accentColor.opacity(0.15), in: Capsule())
             .foregroundStyle(Color.accentColor)
+    }
+}
+
+/// Переключатель «Все / Удалённые» под поиском (макеты «Чаты — вкладка „Все“» и «„Удалённые“»).
+private struct ChatTabs: View {
+    @Binding var showDeleted: Bool
+    let deletedCount: Int
+
+    var body: some View {
+        HStack(spacing: 4) {
+            tab("Все", selected: !showDeleted) { showDeleted = false }
+            tab("Удалённые", count: deletedCount, selected: showDeleted) { showDeleted = true }
+        }
+        .padding(4)
+        .frame(height: 40)
+        .background(Color.appSurface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.appLine, lineWidth: 1))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Какие чаты показать")
+    }
+
+    private func tab(_ title: String, count: Int = 0, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(title)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.app(size: 12, weight: .bold))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .frame(minWidth: 20, minHeight: 20)
+                        .background(Color.appElevated, in: Capsule())
+                }
+            }
+            .font(.app(.subheadline, weight: selected ? .bold : .medium))
+            .foregroundStyle(selected ? Color.brand : Color.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(selected ? Color.brandSoft : Color.clear, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

@@ -28,6 +28,11 @@ struct Chat: Codable, Identifiable, Hashable {
     /// Самые поздние отметки «доставлено» и «прочитано» среди собеседников — для галочек у своих сообщений.
     var deliveredAt: Date?
     var readAt: Date?
+    /// Чат удалённой пары: закрыт только для чтения (ради жалоб) и удалится насовсем в deletesAt.
+    var closedAt: Date?
+    var deletesAt: Date?
+
+    var isClosed: Bool { closedAt != nil }
 
     var displayTitle: String {
         if let title, !title.isEmpty { return title }
@@ -44,13 +49,14 @@ struct Chat: Codable, Identifiable, Hashable {
         type == .direct || type == .secret
     }
 
-    /// В канале писать может только владелец/соадмин — остальные только читают.
+    /// В канале писать может только владелец/соадмин — остальные только читают. В чат удалённой пары не пишет никто.
     var canPost: Bool {
-        type != .channel || myRole == .admin
+        !isClosed && (type != .channel || myRole == .admin)
     }
 
     /// Звонить можно собеседнику 1:1 и в группу (mesh до 4 участников — см. CallManager).
     var canCall: Bool {
+        guard !isClosed else { return false }
         switch type {
         case .direct, .secret: return participants.first?.isBot != true
         case .group: return true

@@ -27,6 +27,8 @@ struct ChatView: View {
     @State private var showSearch = false
     @State private var showClearConfirmation = false
     @State private var showDeleteConfirmation = false
+    /// Жалоба на собеседника из закрытого чата удалённой пары — не на отдельное сообщение, а на переписку.
+    @State private var showPeerReport = false
     /// Сообщение, к которому нужно прокрутить: цитата, закреплённое или найденное поиском.
     @State private var scrollTarget: String?
     @StateObject private var voiceRecorder = VoiceRecorder()
@@ -86,6 +88,14 @@ struct ChatView: View {
                 if viewModel.isSecret {
                     secretBanner
                 }
+                if let closedAt = viewModel.chat.closedAt {
+                    Label("Пара удалена \(Self.dayMonth.string(from: closedAt)) · переписка только для чтения", systemImage: "lock.fill")
+                        .font(.app(.caption, weight: .semibold))
+                        .foregroundStyle(Color.champagne)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(Color.champagneSoft, in: Capsule())
+                }
                 if let stage = viewModel.pairStageName {
                     Label("Вы пара · ступень «\(stage)» на пути к браку", systemImage: "heart.fill")
                         .font(.app(.caption, weight: .semibold))
@@ -125,6 +135,8 @@ struct ChatView: View {
                 }
                 if let selectedIds {
                     selectionBar(selectedCount: selectedMessages(selectedIds).count)
+                } else if viewModel.chat.isClosed {
+                    closedChatCard
                 } else if viewModel.chat.canPost {
                     if voiceRecorder.isRecording {
                         VoiceRecordingBar(recorder: voiceRecorder, onCancel: voiceRecorder.cancel, onSend: finishVoiceRecording)
@@ -201,7 +213,7 @@ struct ChatView: View {
         }
         .confirmationDialog(
             "Удалить чат вместе с перепиской у вас и у собеседника?",
-            isPresented: $showDeleteConfirmation,
+            isPresented: Binding(get: { showDeleteConfirmation && !viewModel.chat.isClosed }, set: { if !$0 { showDeleteConfirmation = false } }),
             titleVisibility: .visible
         ) {
             Button("Удалить чат", role: .destructive) {
@@ -222,6 +234,22 @@ struct ChatView: View {
                 let forwarded = await viewModel.forward(selection.messages, toChatId: chat.id)
                 if forwarded { selectedIds = nil }
                 return forwarded
+            }
+        }
+        .confirmationDialog(
+            removeClosedTitle,
+            isPresented: Binding(get: { showDeleteConfirmation && viewModel.chat.isClosed }, set: { if !$0 { showDeleteConfirmation = false } }),
+            titleVisibility: .visible
+        ) {
+            Button("Убрать у себя", role: .destructive) {
+                Task {
+                    if await viewModel.deleteChat() { onLeftChat() }
+                }
+            }
+        }
+        .sheet(isPresented: $showPeerReport) {
+            if let peer = viewModel.chat.peer {
+                NavigationStack { ReportUserView(userId: peer.id, displayName: peer.displayName) }
             }
         }
         .sheet(item: $messageToReport) { message in
@@ -332,6 +360,7 @@ struct ChatView: View {
     }
 
     private var headerSubtitle: String? {
+        if viewModel.chat.isClosed { return "пара удалена" }
         if let status = viewModel.headerStatus { return status }
         switch viewModel.chat.type {
         case .secret: return "секретный чат"
@@ -341,6 +370,65 @@ struct ChatView: View {
         }
     }
 
+    /// Вместо поля ввода в чате удалённой пары (макет «Чат удалённой пары»).
+    private var closedChatCard: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "lock")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 36)
+                    .background(Color.appElevated, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Писать сюда больше нельзя")
+                        .font(.app(.subheadline, weight: .semibold))
+                    Text(closedChatHint)
+                        .font(.app(.footnote))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            HStack(spacing: 8) {
+                Button("Пожаловаться") { showPeerReport = true }
+                    .font(.app(.subheadline, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(Color.appElevated, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.appLine, lineWidth: 1))
+                    .disabled(viewModel.chat.peer == nil)
+                Button("Убрать у себя") { showDeleteConfirmation = true }
+                    .font(.app(.subheadline, weight: .semibold))
+                    .foregroundStyle(Color.brand)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .appCard(cornerRadius: 20, padding: nil)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+    }
+
+    private var closedChatHint: String {
+        let deletes = viewModel.chat.deletesAt.map { "Чат исчезнет \(Self.dayMonth.string(from: $0)). " } ?? ""
+        return deletes + "Если вас обидели — пожалуйтесь, модератор увидит переписку."
+    }
+
+    private var removeClosedTitle: String {
+        guard let deletesAt = viewModel.chat.deletesAt else { return "Убрать чат у себя? У собеседника он останется." }
+        return "Убрать чат у себя? У собеседника он останется до \(Self.dayMonth.string(from: deletesAt))."
+    }
+
+    /// «25 сентября» — даты закрытия и удаления чата удалённой пары.
+    private static let dayMonth: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM"
+        return formatter
+    }()
+
     private var chatMenu: some View {
         Menu {
             if viewModel.canSearch {
@@ -349,7 +437,7 @@ struct ChatView: View {
             muteMenu
             Button("Очистить историю", systemImage: "eraser") { showClearConfirmation = true }
             if viewModel.chat.canDelete {
-                Button("Удалить чат", systemImage: "trash", role: .destructive) { showDeleteConfirmation = true }
+                Button(viewModel.chat.isClosed ? "Убрать у себя" : "Удалить чат", systemImage: "trash", role: .destructive) { showDeleteConfirmation = true }
                 Button("Заблокировать", systemImage: "hand.raised", role: .destructive) { showBlockConfirmation = true }
             }
         } label: {

@@ -211,6 +211,10 @@ final class ChatListViewModel: ObservableObject {
         case .chatDeleted(let chatId):
             removeChat(id: chatId)
 
+        case .datingUnmatched:
+            // Чат пары стал закрытым (вкладка «Удалённые») — какой именно и до какого числа хранится, знает сервер.
+            Task { await refreshChats() }
+
         case .chatRequestsChanged:
             // На мой запрос ответили — появился новый чат; пришёл новый запрос — вырос счётчик.
             Task {

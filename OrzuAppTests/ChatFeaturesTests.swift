@@ -37,6 +37,22 @@ final class ChatFeaturesTests: XCTestCase {
         XCTAssertEqual(reply.previewText, "🔒 Зашифрованное сообщение")
     }
 
+    /// Чат удалённой пары: только для чтения — писать и звонить нельзя, в списке он во вкладке «Удалённые».
+    func testClosedChatOfDeletedPairIsReadOnly() throws {
+        let json = """
+        {"id":"c1","type":"DIRECT","title":null,"username":null,"myRole":"MEMBER",
+         "participants":[{"id":"u2","username":"madina","displayName":"Мадина","avatarUrl":null,"isBot":false}],
+         "lastMessage":null,"deliveredAt":null,"readAt":null,
+         "closedAt":"2026-09-25T10:00:00.000Z","deletesAt":"2026-10-25T10:00:00.000Z"}
+        """
+        let chat = try decoder.decode(Chat.self, from: Data(json.utf8))
+
+        XCTAssertTrue(chat.isClosed)
+        XCTAssertFalse(chat.canPost)
+        XCTAssertFalse(chat.canCall)
+        XCTAssertTrue(chat.canDelete, "убрать у себя можно")
+    }
+
     func testChatListItemWithPinAndPresence() throws {
         let json = """
         {"id":"c1","type":"DIRECT","title":null,"username":null,"myRole":"MEMBER",

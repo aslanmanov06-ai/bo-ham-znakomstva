@@ -25,4 +25,7 @@ struct ChatDetail: Decodable {
     var pinnedMessage: Message? = nil
     /// Личный чат пары знакомств — по нему показываем ступень «Пути к браку».
     var matchId: String? = nil
+    /// Пару удалили: чат только для чтения до deletesAt.
+    var closedAt: Date? = nil
+    var deletesAt: Date? = nil
 }

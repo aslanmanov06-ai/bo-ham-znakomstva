@@ -60,7 +60,8 @@ final class ChatViewModel: ObservableObject {
     /// Совпадает с MAX_FORWARD_BATCH на backend: больше за один запрос сервер не перешлёт.
     static let maxForwardBatch = 10
 
-    let chat: Chat
+    /// Меняется, только когда пару удаляют при открытом чате: он становится закрытым, только для чтения.
+    @Published private(set) var chat: Chat
     let currentUserId: String
     private var cancellables = Set<AnyCancellable>()
     private let participantsById: [String: User]
@@ -150,6 +151,8 @@ final class ChatViewModel: ObservableObject {
         do {
             let detail = try await APIClient.shared.fetchChatDetail(chatId: chat.id)
             pinnedMessage = detail.pinnedMessage.map(decrypted)
+            chat.closedAt = detail.closedAt
+            chat.deletesAt = detail.deletesAt
             if let matchId = detail.matchId { await loadPairStage(matchId: matchId) }
         } catch let error as APIError where error.isTransient {
             // Без сети плашка просто не появится — ошибку про это уже видно по баннеру «Нет сети».
@@ -316,9 +319,9 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    /// Очистить у всех можно только личный и секретный чат (так же проверяет сервер).
+    /// Очистить у всех можно только личный и секретный чат, и не чат удалённой пары — его хранят ради жалоб.
     var canClearForEveryone: Bool {
-        chat.canDelete
+        chat.canDelete && !chat.isClosed
     }
 
     func clearHistory(forEveryone: Bool) async {
@@ -599,6 +602,12 @@ final class ChatViewModel: ObservableObject {
         case .chatDeleted(let chatId):
             guard chatId == chat.id else { return }
             wasDeleted = true
+
+        case .datingUnmatched(_, let chatId):
+            // Пару удалили, пока чат открыт: сервер закрыл его только для чтения — перечитываем, до какого числа он хранится.
+            guard chatId == chat.id else { return }
+            pairStageName = nil
+            Task { await loadPinnedMessage() }
 
         case .messageUpdated(let message):
             guard message.chatId == chat.id, messages.contains(where: { $0.id == message.id }) else { return }
