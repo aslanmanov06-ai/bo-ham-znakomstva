@@ -34,7 +34,170 @@ struct ChatView: View {
     @StateObject private var voiceRecorder = VoiceRecorder()
     @ObservedObject private var appearance = AppearanceSettings.shared
 
+    // body разбит на части: одним выражением компилятор не успевал вывести типы
+    // («unable to type-check this expression in reasonable time»).
     var body: some View {
+        chatWithDialogs
+            .sheet(isPresented: $showPeerReport) {
+                if let peer = viewModel.chat.peer {
+                    NavigationStack { ReportUserView(userId: peer.id, displayName: peer.displayName) }
+                }
+            }
+            .sheet(item: $messageToReport) { message in
+                NavigationStack {
+                    ReportUserView(userId: message.senderId, displayName: viewModel.displayName(of: message.senderId), messageId: message.id)
+                }
+            }
+            .sheet(isPresented: $showSearch) {
+                MessageSearchView(viewModel: viewModel) { message in
+                    showSearch = false
+                    show(messageId: message.id, loading: message)
+                }
+            }
+            // Чат удалил собеседник или вы сами на другом устройстве — здесь больше нечего показывать.
+            .onChange(of: viewModel.wasDeleted) { _, deleted in
+                if deleted { onLeftChat() }
+            }
+            .onChange(of: draft) { _, text in
+                if editingMessage == nil { viewModel.draftChanged(text) }
+            }
+            .sheet(isPresented: $showSafetyNumber) {
+                SafetyNumberView(peerName: viewModel.chat.displayTitle, safetyNumber: viewModel.safetyNumber)
+            }
+            .sheet(item: $partnerCard) { peer in
+                NavigationStack {
+                    PersonCardView(user: peer)
+                }
+            }
+            .sheet(isPresented: $showGroupInfo) {
+                NavigationStack {
+                    GroupInfoView(
+                        viewModel: GroupInfoViewModel(chatId: viewModel.chat.id, currentUserId: viewModel.currentUserId),
+                        onLeft: onLeftChat
+                    )
+                }
+            }
+            .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
+            .onChange(of: photoItem) { _, item in
+                guard let item else { return }
+                photoItem = nil
+                let viewTimer = pendingViewTimer
+                pendingViewTimer = nil
+                Task { await viewModel.sendPhoto(item, viewTimerSec: viewTimer) }
+            }
+            .onChange(of: voiceRecorder.reachedLimit) { _, reached in
+                if reached { finishVoiceRecording() }
+            }
+            .fullScreenCover(isPresented: $showVideoNoteRecorder) {
+                VideoNoteRecorderView { recording in
+                    Task { await viewModel.sendRecording(recording) }
+                }
+            }
+            .fullScreenCover(item: $timedPhoto) { presentation in
+                TimedPhotoViewer(presentation: presentation)
+            }
+            .onDisappear {
+                VoicePlayer.shared.stop()
+                voiceRecorder.cancel()
+            }
+            .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item]) { result in
+                switch result {
+                case .success(let url):
+                    Task { await viewModel.sendFile(at: url) }
+                case .failure(let error):
+                    viewModel.errorMessage = error.localizedDescription
+                }
+            }
+            .quickLookPreview($previewURL)
+            .task { await viewModel.loadHistory() }
+    }
+
+    /// Лента, панели сверху и снизу, навигационная панель.
+    private var chatScreen: some View {
+        messageList
+            // Фон уходит под стеклянные панели — иначе им нечего преломлять.
+            .background {
+                ZStack {
+                    AppBackground()
+                    appearance.wallpaper.gradient.ignoresSafeArea()
+                }
+            }
+            .safeAreaInset(edge: .top) {
+                topBanners
+            }
+            .bottomGlassBar {
+                bottomBar
+            }
+            .toolbar(.hidden, for: .tabBar)
+            .navigationTitle(viewModel.chat.displayTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                toolbarContent
+            }
+    }
+
+    /// Подтверждения удаления, очистки и блокировки, выбор чата для пересылки.
+    private var chatWithDialogs: some View {
+        chatScreen
+            .confirmationDialog(
+                "Удалить сообщение у всех? Оно исчезнет и у собеседников.",
+                isPresented: Binding(get: { messagePendingDeletion != nil }, set: { if !$0 { messagePendingDeletion = nil } }),
+                titleVisibility: .visible,
+                presenting: messagePendingDeletion
+            ) { message in
+                Button("Удалить у всех", role: .destructive) { Task { await viewModel.delete(message, forEveryone: true) } }
+            }
+            .confirmationDialog(
+                viewModel.canClearForEveryone ? "Очистить историю?" : "Очистить историю у себя? У остальных участников она останется.",
+                isPresented: $showClearConfirmation,
+                titleVisibility: .visible
+            ) {
+                if viewModel.canClearForEveryone {
+                    Button("Очистить у себя", role: .destructive) { Task { await viewModel.clearHistory(forEveryone: false) } }
+                    Button("Очистить у обоих", role: .destructive) { Task { await viewModel.clearHistory(forEveryone: true) } }
+                } else {
+                    Button("Очистить", role: .destructive) { Task { await viewModel.clearHistory(forEveryone: false) } }
+                }
+            }
+            .confirmationDialog(
+                "Удалить чат вместе с перепиской у вас и у собеседника?",
+                isPresented: Binding(get: { showDeleteConfirmation && !viewModel.chat.isClosed }, set: { if !$0 { showDeleteConfirmation = false } }),
+                titleVisibility: .visible
+            ) {
+                Button("Удалить чат", role: .destructive) {
+                    Task {
+                        if await viewModel.deleteChat() { onLeftChat() }
+                    }
+                }
+            }
+            .confirmationDialog(
+                "Заблокировать \(viewModel.chat.displayTitle)? Вы не сможете писать и звонить друг другу. Разблокировать можно в Настройки → Приватность.",
+                isPresented: $showBlockConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Заблокировать", role: .destructive) { Task { await viewModel.blockPeer() } }
+            }
+            .sheet(item: $forwardSelection) { selection in
+                ForwardPickerView { chat in
+                    let forwarded = await viewModel.forward(selection.messages, toChatId: chat.id)
+                    if forwarded { selectedIds = nil }
+                    return forwarded
+                }
+            }
+            .confirmationDialog(
+                removeClosedTitle,
+                isPresented: Binding(get: { showDeleteConfirmation && viewModel.chat.isClosed }, set: { if !$0 { showDeleteConfirmation = false } }),
+                titleVisibility: .visible
+            ) {
+                Button("Убрать у себя", role: .destructive) {
+                    Task {
+                        if await viewModel.deleteChat() { onLeftChat() }
+                    }
+                }
+            }
+    }
+
+    private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
@@ -76,249 +239,115 @@ struct ChatView: View {
                 scrollTarget = nil
             }
         }
-        // Фон уходит под стеклянные панели — иначе им нечего преломлять.
-        .background {
-            ZStack {
-                AppBackground()
-                appearance.wallpaper.gradient.ignoresSafeArea()
+    }
+
+    private var topBanners: some View {
+        VStack(spacing: 6) {
+            if viewModel.isSecret {
+                secretBanner
             }
-        }
-        .safeAreaInset(edge: .top) {
-            VStack(spacing: 6) {
-                if viewModel.isSecret {
-                    secretBanner
-                }
-                if let closedAt = viewModel.chat.closedAt {
-                    Label("Пара удалена \(Self.dayMonth.string(from: closedAt)) · переписка только для чтения", systemImage: "lock.fill")
-                        .font(.app(.caption, weight: .semibold))
-                        .foregroundStyle(Color.champagne)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(Color.champagneSoft, in: Capsule())
-                }
-                if let stage = viewModel.pairStageName {
-                    Label("Вы пара · ступень «\(stage)» на пути к браку", systemImage: "heart.fill")
-                        .font(.app(.caption, weight: .semibold))
-                        .foregroundStyle(Color.champagne)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(Color.champagneSoft, in: Capsule())
-                }
-                if let pinned = viewModel.pinnedMessage {
-                    pinnedBanner(for: pinned)
-                }
-                if viewModel.isShowingHistorySlice {
-                    Button("К последним сообщениям", systemImage: "arrow.down") {
-                        Task { await viewModel.loadHistory() }
-                    }
-                    .font(.app(.footnote, weight: .semibold))
+            if let closedAt = viewModel.chat.closedAt {
+                Label("Пара удалена \(Self.dayMonth.string(from: closedAt)) · переписка только для чтения", systemImage: "lock.fill")
+                    .font(.app(.caption, weight: .semibold))
+                    .foregroundStyle(Color.champagne)
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 7)
+                    .background(Color.champagneSoft, in: Capsule())
+            }
+            if let stage = viewModel.pairStageName {
+                Label("Вы пара · ступень «\(stage)» на пути к браку", systemImage: "heart.fill")
+                    .font(.app(.caption, weight: .semibold))
+                    .foregroundStyle(Color.champagne)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color.champagneSoft, in: Capsule())
+            }
+            if let pinned = viewModel.pinnedMessage {
+                pinnedBanner(for: pinned)
+            }
+            if viewModel.isShowingHistorySlice {
+                Button("К последним сообщениям", systemImage: "arrow.down") {
+                    Task { await viewModel.loadHistory() }
+                }
+                .font(.app(.footnote, weight: .semibold))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .glassSurface()
+            }
+        }
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 6) {
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .font(.app(.footnote))
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
                     .glassSurface()
-                }
             }
-        }
-        .bottomGlassBar {
-            VStack(spacing: 6) {
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .font(.app(.footnote))
-                        .foregroundStyle(.red)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .glassSurface()
-                }
-                if let editingMessage {
-                    editingBanner(for: editingMessage)
-                } else if let replyTo = viewModel.replyTo {
-                    replyBanner(for: replyTo)
-                }
-                if let selectedIds {
-                    selectionBar(selectedCount: selectedMessages(selectedIds).count)
-                } else if viewModel.chat.isClosed {
-                    closedChatCard
-                } else if viewModel.chat.canPost {
-                    if voiceRecorder.isRecording {
-                        VoiceRecordingBar(recorder: voiceRecorder, onCancel: voiceRecorder.cancel, onSend: finishVoiceRecording)
-                    } else {
-                        composer
-                    }
+            if let editingMessage {
+                editingBanner(for: editingMessage)
+            } else if let replyTo = viewModel.replyTo {
+                replyBanner(for: replyTo)
+            }
+            if let selectedIds {
+                selectionBar(selectedCount: selectedMessages(selectedIds).count)
+            } else if viewModel.chat.isClosed {
+                closedChatCard
+            } else if viewModel.chat.canPost {
+                if voiceRecorder.isRecording {
+                    VoiceRecordingBar(recorder: voiceRecorder, onCancel: voiceRecorder.cancel, onSend: finishVoiceRecording)
                 } else {
-                    Text("Публиковать может только владелец канала")
-                        .font(.app(.footnote))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .glassSurface()
-                        .padding(.bottom, 8)
+                    composer
                 }
-            }
-        }
-        .toolbar(.hidden, for: .tabBar)
-        .navigationTitle(viewModel.chat.displayTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                if let peer = profilePeer {
-                    Button { partnerCard = peer } label: { chatHeader }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Открыть анкету")
-                } else {
-                    chatHeader
-                }
-            }
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if viewModel.chat.canCall {
-                    Button { CallManager.shared.startCall(chat: viewModel.chat, video: false) } label: {
-                        Image(systemName: "phone")
-                    }
-                    .accessibilityLabel("Аудиозвонок")
-                    Button { CallManager.shared.startCall(chat: viewModel.chat, video: true) } label: {
-                        Image(systemName: "video")
-                    }
-                    .accessibilityLabel("Видеозвонок")
-                }
-                switch viewModel.chat.type {
-                case .group, .channel:
-                    Button { showGroupInfo = true } label: { Image(systemName: "info.circle") }
-                        .accessibilityLabel("Информация")
-                case .secret:
-                    Button { showSafetyNumber = true } label: { Image(systemName: "lock.shield") }
-                        .accessibilityLabel("Код безопасности")
-                case .direct:
-                    EmptyView()
-                }
-                chatMenu
-            }
-        }
-        .confirmationDialog(
-            "Удалить сообщение у всех? Оно исчезнет и у собеседников.",
-            isPresented: Binding(get: { messagePendingDeletion != nil }, set: { if !$0 { messagePendingDeletion = nil } }),
-            titleVisibility: .visible,
-            presenting: messagePendingDeletion
-        ) { message in
-            Button("Удалить у всех", role: .destructive) { Task { await viewModel.delete(message, forEveryone: true) } }
-        }
-        .confirmationDialog(
-            viewModel.canClearForEveryone ? "Очистить историю?" : "Очистить историю у себя? У остальных участников она останется.",
-            isPresented: $showClearConfirmation,
-            titleVisibility: .visible
-        ) {
-            if viewModel.canClearForEveryone {
-                Button("Очистить у себя", role: .destructive) { Task { await viewModel.clearHistory(forEveryone: false) } }
-                Button("Очистить у обоих", role: .destructive) { Task { await viewModel.clearHistory(forEveryone: true) } }
             } else {
-                Button("Очистить", role: .destructive) { Task { await viewModel.clearHistory(forEveryone: false) } }
+                Text("Публиковать может только владелец канала")
+                    .font(.app(.footnote))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .glassSurface()
+                    .padding(.bottom, 8)
             }
         }
-        .confirmationDialog(
-            "Удалить чат вместе с перепиской у вас и у собеседника?",
-            isPresented: Binding(get: { showDeleteConfirmation && !viewModel.chat.isClosed }, set: { if !$0 { showDeleteConfirmation = false } }),
-            titleVisibility: .visible
-        ) {
-            Button("Удалить чат", role: .destructive) {
-                Task {
-                    if await viewModel.deleteChat() { onLeftChat() }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            if let peer = profilePeer {
+                Button { partnerCard = peer } label: { chatHeader }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Открыть анкету")
+            } else {
+                chatHeader
+            }
+        }
+        ToolbarItemGroup(placement: .navigationBarTrailing) {
+            if viewModel.chat.canCall {
+                Button { CallManager.shared.startCall(chat: viewModel.chat, video: false) } label: {
+                    Image(systemName: "phone")
                 }
-            }
-        }
-        .confirmationDialog(
-            "Заблокировать \(viewModel.chat.displayTitle)? Вы не сможете писать и звонить друг другу. Разблокировать можно в Настройки → Приватность.",
-            isPresented: $showBlockConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Заблокировать", role: .destructive) { Task { await viewModel.blockPeer() } }
-        }
-        .sheet(item: $forwardSelection) { selection in
-            ForwardPickerView { chat in
-                let forwarded = await viewModel.forward(selection.messages, toChatId: chat.id)
-                if forwarded { selectedIds = nil }
-                return forwarded
-            }
-        }
-        .confirmationDialog(
-            removeClosedTitle,
-            isPresented: Binding(get: { showDeleteConfirmation && viewModel.chat.isClosed }, set: { if !$0 { showDeleteConfirmation = false } }),
-            titleVisibility: .visible
-        ) {
-            Button("Убрать у себя", role: .destructive) {
-                Task {
-                    if await viewModel.deleteChat() { onLeftChat() }
+                .accessibilityLabel("Аудиозвонок")
+                Button { CallManager.shared.startCall(chat: viewModel.chat, video: true) } label: {
+                    Image(systemName: "video")
                 }
+                .accessibilityLabel("Видеозвонок")
             }
-        }
-        .sheet(isPresented: $showPeerReport) {
-            if let peer = viewModel.chat.peer {
-                NavigationStack { ReportUserView(userId: peer.id, displayName: peer.displayName) }
+            switch viewModel.chat.type {
+            case .group, .channel:
+                Button { showGroupInfo = true } label: { Image(systemName: "info.circle") }
+                    .accessibilityLabel("Информация")
+            case .secret:
+                Button { showSafetyNumber = true } label: { Image(systemName: "lock.shield") }
+                    .accessibilityLabel("Код безопасности")
+            case .direct:
+                EmptyView()
             }
+            chatMenu
         }
-        .sheet(item: $messageToReport) { message in
-            NavigationStack {
-                ReportUserView(userId: message.senderId, displayName: viewModel.displayName(of: message.senderId), messageId: message.id)
-            }
-        }
-        .sheet(isPresented: $showSearch) {
-            MessageSearchView(viewModel: viewModel) { message in
-                showSearch = false
-                show(messageId: message.id, loading: message)
-            }
-        }
-        // Чат удалил собеседник или вы сами на другом устройстве — здесь больше нечего показывать.
-        .onChange(of: viewModel.wasDeleted) { _, deleted in
-            if deleted { onLeftChat() }
-        }
-        .onChange(of: draft) { _, text in
-            if editingMessage == nil { viewModel.draftChanged(text) }
-        }
-        .sheet(isPresented: $showSafetyNumber) {
-            SafetyNumberView(peerName: viewModel.chat.displayTitle, safetyNumber: viewModel.safetyNumber)
-        }
-        .sheet(item: $partnerCard) { peer in
-            NavigationStack {
-                PersonCardView(user: peer)
-            }
-        }
-        .sheet(isPresented: $showGroupInfo) {
-            NavigationStack {
-                GroupInfoView(
-                    viewModel: GroupInfoViewModel(chatId: viewModel.chat.id, currentUserId: viewModel.currentUserId),
-                    onLeft: onLeftChat
-                )
-            }
-        }
-        .photosPicker(isPresented: $showPhotoPicker, selection: $photoItem, matching: .images)
-        .onChange(of: photoItem) { _, item in
-            guard let item else { return }
-            photoItem = nil
-            let viewTimer = pendingViewTimer
-            pendingViewTimer = nil
-            Task { await viewModel.sendPhoto(item, viewTimerSec: viewTimer) }
-        }
-        .onChange(of: voiceRecorder.reachedLimit) { _, reached in
-            if reached { finishVoiceRecording() }
-        }
-        .fullScreenCover(isPresented: $showVideoNoteRecorder) {
-            VideoNoteRecorderView { recording in
-                Task { await viewModel.sendRecording(recording) }
-            }
-        }
-        .fullScreenCover(item: $timedPhoto) { presentation in
-            TimedPhotoViewer(presentation: presentation)
-        }
-        .onDisappear {
-            VoicePlayer.shared.stop()
-            voiceRecorder.cancel()
-        }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.item]) { result in
-            switch result {
-            case .success(let url):
-                Task { await viewModel.sendFile(at: url) }
-            case .failure(let error):
-                viewModel.errorMessage = error.localizedDescription
-            }
-        }
-        .quickLookPreview($previewURL)
-        .task { await viewModel.loadHistory() }
     }
 
     /// Аватар и имя по центру навигационной панели, как в «Сообщениях».
