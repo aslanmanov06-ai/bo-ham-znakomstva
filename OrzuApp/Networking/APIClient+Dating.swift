@@ -93,6 +93,11 @@ extension APIClient {
         try await request(path: "/dating/verification", method: "GET", body: nil as String?, authorized: true)
     }
 
+    /// «Другой жест» — не больше трёх раз в день, сверх лимита сервер отвечает 429 с объяснением.
+    func rerollSelfieGesture() async throws -> VerificationStatus {
+        try await request(path: "/dating/verification/gesture", method: "POST", body: nil as String?, authorized: true)
+    }
+
     func submitSelfie(attachmentId: String) async throws -> VerificationStatus {
         try await request(path: "/dating/verification", method: "POST", body: ["attachmentId": attachmentId], authorized: true)
     }

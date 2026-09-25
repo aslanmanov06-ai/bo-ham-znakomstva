@@ -438,8 +438,17 @@ struct VerificationStatus: Decodable {
     let reverificationRequested: Bool
     /// Что написал модератор, попросив селфи.
     let reverificationReason: String?
+    /// Жест, который нужно повторить на селфи. nil — селфи сейчас не нужно (есть значок или ждёт проверки).
+    let gesture: SelfieGesture?
     /// Последнее отправленное селфи: по нему видно, ждёт ли оно проверки и почему отклонено.
     let latest: SelfieCheck?
+}
+
+/// Случайный жест для селфи-проверки: по нему модератор видит, что снимок сделан сейчас.
+struct SelfieGesture: Decodable, Equatable {
+    let code: String
+    let emoji: String
+    let title: String
 }
 
 /// Кого ищет человек. Остальные поля настроек поиска на сервере ленте больше не нужны: она подбирает анкеты сама,

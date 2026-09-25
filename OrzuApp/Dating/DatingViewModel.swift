@@ -107,6 +107,11 @@ final class DatingViewModel: ObservableObject {
         verification = try? await APIClient.shared.fetchVerificationStatus()
     }
 
+    /// Ошибку (лимит смен) показывает экран проверки.
+    func rerollSelfieGesture() async throws {
+        verification = try await APIClient.shared.rerollSelfieGesture()
+    }
+
     /// Нужно только настройкам, поэтому грузится оттуда: сбой не должен закрывать вкладки знакомств.
     /// Без анкеты сервер его не отдаёт.
     func loadLookingFor() async throws {

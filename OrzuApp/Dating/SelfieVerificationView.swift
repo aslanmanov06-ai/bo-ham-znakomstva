@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Подтверждение анкеты селфи: модератор сравнивает свежее селфи с фото анкеты.
+/// Подтверждение анкеты селфи: человек повторяет случайный жест, модератор сверяет селфи с фото анкеты и жестом.
 /// Без подтверждения анкету не видят в ленте, а лайки и первые сообщения недоступны.
 struct SelfieVerificationView: View {
     @ObservedObject var dating: DatingViewModel
@@ -9,72 +9,71 @@ struct SelfieVerificationView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showCamera = false
     @State private var isSending = false
+    @State private var isChangingGesture = false
     @State private var errorMessage: String?
 
     private let maxSelfieDimension: CGFloat = 1600
 
     var body: some View {
+        content
+            .navigationTitle("Проверка анкеты")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    // Просьбу модератора можно отложить — значок пока остаётся.
+                    Button(isReverification ? "Позже" : "Закрыть") { dismiss() }
+                }
+            }
+            .fullScreenCover(isPresented: $showCamera) {
+                SelfieCamera(gesture: gesture) { submit($0) }
+                    .ignoresSafeArea()
+            }
+            .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
+                Button("Ок") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "")
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         if isReverification {
-            reverificationBody
+            reverificationContent
+        } else if canSubmit {
+            gestureContent
         } else {
-            firstCheckBody
+            statusContent
         }
     }
 
-    private var firstCheckBody: some View {
+    // MARK: - Первая проверка (макет «Селфи с жестом»)
+
+    private var gestureContent: some View {
         ScrollView {
-            VStack(spacing: 22) {
-                statusIcon
-                    .padding(.top, 12)
-
-                VStack(spacing: 8) {
-                    Text(statusTitle)
-                        .font(.display(.title2))
-                        .multilineTextAlignment(.center)
-                    Text(statusDescription)
-                        .font(.app(.subheadline))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+            VStack(spacing: 16) {
+                Text("Повторите жест на селфи")
+                    .font(.display(size: 21))
+                    .multilineTextAlignment(.center)
+                rejectedLabel
+                gestureCard
+                VStack(alignment: .leading, spacing: 12) {
+                    step(1, "Покажите жест рядом с лицом")
+                    step(2, "Модератор сверит селфи с фото анкеты")
+                    step(3, "Рядом с именем появится значок «проверен»")
                 }
-
-                if let reason = rejectReason {
-                    Label(reason, systemImage: "exclamationmark.triangle.fill")
-                        .font(.app(.footnote, weight: .medium))
-                        .foregroundStyle(.red)
-                        .padding(12)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-
-                if canSubmit {
-                    steps
-                    tips
-                    selfiePicker
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .appCard(cornerRadius: 20)
             }
-            .padding(24)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
         }
-        .background(DatingBackdrop())
-        .navigationTitle("Подтверждение")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Закрыть") { dismiss() }
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) {
-            SelfieCamera { submit($0) }
-                .ignoresSafeArea()
-        }
-        .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
-            Button("Ок") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
+        .safeAreaInset(edge: .bottom) { cameraButton }
+        .background(AppBackground())
     }
 
-    /// Модератор попросил переснять селфи (макет «Модератор просит селфи»): значок остаётся, отказываться не страшно.
-    private var reverificationBody: some View {
+    // MARK: - Модератор попросил переснять (макет «Модератор просит селфи»)
+
+    private var reverificationContent: some View {
         ScrollView {
             VStack(spacing: 18) {
                 VStack(spacing: 10) {
@@ -91,16 +90,10 @@ struct SelfieVerificationView: View {
                 if let reason = dating.verification?.reverificationReason {
                     ReasonCard(reason: reason)
                 }
-                if let rejected = rejectReason {
-                    Label(rejected, systemImage: "exclamationmark.triangle.fill")
-                        .font(.app(.footnote, weight: .medium))
-                        .foregroundStyle(.red)
-                        .padding(12)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
+                rejectedLabel
+                gestureCard
                 VStack(alignment: .leading, spacing: 12) {
-                    step(1, "Сделайте селфи с жестом с картинки")
+                    step(1, "Покажите жест рядом с лицом")
                     step(2, "Модератор сверит его с фото анкеты")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -112,81 +105,40 @@ struct SelfieVerificationView: View {
             .padding(.horizontal, 20)
             .padding(.top, 12)
         }
-        .safeAreaInset(edge: .bottom) {
-            selfiePicker
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-        }
+        .safeAreaInset(edge: .bottom) { cameraButton }
         .background(AppBackground())
-        .navigationTitle("Проверка анкеты")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Позже") { dismiss() }
-            }
-        }
-        .fullScreenCover(isPresented: $showCamera) {
-            SelfieCamera { submit($0) }
-                .ignoresSafeArea()
-        }
-        .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
-            Button("Ок") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
     }
 
-    /// Селфи только с камеры, прямо сейчас: выбрать фото из галереи нельзя.
-    private var selfiePicker: some View {
-        Button(action: openCamera) {
-            HStack(spacing: 8) {
-                if isSending {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Image(systemName: "camera.fill")
+    // MARK: - Селфи на проверке или анкета уже подтверждена
+
+    private var statusContent: some View {
+        ScrollView {
+            VStack(spacing: 22) {
+                statusIcon
+                    .padding(.top, 12)
+                VStack(spacing: 8) {
+                    Text(statusTitle)
+                        .font(.display(.title2))
+                        .multilineTextAlignment(.center)
+                    Text(statusDescription)
+                        .font(.app(.subheadline))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                Text(isSending ? "Отправляем…" : "Сделать селфи")
             }
-            .font(.app(.headline))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(DatingStyle.brandGradient, in: Capsule())
-            .shadow(color: DatingStyle.rose.opacity(0.35), radius: 12, y: 6)
+            .padding(24)
         }
-        .buttonStyle(PressableButtonStyle())
-        .disabled(isSending)
+        .background(DatingBackdrop())
     }
 
-    private func openCamera() {
-        guard SelfieCamera.isAvailable else {
-            errorMessage = "На этом устройстве нет фронтальной камеры — пройдите проверку с iPhone"
-            return
-        }
-        Task {
-            do {
-                try await SelfieCamera.ensureAccess()
-                showCamera = true
-            } catch {
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    /// Значок есть, но модератор попросил новое селфи — и оно ещё не отправлено.
-    private var isReverification: Bool {
-        dating.verification?.verified == true && dating.selfieRequested
-    }
-
-    /// Проверено — золотая печать, на проверке — часы с расходящимися кругами, иначе — камера.
+    /// Проверено — золотая печать, на проверке — часы с расходящимися кругами.
     private var statusIcon: some View {
         ZStack {
             if latest?.status == .pending, dating.verification?.verified != true {
                 PulseRings(color: .champagne)
                     .frame(width: 96, height: 96)
             }
-            Image(systemName: statusSymbol)
+            Image(systemName: dating.verification?.verified == true ? "checkmark.seal.fill" : "clock.fill")
                 .font(.system(size: 40, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 96, height: 96)
@@ -197,20 +149,67 @@ struct SelfieVerificationView: View {
         .frame(height: 150)
     }
 
-    private var statusSymbol: String {
-        if dating.verification?.verified == true { return "checkmark.seal.fill" }
-        return latest?.status == .pending ? "clock.fill" : "person.crop.square.badge.camera"
+    private var statusTitle: String {
+        dating.verification?.verified == true ? "Анкета подтверждена" : "Селфи на проверке"
     }
 
-    /// Что будет дальше — тремя шагами, чтобы проверка не казалась чёрным ящиком.
-    private var steps: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            step(1, "Сделайте свежее селфи")
-            step(2, "Модератор сравнит его с фото анкеты")
-            step(3, "Рядом с именем появится значок «проверен»")
+    private var statusDescription: String {
+        if dating.verification?.verified == true {
+            return "Рядом с вашим именем стоит значок «проверен» — такие анкеты вызывают больше доверия."
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .appCard(cornerRadius: DatingStyle.tileCornerRadius)
+        return "Модератор сверит селфи с фото анкеты и жестом. Обычно это занимает несколько часов."
+    }
+
+    // MARK: - Общие части
+
+    /// Жест крупно и «Другой жест», если этот неудобен (сервер разрешает сменить три раза в день).
+    @ViewBuilder
+    private var gestureCard: some View {
+        if let gesture {
+            VStack(spacing: 12) {
+                Text(gesture.emoji)
+                    .font(.system(size: 64))
+                    .frame(width: 120, height: 120)
+                    .background(Color.champagneSoft, in: Circle())
+                    .background(Circle().fill(Color.champagne.opacity(0.07)).padding(-12))
+                    .accessibilityHidden(true)
+                Text(gesture.title)
+                    .font(.app(size: 18, weight: .semibold))
+                    .padding(.top, 6)
+                Button(action: changeGesture) {
+                    HStack(spacing: 6) {
+                        if isChangingGesture {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        Text("Другой жест")
+                    }
+                    .font(.app(.subheadline, weight: .medium))
+                    .foregroundStyle(Color.brand)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                }
+                .disabled(isChangingGesture || isSending)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 22)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 6)
+            .appCard(cornerRadius: 20, padding: nil)
+        }
+    }
+
+    @ViewBuilder
+    private var rejectedLabel: some View {
+        if let reason = rejectReason {
+            Label(reason, systemImage: "exclamationmark.triangle.fill")
+                .font(.app(.footnote, weight: .medium))
+                .foregroundStyle(.red)
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
     }
 
     private func step(_ number: Int, _ text: String) -> some View {
@@ -230,25 +229,33 @@ struct SelfieVerificationView: View {
         }
     }
 
-    private var tips: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            tip("sun.max.fill", "Хороший свет, лицо целиком")
-            tip("eyeglasses", "Без очков и головного убора")
-            tip("eye.slash.fill", "Селфи видит только модератор")
+    /// Селфи только с камеры, прямо сейчас: выбрать фото из галереи нельзя.
+    private var cameraButton: some View {
+        Button(action: openCamera) {
+            HStack(spacing: 8) {
+                if isSending {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: "camera.fill")
+                }
+                Text(isSending ? "Отправляем…" : "Сделать селфи")
+            }
+            .font(.app(.headline))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(DatingStyle.brandGradient, in: Capsule())
+            .shadow(color: DatingStyle.rose.opacity(0.35), radius: 12, y: 6)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .appCard(cornerRadius: DatingStyle.tileCornerRadius, padding: nil)
+        .buttonStyle(PressableButtonStyle())
+        .disabled(isSending || isChangingGesture)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
     }
 
-    private func tip(_ systemImage: String, _ text: String) -> some View {
-        Label {
-            Text(text)
-                .font(.app(.subheadline))
-        } icon: {
-            Image(systemName: systemImage)
-                .foregroundStyle(DatingStyle.rose)
-        }
+    private var gesture: SelfieGesture? {
+        dating.verification?.gesture
     }
 
     private var latest: SelfieCheck? {
@@ -259,25 +266,41 @@ struct SelfieVerificationView: View {
         (dating.verification?.verified != true || dating.selfieRequested) && latest?.status != .pending
     }
 
-    private var statusTitle: String {
-        if dating.verification?.verified == true { return "Анкета подтверждена" }
-        if latest?.status == .pending { return "Селфи на проверке" }
-        return "Получите золотой значок"
-    }
-
-    private var statusDescription: String {
-        if dating.verification?.verified == true {
-            return "Рядом с вашим именем стоит значок «проверен» — такие анкеты вызывают больше доверия."
-        }
-        if latest?.status == .pending {
-            return "Модератор сравнит селфи с фото анкеты. Обычно это занимает несколько часов."
-        }
-        return "Модератор сверит селфи с фото анкеты, и рядом с вашим именем появится значок «проверен»."
+    /// Значок есть, но модератор попросил новое селфи — и оно ещё не отправлено.
+    private var isReverification: Bool {
+        dating.verification?.verified == true && dating.selfieRequested
     }
 
     private var rejectReason: String? {
         guard latest?.status == .rejected else { return nil }
         return latest?.rejectReason ?? "Селфи отклонено — попробуйте ещё раз"
+    }
+
+    private func changeGesture() {
+        isChangingGesture = true
+        Task {
+            defer { isChangingGesture = false }
+            do {
+                try await dating.rerollSelfieGesture()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func openCamera() {
+        guard SelfieCamera.isAvailable else {
+            errorMessage = "На этом устройстве нет фронтальной камеры — пройдите проверку с iPhone"
+            return
+        }
+        Task {
+            do {
+                try await SelfieCamera.ensureAccess()
+                showCamera = true
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func submit(_ image: UIImage) {

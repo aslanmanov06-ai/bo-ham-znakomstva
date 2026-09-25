@@ -233,7 +233,8 @@ final class DatingModelsTests: XCTestCase {
     func testDecodesSelfieRequestFromModerator() throws {
         let json = Data("""
         {"verified":true,"verifiedAt":"2026-09-20T09:00:00.000Z","reverificationRequested":true,
-         "reverificationReason":"Фото сильно изменились","latest":null}
+         "reverificationReason":"Фото сильно изменились","latest":null,
+         "gesture":{"code":"PEACE","emoji":"✌️","title":"Два пальца — знак V"}}
         """.utf8)
 
         let status = try decoder().decode(VerificationStatus.self, from: json)
@@ -241,5 +242,6 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertTrue(status.verified)
         XCTAssertTrue(status.reverificationRequested)
         XCTAssertEqual(status.reverificationReason, "Фото сильно изменились")
+        XCTAssertEqual(status.gesture, SelfieGesture(code: "PEACE", emoji: "✌️", title: "Два пальца — знак V"))
     }
 }
