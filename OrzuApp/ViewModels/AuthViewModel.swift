@@ -45,6 +45,23 @@ final class AuthViewModel: ObservableObject {
                 Task { await self?.refreshCurrentUser() }
             }
             .store(in: &cancellables)
+        // Свёрнутое приложение iOS замораживает, но сокет для сервера ещё до минуты «жив». Закрываем его сразу:
+        // push и так приходят всегда, а замороженный сокет только терял бы события. Во время звонка не трогаем —
+        // по сокету идёт сигнализация WebRTC.
+        NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard self?.currentUser != nil, case .idle = CallManager.shared.state else { return }
+                WebSocketClient.shared.disconnect()
+            }
+            .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard self?.currentUser != nil else { return }
+                WebSocketClient.shared.connect()
+            }
+            .store(in: &cancellables)
         restoreSession()
     }
 

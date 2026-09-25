@@ -106,8 +106,9 @@ final class ChatViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Пока сети не было, сокет пропустил новые сообщения — догружаем последние.
+        // Пока сети или сокета не было (приложение в фоне), новые сообщения прошли мимо — догружаем последние.
         NotificationCenter.default.publisher(for: .networkBecameAvailable)
+            .merge(with: NotificationCenter.default.publisher(for: .realtimeReconnected))
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self, !self.isShowingHistorySlice else { return }

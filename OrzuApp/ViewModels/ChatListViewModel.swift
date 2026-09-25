@@ -32,8 +32,9 @@ final class ChatListViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Пока сети не было, сокет пропустил новые сообщения и чаты — перечитываем список.
+        // Пока сети или сокета не было (приложение в фоне), новые сообщения и чаты прошли мимо — перечитываем список.
         NotificationCenter.default.publisher(for: .networkBecameAvailable)
+            .merge(with: NotificationCenter.default.publisher(for: .realtimeReconnected))
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 Task { await self?.refreshChats() }

@@ -79,11 +79,15 @@ final class PushManager: NSObject, ObservableObject {
 }
 
 extension PushManager: UNUserNotificationCenterDelegate {
+    /// Сервер шлёт push всегда. Флаг live — событие приложение получает по WebSocket и показывает само:
+    /// пока сокет подключён, баннер поверх него лишний. Без сокета (переподключается) баннер нужен — иначе о событии не узнать.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        let isLive = notification.request.content.userInfo["live"] as? Bool == true
+        let socketReady = await MainActor.run { WebSocketClient.shared.isReady }
+        return isLive && socketReady ? [] : [.banner, .sound]
     }
 
     nonisolated func userNotificationCenter(

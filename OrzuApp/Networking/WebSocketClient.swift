@@ -106,6 +106,11 @@ struct IncomingCall: Equatable {
     }
 }
 
+extension Notification.Name {
+    /// Сокет снова авторизован после разрыва (фон, обрыв связи): пока его не было, события могли пройти мимо.
+    static let realtimeReconnected = Notification.Name("com.orzuapp.messenger.realtimeReconnected")
+}
+
 /// Единственное WS-соединение на всё приложение: сервер рассылает новые сообщения по всем чатам пользователя,
 /// а конкретные экраны сами фильтруют события по chatId через `events`.
 @MainActor
@@ -123,6 +128,8 @@ final class WebSocketClient: NSObject, ObservableObject {
     /// По нему же плашка над вкладками показывает «Соединение…».
     @Published private(set) var isReady = false
     private var queuedSignals: [[String: Any]] = []
+    /// Сокет уже был готов в этом запуске: следующий "ready" — переподключение, а не первое подключение.
+    private var hasBeenReady = false
 
     private var task: URLSessionWebSocketTask?
     private let session = URLSession(configuration: .default)
@@ -240,6 +247,10 @@ final class WebSocketClient: NSObject, ObservableObject {
         switch type {
         case "ready":
             isReady = true
+            if hasBeenReady {
+                NotificationCenter.default.post(name: .realtimeReconnected, object: nil)
+            }
+            hasBeenReady = true
             let signals = queuedSignals
             queuedSignals.removeAll()
             for signal in signals {
