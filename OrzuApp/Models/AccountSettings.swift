@@ -51,4 +51,6 @@ struct NotificationSettings: Codable, Equatable {
     var meetings: Bool
     /// false — на экране блокировки только «Бо Хам · Новое сообщение», без имени и текста.
     var preview: Bool
+    /// Рассылки команды Бо Хам из админки: новые функции и объявления.
+    var news: Bool
 }

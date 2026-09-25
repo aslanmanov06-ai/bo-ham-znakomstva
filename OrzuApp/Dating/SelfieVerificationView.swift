@@ -15,6 +15,14 @@ struct SelfieVerificationView: View {
     private let maxSelfieDimension: CGFloat = 1600
 
     var body: some View {
+        if isReverification {
+            reverificationBody
+        } else {
+            firstCheckBody
+        }
+    }
+
+    private var firstCheckBody: some View {
         ScrollView {
             VStack(spacing: 22) {
                 statusIcon
@@ -42,25 +50,7 @@ struct SelfieVerificationView: View {
                 if canSubmit {
                     steps
                     tips
-                    PhotosPicker(selection: $item, matching: .images) {
-                        HStack(spacing: 8) {
-                            if isSending {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Image(systemName: "camera.fill")
-                            }
-                            Text(isSending ? "Отправляем…" : "Выбрать селфи")
-                        }
-                        .font(.app(.headline))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(DatingStyle.brandGradient, in: Capsule())
-                        .shadow(color: DatingStyle.rose.opacity(0.35), radius: 12, y: 6)
-                    }
-                    .buttonStyle(PressableButtonStyle())
-                    .disabled(isSending)
+                    selfiePicker
                 }
             }
             .padding(24)
@@ -82,6 +72,97 @@ struct SelfieVerificationView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    /// Модератор попросил переснять селфи (макет «Модератор просит селфи»): значок остаётся, отказываться не страшно.
+    private var reverificationBody: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                VStack(spacing: 10) {
+                    HaloIcon(systemImage: "person.crop.rectangle", tint: .champagne, fill: .champagneSoft)
+                        .padding(.top, 10)
+                    Text("Модератор просит новое селфи")
+                        .font(.display(size: 21))
+                        .multilineTextAlignment(.center)
+                    Text("Значок «проверен» и анкета остаются — лента, лайки и переписки работают как обычно.")
+                        .font(.app(.subheadline))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                if let reason = dating.verification?.reverificationReason {
+                    ReasonCard(reason: reason)
+                }
+                if let rejected = rejectReason {
+                    Label(rejected, systemImage: "exclamationmark.triangle.fill")
+                        .font(.app(.footnote, weight: .medium))
+                        .foregroundStyle(.red)
+                        .padding(12)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    step(1, "Сделайте селфи с жестом с картинки")
+                    step(2, "Модератор сверит его с фото анкеты")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .appCard(cornerRadius: 20)
+                Label("Селфи видит только модератор, в анкете его нет", systemImage: "lock")
+                    .font(.app(.caption))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+        }
+        .safeAreaInset(edge: .bottom) {
+            selfiePicker
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+        }
+        .background(AppBackground())
+        .navigationTitle("Проверка анкеты")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Позже") { dismiss() }
+            }
+        }
+        .onChange(of: item) { _, selected in
+            guard let selected else { return }
+            submit(selected)
+        }
+        .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
+            Button("Ок") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    /// Выбор селфи из фото телефона: камера в приложении пока не встроена.
+    private var selfiePicker: some View {
+        PhotosPicker(selection: $item, matching: .images) {
+            HStack(spacing: 8) {
+                if isSending {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: "camera.fill")
+                }
+                Text(isSending ? "Отправляем…" : "Выбрать селфи")
+            }
+            .font(.app(.headline))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(DatingStyle.brandGradient, in: Capsule())
+            .shadow(color: DatingStyle.rose.opacity(0.35), radius: 12, y: 6)
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(isSending)
+    }
+
+    /// Значок есть, но модератор попросил новое селфи — и оно ещё не отправлено.
+    private var isReverification: Bool {
+        dating.verification?.verified == true && dating.selfieRequested
     }
 
     /// Проверено — золотая печать, на проверке — часы с расходящимися кругами, иначе — камера.
@@ -161,7 +242,7 @@ struct SelfieVerificationView: View {
     }
 
     private var canSubmit: Bool {
-        dating.verification?.verified != true && latest?.status != .pending
+        (dating.verification?.verified != true || dating.selfieRequested) && latest?.status != .pending
     }
 
     private var statusTitle: String {

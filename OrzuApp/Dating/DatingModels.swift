@@ -434,6 +434,10 @@ struct SelfieCheck: Decodable, Hashable {
 struct VerificationStatus: Decodable {
     let verified: Bool
     let verifiedAt: Date?
+    /// Модератор попросил переснять селфи: значок и анкета остаются, новое селфи принимается.
+    let reverificationRequested: Bool
+    /// Что написал модератор, попросив селфи.
+    let reverificationReason: String?
     /// Последнее отправленное селфи: по нему видно, ждёт ли оно проверки и почему отклонено.
     let latest: SelfieCheck?
 }

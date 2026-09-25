@@ -7,7 +7,7 @@ final class AccountSettingsTests: XCTestCase {
         {"id":"u1","username":"alice","displayName":"Алиса","avatarUrl":"/users/u1/avatar?v=a1","email":null,
          "messagePrivacy":"CONTACTS","groupInvitePrivacy":"NOBODY","messengerSearchByUsername":true,
          "datingSearchByUsername":false,"mailEnabled":false,"hasPassword":false,"googleLinked":true,"deactivated":false,
-         "notifications":{"messages":true,"matches":true,"intros":true,"meetings":true,"preview":false}}
+         "notifications":{"messages":true,"matches":true,"intros":true,"meetings":true,"preview":false,"news":true}}
         """.utf8)
 
         let settings = try JSONDecoder().decode(AccountSettings.self, from: json)
@@ -17,6 +17,7 @@ final class AccountSettingsTests: XCTestCase {
         XCTAssertEqual(settings.user.avatarUrl, "/users/u1/avatar?v=a1")
         XCTAssertFalse(settings.hasPassword)
         XCTAssertTrue(settings.googleLinked)
+        XCTAssertTrue(settings.notifications.news)
     }
 
     /// Незаполненные поля не должны уходить на сервер — иначе изменение одной настройки сбросило бы другие.

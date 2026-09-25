@@ -4,6 +4,7 @@ import SwiftUI
 /// Код уходит на почту из Google; свою почту человек вводит, только если Google её не передал.
 struct GoogleRegistrationView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    @ObservedObject private var appStatus = AppStatus.shared
     let registration: GoogleRegistration
 
     @State private var username: String
@@ -24,100 +25,104 @@ struct GoogleRegistrationView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Почти готово")
-                            .font(.display(size: 22))
-                        Text("Подтвердите почту из Google — пришлём на неё код. Это защищает аккаунт от чужих входов.")
-                            .font(.app(.subheadline))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 4)
-                    .padding(.top, 6)
+            if appStatus.registrationClosed {
+                RegistrationClosedView { authViewModel.pendingGoogleRegistration = nil }
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Почти готово")
+                                .font(.display(size: 22))
+                            Text("Подтвердите почту из Google — пришлём на неё код. Это защищает аккаунт от чужих входов.")
+                                .font(.app(.subheadline))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 4)
+                        .padding(.top, 6)
 
-                    if let googleEmail = registration.profile.email {
-                        googleEmailCard(googleEmail)
-                    } else {
-                        LabeledAppField(title: "Почта", hint: "Google не передал почту — укажите её, на неё придёт код.", error: emailError) {
-                            TextField("name@mail.ru", text: $typedEmail)
-                                .textContentType(.emailAddress)
-                                .keyboardType(.emailAddress)
+                        if let googleEmail = registration.profile.email {
+                            googleEmailCard(googleEmail)
+                        } else {
+                            LabeledAppField(title: "Почта", hint: "Google не передал почту — укажите её, на неё придёт код.", error: emailError) {
+                                TextField("name@mail.ru", text: $typedEmail)
+                                    .textContentType(.emailAddress)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .onChange(of: typedEmail) { emailError = nil }
+                            }
+                        }
+
+                        LabeledAppField(title: "Username", hint: "По нему вас найдут в поиске.", error: usernameError) {
+                            TextField("латиница, цифры и «_»", text: $username)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                .onChange(of: typedEmail) { emailError = nil }
+                                // Сервер хранит username строчными — показываем сразу так, как он сохранится.
+                                .onChange(of: username) {
+                                    usernameError = nil
+                                    username = username.lowercased()
+                                }
+                        }
+                        LabeledAppField(title: "Имя") {
+                            TextField("Как к вам обращаться", text: $displayName)
+                                .textContentType(.givenName)
+                        }
+                        LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
+                            TextField("+992 90 123 45 67", text: $phone)
+                                .textContentType(.telephoneNumber)
+                                .keyboardType(.phonePad)
+                        }
+
+                        Text("Пароль можно задать позже в настройках.")
+                            .font(.app(.caption))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
+                        if let errorMessage {
+                            Label(errorMessage, systemImage: "exclamationmark.circle.fill")
+                                .font(.app(.footnote))
+                                .foregroundStyle(.red)
                         }
                     }
-
-                    LabeledAppField(title: "Username", hint: "По нему вас найдут в поиске.", error: usernameError) {
-                        TextField("латиница, цифры и «_»", text: $username)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            // Сервер хранит username строчными — показываем сразу так, как он сохранится.
-                            .onChange(of: username) {
-                                usernameError = nil
-                                username = username.lowercased()
-                            }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .frame(maxWidth: 440)
+                    .frame(maxWidth: .infinity)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .bottom) {
+                    Button {
+                        Task { await requestCode() }
+                    } label: {
+                        if isBusy { ProgressView().tint(.white) } else { Text("Получить код") }
                     }
-                    LabeledAppField(title: "Имя") {
-                        TextField("Как к вам обращаться", text: $displayName)
-                            .textContentType(.givenName)
-                    }
-                    LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
-                        TextField("+992 90 123 45 67", text: $phone)
-                            .textContentType(.telephoneNumber)
-                            .keyboardType(.phonePad)
-                    }
-
-                    Text("Пароль можно задать позже в настройках.")
-                        .font(.app(.caption))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 4)
-
-                    if let errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.circle.fill")
-                            .font(.app(.footnote))
-                            .foregroundStyle(.red)
+                    .buttonStyle(.appPrimary)
+                    .disabled(!isValid || isBusy)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+                    .frame(maxWidth: 440)
+                }
+                .background(AppBackground())
+                .navigationTitle("Завершите регистрацию")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Отмена") { authViewModel.pendingGoogleRegistration = nil }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .frame(maxWidth: 440)
-                .frame(maxWidth: .infinity)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    Task { await requestCode() }
-                } label: {
-                    if isBusy { ProgressView().tint(.white) } else { Text("Получить код") }
+                .navigationDestination(isPresented: $showCode) {
+                    EmailCodeView(
+                        email: codeEmail,
+                        canChangeEmail: registration.profile.email == nil,
+                        resend: { try await authViewModel.requestGoogleRegistrationCode(registration, username: username, email: typedEmailIfNeeded) },
+                        confirm: { code in
+                            try await authViewModel.completeGoogleRegistration(
+                                registration, username: username, displayName: displayName, email: typedEmailIfNeeded,
+                                phone: PhoneRules.normalized(phone), code: code
+                            )
+                        }
+                    )
                 }
-                .buttonStyle(.appPrimary)
-                .disabled(!isValid || isBusy)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-                .frame(maxWidth: 440)
-            }
-            .background(AppBackground())
-            .navigationTitle("Завершите регистрацию")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") { authViewModel.pendingGoogleRegistration = nil }
-                }
-            }
-            .navigationDestination(isPresented: $showCode) {
-                EmailCodeView(
-                    email: codeEmail,
-                    canChangeEmail: registration.profile.email == nil,
-                    resend: { try await authViewModel.requestGoogleRegistrationCode(registration, username: username, email: typedEmailIfNeeded) },
-                    confirm: { code in
-                        try await authViewModel.completeGoogleRegistration(
-                            registration, username: username, displayName: displayName, email: typedEmailIfNeeded,
-                            phone: PhoneRules.normalized(phone), code: code
-                        )
-                    }
-                )
             }
         }
         .tint(.brand)
@@ -182,6 +187,9 @@ struct GoogleRegistrationView: View {
             if registration.profile.email == nil { emailError = error.localizedDescription } else { errorMessage = error.localizedDescription }
         } catch let error as APIError where error.code == ServerErrorCode.usernameTaken {
             usernameError = error.localizedDescription
+        } catch let error as APIError where error.code == ServerErrorCode.registrationClosed {
+            // Регистрацию закрыли, пока человек заполнял форму: вместо формы — объяснение.
+            AppStatus.shared.markRegistrationClosed()
         } catch {
             errorMessage = error.localizedDescription
         }

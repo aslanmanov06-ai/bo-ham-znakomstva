@@ -544,14 +544,27 @@ actor APIClient {
             return try await send(request, authorized: authorized, allowRetry: false)
         }
 
+        guard !(200...299).contains(httpResponse.statusCode) else { return data }
+        let body = try? decoder.decode(ServerErrorBody.self, from: data)
+        announceAppWideRejection(code: body?.code, message: body?.readableMessage, data: data)
         if httpResponse.statusCode >= 500 { throw APIError.unavailable(status: httpResponse.statusCode) }
-        guard (200...299).contains(httpResponse.statusCode) else {
-            let body = try? decoder.decode(ServerErrorBody.self, from: data)
-            let message = body?.readableMessage ?? "Ошибка сервера (\(httpResponse.statusCode))"
-            guard let code = body?.code else { throw APIError.server(message) }
-            throw APIError.rejected(code: code, message: message)
+        let message = body?.readableMessage ?? "Ошибка сервера (\(httpResponse.statusCode))"
+        guard let code = body?.code else { throw APIError.server(message) }
+        throw APIError.rejected(code: code, message: message)
+    }
+
+    /// Обслуживание и блокировка касаются всего приложения, а не экрана, который сделал запрос: о них узнаёт AppStatus.
+    /// Сам запрос при этом завершается ошибкой как обычно (при обслуживании — временной: экран покажет сохранённое).
+    private nonisolated func announceAppWideRejection(code: String?, message: String?, data: Data) {
+        switch code {
+        case ServerErrorCode.maintenance:
+            NotificationCenter.default.post(name: .maintenanceDetected, object: message)
+        case ServerErrorCode.accountBanned:
+            guard let notice = try? ISO8601Coding.makeDecoder().decode(BanNotice.self, from: data) else { return }
+            NotificationCenter.default.post(name: .accountBanned, object: notice)
+        default:
+            break
         }
-        return data
     }
 
     /// path может содержать query — appendingPathComponent её экранировал бы, поэтому собираем через URLComponents.

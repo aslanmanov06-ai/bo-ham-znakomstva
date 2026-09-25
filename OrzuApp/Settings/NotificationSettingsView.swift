@@ -39,6 +39,9 @@ struct NotificationSettingsView: View {
                     toggle("Первые сообщения", subtitle: "И запросы на переписку", systemImage: "sparkles", color: .champagne, keyPath: \.intros, in: notifications)
                     toggle("Встречи", subtitle: "Приглашения и напоминания", systemImage: "calendar", color: .champagne, keyPath: \.meetings, in: notifications)
                 }
+                Section("От команды Бо Хам") {
+                    toggle("Новости приложения", subtitle: "Новые функции и важные объявления", systemImage: "megaphone.fill", color: .champagne, keyPath: \.news, in: notifications)
+                }
                 Section {
                     toggle("Показывать имя и текст", subtitle: "Иначе — только «Бо Хам · Новое сообщение»", systemImage: nil, color: .brand, keyPath: \.preview, in: notifications)
                 } header: {

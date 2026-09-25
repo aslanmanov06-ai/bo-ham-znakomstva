@@ -46,7 +46,7 @@ enum ServerEvent {
     case datingJourney(matchId: String)
     /// Приглашение на встречу создано или на него ответили.
     case datingMeeting(DatingMeeting)
-    /// Модератор проверил селфи, фото или видео анкеты — статусы в анкете изменились.
+    /// Модератор проверил селфи, фото или видео анкеты, попросил новое селфи или снял значок — статусы в анкете изменились.
     case datingModerated
     /// Новый запрос на переписку или на мой запрос ответили: ящик «Запросы» и список чатов перечитываются.
     case chatRequestsChanged
@@ -340,7 +340,7 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "chat.request", "chat.requestAccepted":
             events.send(.chatRequestsChanged)
 
-        case "dating.verification", "dating.photoModerated", "dating.videoModerated":
+        case "dating.verification", "dating.photoModerated", "dating.videoModerated", "dating.selfieRequested", "dating.verificationRevoked":
             // Что именно проверили, клиенту не важно: он перечитывает анкету целиком.
             events.send(.datingModerated)
 

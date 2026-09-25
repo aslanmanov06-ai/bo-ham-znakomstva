@@ -28,6 +28,7 @@
 		1B02DC6B89DB42816E82BFD3 /* AccountExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = F993B33790DE2FAD7C59EBE9 /* AccountExtras.swift */; };
 		1DA2535D2EE82F57254567A2 /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E5C0BA5676E5F934EBE /* Glass.swift */; };
 		1DB7072490B5F85DB264712F /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DACDDF26308EE8918ED7CDD /* RegisterView.swift */; };
+		9055C9080FC8FFE26E7E509E /* ServiceScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE3D4B0DEBFD51FE4ECBDB9 /* ServiceScreens.swift */; };
 		1F7AB3AEBDB834C0C49A5ABB /* GoogleAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5190A9013E0D3D02269827 /* GoogleAuth.swift */; };
 		209AC3C339F75FF4A4D086B4 /* Bot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0BFF183DE2E7FE5CD6EB9C /* Bot.swift */; };
 		20CF48C19AE7DFA5DED2EF19 /* MediaRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D3417C3CAFEA4B3B45B98B /* MediaRecording.swift */; };
@@ -78,8 +79,10 @@
 		81365BAB0DB37054FE263F86 /* ChatRequestViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5DCDE8B7AEDFA7D6AD73E5 /* ChatRequestViews.swift */; };
 		8140C79CCBEE7EB60197AC69 /* MatchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24EFCB4FAB4CD8BD8A09A1A2 /* MatchesView.swift */; };
 		81A81E4CE1BCCA04B8D3B8AC /* AccountSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D962672E62662EAF451944D /* AccountSettingsTests.swift */; };
+		E243BB75C718739EC9829DEC /* AppVersionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C17F7B52D24BE77D69D638 /* AppVersionTests.swift */; };
 		85AC882D58DFFDBD110E6B77 /* MessageSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EB368F9B41637D3CADF6BE /* MessageSearchView.swift */; };
 		8769703856E6292FF9F62042 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B2B594CD92B3E407E766DD4 /* AppConfig.swift */; };
+		80B8C45C8E44D8A24AF9DBDB /* AppStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B6244699C9EF19DB5ABBC5 /* AppStatus.swift */; };
 		891FBA520B6C3B01E6D032E0 /* BotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2304D7BDBE237520F576B270 /* BotsView.swift */; };
 		8B010558AA28957B3EF8C30D /* CurrentUserCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D61AC07CCA26A36947ABFE /* CurrentUserCache.swift */; };
 		8BEA9570C8852EBE609603DE /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFFC3168F96892A0B2254D38 /* TokenStore.swift */; };
@@ -180,11 +183,13 @@
 		3C30567B940B3DFA1AD7E99F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		3CBADAC3011C435EAD5B7556 /* SecretChatCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecretChatCrypto.swift; sourceTree = "<group>"; };
 		3D962672E62662EAF451944D /* AccountSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSettingsTests.swift; sourceTree = "<group>"; };
+		32C17F7B52D24BE77D69D638 /* AppVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppVersionTests.swift; sourceTree = "<group>"; };
 		40D61AC07CCA26A36947ABFE /* CurrentUserCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrentUserCache.swift; sourceTree = "<group>"; };
 		414BF1E83FD2FBE91ADFBB79 /* DatingBrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatingBrowseView.swift; sourceTree = "<group>"; };
 		468B685B4EF5967CC5441742 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		48739EF3D65B10F451C6C3FE /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		4B2B594CD92B3E407E766DD4 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		26B6244699C9EF19DB5ABBC5 /* AppStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatus.swift; sourceTree = "<group>"; };
 		4B53E7A2EDF59A362B1798A6 /* MessageOutbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageOutbox.swift; sourceTree = "<group>"; };
 		4F035CDCE68B742F1B42F33D /* DatingBrowseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatingBrowseTests.swift; sourceTree = "<group>"; };
 		4F2B996BAA0A17A0BCE5B19E /* MatchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchDetailView.swift; sourceTree = "<group>"; };
@@ -233,6 +238,7 @@
 		9D01E21C0C66EACEE7C3F213 /* PublicChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublicChannel.swift; sourceTree = "<group>"; };
 		9D626BB125B9DEA0C148BD8F /* OrzuAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = OrzuAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9DACDDF26308EE8918ED7CDD /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		1CE3D4B0DEBFD51FE4ECBDB9 /* ServiceScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceScreens.swift; sourceTree = "<group>"; };
 		9DE0AC2C1596068B4C0E7942 /* MessageOutboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageOutboxTests.swift; sourceTree = "<group>"; };
 		A15B752E7E6F9191F6A11CB3 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		A1F80185CA990F496B95DE02 /* Chat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chat.swift; sourceTree = "<group>"; };
@@ -379,6 +385,7 @@
 				CA82EDC67E21BC93D70A3633 /* APIClient+Account.swift */,
 				B77A21B5B888F6FCACFC6C78 /* APIClient+Dating.swift */,
 				4B2B594CD92B3E407E766DD4 /* AppConfig.swift */,
+				26B6244699C9EF19DB5ABBC5 /* AppStatus.swift */,
 				C515A45CE89E5A502EDA5AD5 /* AttachmentLoader.swift */,
 				40D61AC07CCA26A36947ABFE /* CurrentUserCache.swift */,
 				DD84AD7C7CD075E4FFEB76D4 /* DiskStore.swift */,
@@ -428,6 +435,7 @@
 			isa = PBXGroup;
 			children = (
 				3D962672E62662EAF451944D /* AccountSettingsTests.swift */,
+				32C17F7B52D24BE77D69D638 /* AppVersionTests.swift */,
 				C442DE4DA38334A22F59DB65 /* ChatFeaturesTests.swift */,
 				C8248365125DDE38C78865DC /* ChatRequestTests.swift */,
 				2756995704E1529B3926054D /* CurrentUserCacheTests.swift */,
@@ -487,6 +495,7 @@
 				DF9856094D29E9866FF26367 /* NewChatView.swift */,
 				81A1B9DC94001DD94CE3A04B /* PasswordResetView.swift */,
 				9DACDDF26308EE8918ED7CDD /* RegisterView.swift */,
+				1CE3D4B0DEBFD51FE4ECBDB9 /* ServiceScreens.swift */,
 				DB5BC7C9D0CA4F417C87883C /* RootView.swift */,
 				571551BC9B8F87720B657615 /* UIImage+Downscale.swift */,
 			);
@@ -676,6 +685,7 @@
 				FAC85AD80FBA31B64540B1E5 /* AccountRemovalView.swift in Sources */,
 				775DD2ACF4FF13E86943D9F0 /* AccountSettings.swift in Sources */,
 				8769703856E6292FF9F62042 /* AppConfig.swift in Sources */,
+				80B8C45C8E44D8A24AF9DBDB /* AppStatus.swift in Sources */,
 				B890399BB35161718C848B26 /* AppDelegate.swift in Sources */,
 				AAA2CB8FDCD294C8B4CAD8A7 /* AppearanceSettings.swift in Sources */,
 				B064A162CCA64E800D3DBE3E /* Attachment.swift in Sources */,
@@ -754,6 +764,7 @@
 				14466174085A16A94438BC24 /* PushManager.swift in Sources */,
 				FBFC07AD8FADA7D263F94DB0 /* RTCVideoRenderView.swift in Sources */,
 				1DB7072490B5F85DB264712F /* RegisterView.swift in Sources */,
+				9055C9080FC8FFE26E7E509E /* ServiceScreens.swift in Sources */,
 				4064E749D6649A253AF9B865 /* ReportUserView.swift in Sources */,
 				D95A5513E3EB649FCBF4A510 /* RootView.swift in Sources */,
 				3D09436F41023926AF42317A /* SafetyAlertsViewModel.swift in Sources */,
@@ -781,6 +792,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				81A81E4CE1BCCA04B8D3B8AC /* AccountSettingsTests.swift in Sources */,
+				E243BB75C718739EC9829DEC /* AppVersionTests.swift in Sources */,
 				16CFB1A5DB64717B2393CB11 /* ChatFeaturesTests.swift in Sources */,
 				049254F6895AB31137A400EF /* ChatRequestTests.swift in Sources */,
 				E6F803FA2D27D196FC320367 /* CurrentUserCacheTests.swift in Sources */,

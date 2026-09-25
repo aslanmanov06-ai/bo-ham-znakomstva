@@ -218,7 +218,7 @@ final class DatingModelsTests: XCTestCase {
 
     func testDecodesVerificationStatus() throws {
         let json = Data("""
-        {"verified":false,"verifiedAt":null,
+        {"verified":false,"verifiedAt":null,"reverificationRequested":false,"reverificationReason":null,
          "latest":{"id":"s1","status":"REJECTED","rejectReason":"Нужно новое селфи, а не фото из анкеты",
          "createdAt":"2026-09-20T09:00:00.000Z"}}
         """.utf8)
@@ -228,5 +228,18 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertFalse(status.verified)
         XCTAssertEqual(status.latest?.status, .rejected)
         XCTAssertEqual(status.latest?.rejectReason, "Нужно новое селфи, а не фото из анкеты")
+    }
+
+    func testDecodesSelfieRequestFromModerator() throws {
+        let json = Data("""
+        {"verified":true,"verifiedAt":"2026-09-20T09:00:00.000Z","reverificationRequested":true,
+         "reverificationReason":"Фото сильно изменились","latest":null}
+        """.utf8)
+
+        let status = try decoder().decode(VerificationStatus.self, from: json)
+
+        XCTAssertTrue(status.verified)
+        XCTAssertTrue(status.reverificationRequested)
+        XCTAssertEqual(status.reverificationReason, "Фото сильно изменились")
     }
 }

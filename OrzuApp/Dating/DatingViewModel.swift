@@ -192,6 +192,11 @@ final class DatingViewModel: ObservableObject {
         verification?.latest?.status == .pending
     }
 
+    /// Модератор просит переснять селфи, а новое ещё не отправлено: значок есть, но нужна проверка.
+    var selfieRequested: Bool {
+        verification?.reverificationRequested == true && !selfiePending
+    }
+
     private func loadRules() async {
         do {
             stage = .rules(try await APIClient.shared.fetchCommunityRules())

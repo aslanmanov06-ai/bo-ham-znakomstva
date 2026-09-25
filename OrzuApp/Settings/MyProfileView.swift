@@ -11,6 +11,9 @@ struct MyProfileView: View {
     @State private var showPreview = false
     @State private var showSelfie = false
     @State private var showSafety = false
+    /// Экран запроса селфи открывается сам один раз: «Позже» — выбор человека, повторно не навязываем.
+    @State private var selfieRequestShown = false
+    @ObservedObject private var push = PushManager.shared
 
     init(dating: DatingViewModel, onProfileChanged: @escaping (User) -> Void) {
         self.dating = dating
@@ -63,6 +66,20 @@ struct MyProfileView: View {
         }
         .sheet(isPresented: $showSelfie) {
             NavigationStack { SelfieVerificationView(dating: dating) }
+        }
+        // Модератор попросил новое селфи — показываем его экран, как только человек в профиле.
+        .task(id: dating.selfieRequested) {
+            guard dating.selfieRequested, !selfieRequestShown else { return }
+            selfieRequestShown = true
+            showSelfie = true
+        }
+        // Нажали на push с просьбой модератора — экран открываем, даже если уже откладывали.
+        .onChange(of: push.pendingSelfieRequest) { _, pending in
+            guard pending else { return }
+            push.pendingSelfieRequest = false
+            Task { await dating.refreshVerification() }
+            selfieRequestShown = true
+            showSelfie = true
         }
         .sheet(isPresented: $showSafety) {
             NavigationStack { SafetyView() }
@@ -183,6 +200,12 @@ struct MyProfileView: View {
         }
     }
 
+    private var selfieTileSubtitle: String {
+        if dating.selfieRequested { return "Нужно новое селфи" }
+        if dating.needsSelfie { return dating.selfiePending ? "Ждёт модератора" : "Пройти по селфи" }
+        return "Пройдена"
+    }
+
     private func statusChip(_ title: String, systemImage: String, tint: Color) -> some View {
         Label(title, systemImage: systemImage)
             .font(.app(.caption, weight: .semibold))
@@ -198,7 +221,7 @@ struct MyProfileView: View {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 actionTile("Анкета", subtitle: "Фото и о себе", systemImage: "heart.text.square.fill", tint: .brand) { showDatingEditor = true }
                 actionTile("Как меня видят", subtitle: "Глазами других", systemImage: "eye.fill", tint: .brand) { showPreview = true }
-                actionTile("Проверка", subtitle: dating.needsSelfie ? (dating.selfiePending ? "Ждёт модератора" : "Пройти по селфи") : "Пройдена", systemImage: "checkmark.seal.fill", tint: .champagne) { showSelfie = true }
+                actionTile("Проверка", subtitle: selfieTileSubtitle, systemImage: "checkmark.seal.fill", tint: .champagne) { showSelfie = true }
                 actionTile("Безопасность", subtitle: "Контакты и SOS", systemImage: "shield.lefthalf.filled", tint: .champagne) { showSafety = true }
             }
             .listRowBackground(Color.clear)

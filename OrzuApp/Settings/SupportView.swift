@@ -116,6 +116,12 @@ struct SupportView: View {
 
 /// Новое обращение: тема и описание. Границы длины — те же, что проверяет сервер.
 struct NewSupportTicketView: View {
+    /// Тема задана заранее (обжалование блокировки): выбора темы и подсказки про SOS нет.
+    var fixedCategory: SupportCategory?
+    /// Куда отправить: обычное обращение или обжалование без входа.
+    var submit: (SupportCategory, String) async throws -> SupportTicket = { category, text in
+        try await APIClient.shared.createSupportTicket(category: category, text: text)
+    }
     let onSent: (SupportTicket) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -129,9 +135,11 @@ struct NewSupportTicketView: View {
 
     var body: some View {
         Form {
-            Section("Тема") {
-                FlowChips(options: SupportCategory.allCases, selection: $category)
-                    .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+            if fixedCategory == nil {
+                Section("Тема") {
+                    FlowChips(options: SupportCategory.allCases, selection: $category)
+                        .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                }
             }
             Section {
                 TextField("Опишите подробно — так ответим быстрее", text: $text, axis: .vertical)
@@ -145,21 +153,13 @@ struct NewSupportTicketView: View {
                 Text("\(text.count) / \(Self.maxLength)")
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            Section {
-                Label {
-                    Text("Если вам угрожают прямо сейчас — нажмите SOS в разделе «Безопасность», это быстрее.")
-                        .font(.app(.footnote))
-                        .foregroundStyle(.secondary)
-                } icon: {
-                    Image(systemName: "shield.lefthalf.filled").foregroundStyle(Color.champagne)
-                }
-            }
+            if fixedCategory == nil { sosHint }
             if let errorMessage {
                 Text(errorMessage).foregroundStyle(.red)
             }
         }
         .appScreenBackground()
-        .navigationTitle("Новое обращение")
+        .navigationTitle(fixedCategory?.title ?? "Новое обращение")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -174,6 +174,19 @@ struct NewSupportTicketView: View {
             }
         }
         .interactiveDismissDisabled(!text.isEmpty)
+        .onAppear { category = category ?? fixedCategory }
+    }
+
+    private var sosHint: some View {
+        Section {
+            Label {
+                Text("Если вам угрожают прямо сейчас — нажмите SOS в разделе «Безопасность», это быстрее.")
+                    .font(.app(.footnote))
+                    .foregroundStyle(.secondary)
+            } icon: {
+                Image(systemName: "shield.lefthalf.filled").foregroundStyle(Color.champagne)
+            }
+        }
     }
 
     private var trimmedText: String {
@@ -191,7 +204,7 @@ struct NewSupportTicketView: View {
         Task {
             defer { isSending = false }
             do {
-                onSent(try await APIClient.shared.createSupportTicket(category: category, text: trimmedText))
+                onSent(try await submit(category, trimmedText))
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription

@@ -20,6 +20,8 @@ final class PushManager: NSObject, ObservableObject {
     }
     /// Тревога доверенного контакта: её нужно открыть сразу, из любой вкладки.
     @Published var pendingSosId: String?
+    /// Модератор попросил новое селфи — открыть «Мой профиль» и экран проверки.
+    @Published var pendingSelfieRequest = false
 
     private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "Push")
     private var deviceToken: String?
@@ -100,10 +102,12 @@ extension PushManager: UNUserNotificationCenterDelegate {
         let sosId = info["sosId"] as? String
         // Первое сообщение, встреча и «Путь к браку» ведут во вкладку «Знакомства», а не в чат.
         let dating = chatId == nil && (info["introId"] != nil || info["meetingId"] != nil || info["matchId"] != nil)
+        let selfieRequest = info["moderation"] as? String == "dating.selfieRequested"
         await MainActor.run {
             self.pendingChatId = chatId
             self.pendingSosId = sosId
             self.pendingDating = dating
+            if selfieRequest { self.pendingSelfieRequest = true }
         }
     }
 }

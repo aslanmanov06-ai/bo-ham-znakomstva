@@ -18,6 +18,12 @@ enum ServerErrorCode {
     static let usernameTaken = "USERNAME_TAKEN"
     /// Код на эту почту отправлен меньше минуты назад и ещё действует.
     static let codeAlreadySent = "CODE_ALREADY_SENT"
+    /// Администратор временно закрыл регистрацию; вход работает.
+    static let registrationClosed = "REGISTRATION_CLOSED"
+    /// Аккаунт заблокирован модерацией — в ответе срок, причина и пропуск на обжалование (BanNotice).
+    static let accountBanned = "ACCOUNT_BANNED"
+    /// Режим обслуживания: сервер отвечает 503 на всё, кроме входа, документов и конфига приложения.
+    static let maintenance = "MAINTENANCE"
 }
 
 /// Запросы знакомств, безопасности, жалоб и правил сообщества. Вынесены из APIClient.swift, чтобы

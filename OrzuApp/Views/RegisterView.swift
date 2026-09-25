@@ -3,6 +3,7 @@ import SwiftUI
 /// Регистрация по паролю: форма → код из письма (EmailCodeView) → аккаунт. Дальше корневой экран покажет анкету.
 struct RegisterView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    @ObservedObject private var appStatus = AppStatus.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var username = ""
@@ -18,100 +19,104 @@ struct RegisterView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Создайте аккаунт")
-                            .font(.display(size: 22))
-                        Text("На почту придёт код подтверждения. Дальше — короткая анкета: пол, дата рождения, город и одно фото.")
-                            .font(.app(.subheadline))
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.horizontal, 4)
-                    .padding(.top, 6)
+            if appStatus.registrationClosed {
+                RegistrationClosedView { dismiss() }
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Создайте аккаунт")
+                                .font(.display(size: 22))
+                            Text("На почту придёт код подтверждения. Дальше — короткая анкета: пол, дата рождения, город и одно фото.")
+                                .font(.app(.subheadline))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 4)
+                        .padding(.top, 6)
 
-                    LabeledAppField(title: "Username", error: usernameError) {
-                        TextField("латиница, цифры и «_»", text: $username)
-                            .textContentType(.username)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            // Сервер хранит username строчными — показываем сразу так, как он сохранится.
-                            .onChange(of: username) {
-                                usernameError = nil
-                                username = username.lowercased()
-                            }
-                    }
-                    LabeledAppField(title: "Имя") {
-                        TextField("Как к вам обращаться", text: $displayName)
-                            .textContentType(.givenName)
-                    }
-                    LabeledAppField(
-                        title: "Почта",
-                        hint: "Для входа и восстановления пароля. Никому не показывается.",
-                        error: emailError
-                    ) {
-                        TextField("name@mail.ru", text: $email)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .onChange(of: email) { emailError = nil }
-                    }
-                    LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
-                        TextField("+992 90 123 45 67", text: $phone)
-                            .textContentType(.telephoneNumber)
-                            .keyboardType(.phonePad)
-                    }
-                    LabeledAppField(title: "Пароль") {
-                        SecureField("Не меньше 8 символов", text: $password)
-                            .textContentType(.newPassword)
-                    }
+                        LabeledAppField(title: "Username", error: usernameError) {
+                            TextField("латиница, цифры и «_»", text: $username)
+                                .textContentType(.username)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                // Сервер хранит username строчными — показываем сразу так, как он сохранится.
+                                .onChange(of: username) {
+                                    usernameError = nil
+                                    username = username.lowercased()
+                                }
+                        }
+                        LabeledAppField(title: "Имя") {
+                            TextField("Как к вам обращаться", text: $displayName)
+                                .textContentType(.givenName)
+                        }
+                        LabeledAppField(
+                            title: "Почта",
+                            hint: "Для входа и восстановления пароля. Никому не показывается.",
+                            error: emailError
+                        ) {
+                            TextField("name@mail.ru", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .onChange(of: email) { emailError = nil }
+                        }
+                        LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
+                            TextField("+992 90 123 45 67", text: $phone)
+                                .textContentType(.telephoneNumber)
+                                .keyboardType(.phonePad)
+                        }
+                        LabeledAppField(title: "Пароль") {
+                            SecureField("Не меньше 8 символов", text: $password)
+                                .textContentType(.newPassword)
+                        }
 
-                    if let errorMessage {
-                        Label(errorMessage, systemImage: "exclamationmark.circle.fill")
-                            .font(.app(.footnote))
-                            .foregroundStyle(.red)
+                        if let errorMessage {
+                            Label(errorMessage, systemImage: "exclamationmark.circle.fill")
+                                .font(.app(.footnote))
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .frame(maxWidth: 440)
+                    .frame(maxWidth: .infinity)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .bottom) {
+                    Button {
+                        Task { await requestCode() }
+                    } label: {
+                        if isBusy { ProgressView().tint(.white) } else { Text("Получить код") }
+                    }
+                    .buttonStyle(.appPrimary)
+                    .disabled(!isValid || isBusy)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+                    .frame(maxWidth: 440)
+                }
+                .background(AppBackground())
+                .navigationTitle("Регистрация")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Отмена") { dismiss() }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .frame(maxWidth: 440)
-                .frame(maxWidth: .infinity)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) {
-                Button {
-                    Task { await requestCode() }
-                } label: {
-                    if isBusy { ProgressView().tint(.white) } else { Text("Получить код") }
+                .navigationDestination(isPresented: $showCode) {
+                    EmailCodeView(
+                        email: normalizedEmail,
+                        canChangeEmail: true,
+                        resend: { try await authViewModel.requestRegistrationCode(email: normalizedEmail, username: username) },
+                        confirm: { code in
+                            try await authViewModel.register(
+                                username: username, displayName: displayName, password: password, email: normalizedEmail,
+                                phone: PhoneRules.normalized(phone), code: code
+                            )
+                            dismiss()
+                        }
+                    )
                 }
-                .buttonStyle(.appPrimary)
-                .disabled(!isValid || isBusy)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
-                .frame(maxWidth: 440)
-            }
-            .background(AppBackground())
-            .navigationTitle("Регистрация")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Отмена") { dismiss() }
-                }
-            }
-            .navigationDestination(isPresented: $showCode) {
-                EmailCodeView(
-                    email: normalizedEmail,
-                    canChangeEmail: true,
-                    resend: { try await authViewModel.requestRegistrationCode(email: normalizedEmail, username: username) },
-                    confirm: { code in
-                        try await authViewModel.register(
-                            username: username, displayName: displayName, password: password, email: normalizedEmail,
-                            phone: PhoneRules.normalized(phone), code: code
-                        )
-                        dismiss()
-                    }
-                )
             }
         }
         .tint(.brand)
@@ -144,6 +149,9 @@ struct RegisterView: View {
             emailError = error.localizedDescription
         } catch let error as APIError where error.code == ServerErrorCode.usernameTaken {
             usernameError = error.localizedDescription
+        } catch let error as APIError where error.code == ServerErrorCode.registrationClosed {
+            // Регистрацию закрыли, пока человек заполнял форму: вместо формы — объяснение.
+            AppStatus.shared.markRegistrationClosed()
         } catch {
             errorMessage = error.localizedDescription
         }

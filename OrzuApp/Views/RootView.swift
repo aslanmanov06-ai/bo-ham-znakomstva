@@ -4,6 +4,7 @@ struct RootView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @ObservedObject private var callManager = CallManager.shared
     @ObservedObject private var appearance = AppearanceSettings.shared
+    @ObservedObject private var appStatus = AppStatus.shared
 
     var body: some View {
         Group {
@@ -15,10 +16,28 @@ struct RootView: View {
                 LoginView()
             }
         }
+        // Служебные экраны накрывают приложение, не пересоздавая его: после обслуживания всё на своих местах.
+        .overlay { appWideScreen }
+        .task { await appStatus.refresh() }
         .fullScreenCover(isPresented: isCallActive) {
             CallOverlayView()
         }
         .preferredColorScheme(appearance.theme.colorScheme)
+    }
+
+    /// Обновление важнее блокировки (старая версия может не понять новых ответов сервера), блокировка — обслуживания.
+    @ViewBuilder
+    private var appWideScreen: some View {
+        if appStatus.updateRequired, let minimum = appStatus.config?.minIosVersion {
+            UpdateRequiredView(minimumVersion: minimum)
+        } else if let ban = appStatus.ban {
+            AccountBannedView(notice: ban) {
+                appStatus.dismissBan()
+                Task { await authViewModel.logout() }
+            }
+        } else if appStatus.isUnderMaintenance {
+            MaintenanceView(status: appStatus)
+        }
     }
 
     private var isCallActive: Binding<Bool> {
@@ -154,6 +173,10 @@ private struct MainTabView: View {
             guard pending else { return }
             selection = .dating
             push.pendingDating = false
+        }
+        // Просьба модератора о селфи открывается в «Моём профиле».
+        .onChange(of: push.pendingSelfieRequest) { _, pending in
+            if pending { selection = .profile }
         }
         .task(id: push.pendingSosId) {
             guard let sosId = push.pendingSosId else { return }

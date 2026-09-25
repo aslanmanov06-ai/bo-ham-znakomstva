@@ -57,6 +57,16 @@ extension APIClient {
         try await request(path: "/support", method: "POST", body: CreateSupportTicketBody(category: category, text: text), authorized: true)
     }
 
+    /// Обжалование блокировки без входа: пропуск пришёл вместе с отказом ACCOUNT_BANNED.
+    func appealBan(appealToken: String, text: String) async throws -> SupportTicket {
+        try await request(path: "/support/appeal", method: "POST", body: ["appealToken": appealToken, "text": text], authorized: false)
+    }
+
+    /// Без авторизации: режим обслуживания, открыта ли регистрация, минимальная версия — спрашивается и до входа.
+    func fetchAppConfig() async throws -> AppRuntimeConfig {
+        try await request(path: "/app/config", method: "GET", body: nil as String?, authorized: false)
+    }
+
     // MARK: - Документы
 
     /// Без авторизации: документы открываются и до входа. Правила сообщества — fetchCommunityRules.
