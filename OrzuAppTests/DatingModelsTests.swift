@@ -244,4 +244,12 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertEqual(status.reverificationReason, "Фото сильно изменились")
         XCTAssertEqual(status.gesture, SelfieGesture(code: "PEACE", emoji: "✌️", title: "Два пальца — знак V"))
     }
+
+    func testPeopleCountDeclension() {
+        XCTAssertEqual(LikedMeBanner.peopleCount(1), "1 человек")
+        XCTAssertEqual(LikedMeBanner.peopleCount(3), "3 человека")
+        XCTAssertEqual(LikedMeBanner.peopleCount(5), "5 человек")
+        XCTAssertEqual(LikedMeBanner.peopleCount(12), "12 человек")
+        XCTAssertEqual(LikedMeBanner.peopleCount(22), "22 человека")
+    }
 }

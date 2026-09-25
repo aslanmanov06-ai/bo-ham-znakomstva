@@ -126,6 +126,11 @@ extension APIClient {
         try await request(path: "/dating/feed", method: "GET", body: nil as String?, authorized: true)
     }
 
+    /// «Вас лайкнули»: кто лайкнул меня, а я ещё не ответил. Отвечают обычным swipe.
+    func fetchLikedMe() async throws -> DatingLikedMe {
+        try await request(path: "/dating/likes", method: "GET", body: nil as String?, authorized: true)
+    }
+
     /// Анкета по точному @username (без «@»). Пустой список — не нашли или человек запретил такой поиск.
     func searchDatingProfiles(username: String) async throws -> [DatingFeedCard] {
         let result: DatingUsernameSearch = try await request(

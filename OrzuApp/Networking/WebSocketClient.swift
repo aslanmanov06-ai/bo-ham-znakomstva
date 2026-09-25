@@ -40,6 +40,8 @@ enum ServerEvent {
     case datingMatch(DatingMatch)
     /// Пришло первое сообщение от того, с кем пары ещё нет.
     case datingIntro(IncomingIntro)
+    /// Меня лайкнули из ленты — «Вас лайкнули» пополнился.
+    case datingLiked
     /// Пару разорвали — её чат удалён у обоих.
     case datingUnmatched(matchId: String, chatId: String?)
     /// «Путь к браку» пары изменился: ступень, предложение или чек-лист.
@@ -324,6 +326,9 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "dating.intro":
             guard let intro: IncomingIntro = decode(json["intro"]) else { return }
             events.send(.datingIntro(intro))
+
+        case "dating.liked":
+            events.send(.datingLiked)
 
         case "dating.unmatched":
             guard let matchId = json["matchId"] as? String else { return }

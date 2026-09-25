@@ -103,8 +103,7 @@ struct DatingUsernameSearchView: View {
     }
 
     private func location(_ profile: DatingProfilePublic) -> String {
-        let city = catalog?.cityName(countryCode: profile.countryCode, cityCode: profile.cityCode) ?? profile.cityCode
-        return [city, profile.distanceText].compactMap { $0 }.joined(separator: " · ")
+        profile.locationLine(catalog: catalog)
     }
 
     private func detail(_ card: DatingFeedCard) -> some View {

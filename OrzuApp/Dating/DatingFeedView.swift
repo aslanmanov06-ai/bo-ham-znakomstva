@@ -21,6 +21,8 @@ struct DatingFeedView: View {
     @ObservedObject var matches: MatchesViewModel
 
     @StateObject private var feed = DatingFeedViewModel()
+    @StateObject private var likes = LikedMeViewModel()
+    @State private var showLikedMe = false
     @State private var showProfileEditor = false
     @State private var showMatches = false
     @State private var detailCard: DatingFeedCard?
@@ -44,6 +46,11 @@ struct DatingFeedView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
             }
+            if !likes.cards.isEmpty && feed.blockedMessage == nil {
+                LikedMeBanner(cards: likes.cards) { showLikedMe = true }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+            }
             content
         }
         .background(DatingBackdrop())
@@ -52,7 +59,13 @@ struct DatingFeedView: View {
         .navigationDestination(isPresented: $showMatches) {
             MatchesView(dating: dating, matches: matches)
         }
-        .task(id: dating.searchSettingsRevision) { await feed.load() }
+        .navigationDestination(isPresented: $showLikedMe) {
+            LikedMeView(likes: likes, dating: dating)
+        }
+        .task(id: dating.searchSettingsRevision) {
+            await feed.load()
+            await likes.load()
+        }
         .task(id: visibleCards.first?.id) { prefetchUpcomingPhotos() }
         .sensoryFeedback(.selection, trigger: pastThreshold) { _, isPast in isPast }
         .sheet(isPresented: $showProfileEditor) {
@@ -540,11 +553,7 @@ private struct DatingCardView: View {
     }
 
     private var subtitle: String {
-        var parts = [catalog?.cityName(countryCode: card.profile.countryCode, cityCode: card.profile.cityCode) ?? card.profile.cityCode]
-        if let distance = card.profile.distanceText {
-            parts.append(distance)
-        }
-        return parts.joined(separator: " · ")
+        card.profile.locationLine(catalog: catalog)
     }
 }
 

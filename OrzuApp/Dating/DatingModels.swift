@@ -121,6 +121,12 @@ struct DatingProfilePublic: Codable, Identifiable, Hashable {
     var distanceText: String? {
         distanceKm.map { "\($0) км" }
     }
+
+    /// «Душанбе · 3 км» — подпись под именем в карточках анкет.
+    func locationLine(catalog: DatingCatalog?) -> String {
+        let city = catalog?.cityName(countryCode: countryCode, cityCode: cityCode) ?? cityCode
+        return [city, distanceText].compactMap { $0 }.joined(separator: " · ")
+    }
 }
 
 struct DatingPhoto: Codable, Identifiable, Hashable {
@@ -520,6 +526,27 @@ struct DatingBrowseCard: Decodable, Identifiable, Hashable {
         card = try DatingFeedCard(from: decoder)
         liked = try decoder.container(keyedBy: CodingKeys.self).decode(Bool.self, forKey: .liked)
     }
+}
+
+/// Анкета из «Вас лайкнули»: карточка как в ленте и когда поставлен лайк.
+struct DatingLikedCard: Decodable, Identifiable, Hashable {
+    let card: DatingFeedCard
+    let likedAt: Date
+
+    var id: String { card.id }
+
+    private enum CodingKeys: String, CodingKey {
+        case likedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        card = try DatingFeedCard(from: decoder)
+        likedAt = try decoder.container(keyedBy: CodingKeys.self).decode(Date.self, forKey: .likedAt)
+    }
+}
+
+struct DatingLikedMe: Decodable {
+    let cards: [DatingLikedCard]
 }
 
 struct DatingBrowsePage: Decodable {

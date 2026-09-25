@@ -16,6 +16,7 @@
 		091BCA2DB467005A26AEAE5F /* DatingPhotosSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 815A26290FE526B175FBDCC4 /* DatingPhotosSection.swift */; };
 		0BE9B846155D83CF8FA9F715 /* OFL-Onest.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1ADDEB20561376ACA81B7EA2 /* OFL-Onest.txt */; };
 		0C69225785FF61F4D03F736D /* DatingFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBCE1D022038C844D1435297 /* DatingFeedView.swift */; };
+		3D9997317A936FD3BE455C9D /* LikedMeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B562A1DE2EA308ABA456F1E /* LikedMeView.swift */; };
 		0D3280FD26C8F8D1AE08640F /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CEC0B0A15F84F37B7C2BD0B /* CallManager.swift */; };
 		0EE7028B2B9D4505A5AF5109 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 553947667A2A0E9A6C871D91 /* AvatarView.swift */; };
 		14466174085A16A94438BC24 /* PushManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 189E3D76DBCC431FBCEF6141 /* PushManager.swift */; };
@@ -50,6 +51,7 @@
 		3F64C6C73C6C26B75B914C3F /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B22D3F9B971816EFF53AA1F /* User.swift */; };
 		4064E749D6649A253AF9B865 /* ReportUserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569949D173E594CC9D908030 /* ReportUserView.swift */; };
 		4128D123A190AAE75C16D9F4 /* DatingFeedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838778D3952B9F2A47DF45DC /* DatingFeedViewModel.swift */; };
+		B421094695E0B074B852F18B /* LikedMeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37F5CCD7AC9107FCAB71737 /* LikedMeViewModel.swift */; };
 		43B5BDB5FA0413282B997DC6 /* DiskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD84AD7C7CD075E4FFEB76D4 /* DiskStore.swift */; };
 		444DB00D8D52093764AD8088 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 286BF60F59C645D4CFABF1B0 /* ChatViewModel.swift */; };
 		4952EE618C30DE62465F3444 /* Unbounded-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 942F5B87471E82A76BDD3705 /* Unbounded-SemiBold.ttf */; };
@@ -228,6 +230,7 @@
 		82F7FBEB9C981A570F5B6EB7 /* GroupInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupInfoView.swift; sourceTree = "<group>"; };
 		83621C866709838B967A6374 /* ComposerBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerBar.swift; sourceTree = "<group>"; };
 		838778D3952B9F2A47DF45DC /* DatingFeedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatingFeedViewModel.swift; sourceTree = "<group>"; };
+		F37F5CCD7AC9107FCAB71737 /* LikedMeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LikedMeViewModel.swift; sourceTree = "<group>"; };
 		887975C0819D3EC0ED06005B /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		8C5B1C9E9E0CEC2FBC8E5432 /* LocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProvider.swift; sourceTree = "<group>"; };
 		8C5BB507C11AAFA4E30E4CEF /* AttachmentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentViews.swift; sourceTree = "<group>"; };
@@ -260,6 +263,7 @@
 		BA81232A1F7C43F30CE7763F /* Unbounded-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Unbounded-Bold.ttf"; sourceTree = "<group>"; };
 		BA914C8A547B1FCAC0A18042 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		BBCE1D022038C844D1435297 /* DatingFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatingFeedView.swift; sourceTree = "<group>"; };
+		0B562A1DE2EA308ABA456F1E /* LikedMeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LikedMeView.swift; sourceTree = "<group>"; };
 		BDA75A70735A97006753DF6A /* OrzuApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = OrzuApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C01B872E6F19303DEAA8F7B5 /* VideoNoteCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoNoteCamera.swift; sourceTree = "<group>"; };
 		C442DE4DA38334A22F59DB65 /* ChatFeaturesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFeaturesTests.swift; sourceTree = "<group>"; };
@@ -325,7 +329,9 @@
 				414BF1E83FD2FBE91ADFBB79 /* DatingBrowseView.swift */,
 				ABF73D61087A3B943C9EB170 /* DatingBrowseViewModel.swift */,
 				BBCE1D022038C844D1435297 /* DatingFeedView.swift */,
+				0B562A1DE2EA308ABA456F1E /* LikedMeView.swift */,
 				838778D3952B9F2A47DF45DC /* DatingFeedViewModel.swift */,
+				F37F5CCD7AC9107FCAB71737 /* LikedMeViewModel.swift */,
 				E1AB7B67F1877B6FEAD4A150 /* DatingFormControls.swift */,
 				D9FFB09E7B95F7F4BB381BF2 /* DatingMediaViews.swift */,
 				AB14679A3CD8A5FE7C8C2F5E /* DatingModels.swift */,
@@ -719,7 +725,9 @@
 				53167CFF67989C5FECA215FD /* DatingBrowseView.swift in Sources */,
 				7400E5FDAED6D3D4EE46144B /* DatingBrowseViewModel.swift in Sources */,
 				0C69225785FF61F4D03F736D /* DatingFeedView.swift in Sources */,
+				3D9997317A936FD3BE455C9D /* LikedMeView.swift in Sources */,
 				4128D123A190AAE75C16D9F4 /* DatingFeedViewModel.swift in Sources */,
+				B421094695E0B074B852F18B /* LikedMeViewModel.swift in Sources */,
 				F7F0B003AB53FC894FE6A32E /* DatingFormControls.swift in Sources */,
 				DBEE4CC6D4641F8189126363 /* DatingMediaViews.swift in Sources */,
 				01B3AD6129B94654DE2313A1 /* DatingModels.swift in Sources */,
