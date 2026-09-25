@@ -26,7 +26,7 @@ struct AccountRemovalView: View {
         .navigationTitle("Аккаунт")
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog(
-            "Удалить аккаунт навсегда? Анкета, пары и переписка пропадут без возможности восстановления.",
+            "Удалить аккаунт навсегда? Анкета, пары и переписка сразу пропадут для всех, восстановить аккаунт будет нельзя.",
             isPresented: $confirmDelete,
             titleVisibility: .visible
         ) {
@@ -57,7 +57,7 @@ struct AccountRemovalView: View {
     private var deleteCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             header("Удалить навсегда", systemImage: "trash.fill", color: .red)
-            Text("Удалятся анкета, фото, селфи, пары, сообщения и файлы. Восстановить их будет нельзя.")
+            Text("Аккаунт, анкета и фото сразу исчезнут для других, восстановить их будет нельзя. Переписку, фото и видео мы храним ещё год — только для разбора жалоб и запросов по закону, — затем удаляем безвозвратно.")
                 .font(.app(.subheadline))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
