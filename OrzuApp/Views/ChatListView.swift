@@ -30,232 +30,256 @@ struct ChatListView: View {
     /// Вкладка «Удалённые»: чаты удалённых пар, только для чтения, отдельно от обычных.
     @State private var showDeleted = false
 
+    // body разбит на части: одним выражением компилятор не успевал вывести типы
+    // («unable to type-check this expression in reasonable time»).
     var body: some View {
         NavigationStack {
-            List {
-                if searchNeedle.isEmpty {
-                    ChatTabs(showDeleted: $showDeleted, deletedCount: viewModel.chats.filter(\.isClosed).count)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 6, trailing: 16))
-                }
-
-                if searchNeedle.isEmpty && !showDeleted && viewModel.incomingRequestsCount > 0 {
-                    Button { activeSheet = .requests } label: {
-                        RequestsCard(count: viewModel.incomingRequestsCount)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 10, trailing: 16))
-                }
-
-                ForEach(visibleChats) { chat in
-                    Button {
-                        openedChat = chat
-                    } label: {
-                        ChatRow(chat: chat)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparatorTint(Color.appLine)
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            Task { await viewModel.setPinned(chat, pinned: chat.pinnedAt == nil) }
+            chatList
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button("Новый чат", systemImage: "person") { activeSheet = .newChat }
+                            Button("Новый канал", systemImage: "megaphone") { activeSheet = .newChannel }
+                            Button("Найти канал", systemImage: "magnifyingglass") { activeSheet = .channelDirectory }
+                            Button("Мои боты", systemImage: "cpu") { activeSheet = .bots }
                         } label: {
-                            Label(chat.pinnedAt == nil ? "Закрепить" : "Открепить", systemImage: chat.pinnedAt == nil ? "pin" : "pin.slash")
+                            Image(systemName: "square.and.pencil")
                         }
-                        .tint(.champagne)
-                    }
-                    .swipeActions(edge: .trailing) {
-                        if chat.canDelete {
-                            Button(role: .destructive) { chatPendingDeletion = chat } label: {
-                                Label(chat.isClosed ? "Убрать" : "Удалить", systemImage: "trash")
-                            }
-                        }
-                        Button { chatPendingClear = chat } label: { Label("Очистить", systemImage: "eraser") }
-                            .tint(.gray)
+                        .accessibilityLabel("Создать")
                     }
                 }
+                .task {
+                    await viewModel.load()
+                    await viewModel.loadRequestsCount()
+                }
+                // Незнакомому сервер не дал открыть чат — открываем переписку, где первое сообщение уйдёт запросом.
+                .onChange(of: viewModel.requestTarget) { _, user in
+                    guard let user else { return }
+                    viewModel.requestTarget = nil
+                    pendingPerson = user
+                }
+                // «Написать» из анкеты во вкладке знакомств.
+                // Запрос — отдельной задачей: обнуление pending меняет id, и SwiftUI отменяет этот .task —
+                // запрос обрывался с URLError.cancelled и показывал «Ошибка: Cancelled».
+                .task(id: push.pendingConversation?.id) {
+                    guard let user = push.pendingConversation else { return }
+                    push.pendingConversation = nil
+                    Task { openedChat = await viewModel.startChat(with: user) }
+                }
+                .task(id: push.pendingChatId) {
+                    guard let chatId = push.pendingChatId else { return }
+                    push.pendingChatId = nil
+                    Task {
+                        if !viewModel.chats.contains(where: { $0.id == chatId }) {
+                            await viewModel.load()
+                        }
+                        openedChat = viewModel.chats.first { $0.id == chatId }
+                    }
+                }
+                .refreshable {
+                    await viewModel.load()
+                    await viewModel.loadRequestsCount()
+                }
+                .sheet(item: $activeSheet) { sheet in
+                    sheetContent(for: sheet)
+                }
+                .navigationDestination(item: $pendingPerson) { user in
+                    PendingChatView(user: user) { chatId in
+                        pendingPerson = nil
+                        Task { openedChat = await viewModel.chat(withId: chatId) }
+                    }
+                }
+                .navigationDestination(item: $openedChat) { chat in
+                    if let currentUserId = authViewModel.currentUser?.id {
+                        ChatView(viewModel: ChatViewModel(chat: chat, currentUserId: currentUserId)) {
+                            openedChat = nil
+                            viewModel.removeChat(id: chat.id)
+                        }
+                    }
+                }
+        }
+    }
 
-                if searchNeedle.isEmpty && showDeleted {
-                    Text("Чаты пар, которые удалили вы или вас. Писать в них нельзя, переписка хранится 30 дней — чтобы можно было пожаловаться.")
-                        .font(.app(.caption))
-                        .foregroundStyle(.secondary)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 10, leading: 24, bottom: 10, trailing: 24))
-                }
+    private var chatList: some View {
+        List {
+            listContent
+        }
+        .listStyle(.plain)
+        .appScreenBackground()
+        .searchable(text: $query, prompt: "Чаты и люди по @username")
+        .task(id: searchNeedle) { await searchUsers(searchNeedle) }
+        .overlay {
+            if !searchNeedle.isEmpty && filteredChats.isEmpty && newPeople.isEmpty && userSearchError == nil {
+                if isSearchingUsers { ProgressView() } else { ContentUnavailableView.search(text: query) }
+            } else if viewModel.chats.isEmpty && !viewModel.isLoading {
+                ContentUnavailableView("Пока нет чатов", systemImage: "bubble.left.and.bubble.right", description: Text("Нажмите ✎, чтобы найти собеседника"))
+            }
+        }
+        .confirmationDialog(
+            "Очистить историю?",
+            isPresented: Binding(get: { chatPendingClear != nil }, set: { if !$0 { chatPendingClear = nil } }),
+            titleVisibility: .visible,
+            presenting: chatPendingClear
+        ) { chat in
+            Button("Очистить у себя", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: false) } }
+            // Очистить у всех сервер разрешает только в личном и секретном чате, и не в чате удалённой пары.
+            if chat.canDelete && !chat.isClosed {
+                Button("Очистить у обоих", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: true) } }
+            }
+        }
+        .confirmationDialog(
+            chatPendingDeletion?.isClosed == true
+                ? "Убрать чат у себя? У собеседника он останется, пока не истечёт срок хранения."
+                : "Удалить чат вместе с перепиской у вас и у собеседника?",
+            isPresented: Binding(get: { chatPendingDeletion != nil }, set: { if !$0 { chatPendingDeletion = nil } }),
+            titleVisibility: .visible,
+            presenting: chatPendingDeletion
+        ) { chat in
+            Button(chat.isClosed ? "Убрать у себя" : "Удалить чат", role: .destructive) { Task { await viewModel.delete(chat) } }
+        }
+        .alert("Ошибка", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("Ок") { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+        .navigationTitle("Чаты")
+    }
 
-                if !searchNeedle.isEmpty && (!newPeople.isEmpty || userSearchError != nil) {
-                    Section {
-                        ForEach(newPeople) { user in
-                            Button {
-                                // Бот — не человек с анкетой: ему пишут сразу.
-                                if user.isBot == true {
-                                    Task { openedChat = await viewModel.startChat(with: user) }
-                                } else {
-                                    activeSheet = .person(user)
-                                }
-                            } label: {
-                                FoundUserRow(user: user)
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparatorTint(Color.appLine)
-                        }
-                    } header: {
-                        Text("Глобальный поиск")
-                    } footer: {
-                        if let userSearchError { Text(userSearchError) }
+    @ViewBuilder
+    private var listContent: some View {
+        if searchNeedle.isEmpty {
+            ChatTabs(showDeleted: $showDeleted, deletedCount: viewModel.chats.filter(\.isClosed).count)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 6, trailing: 16))
+        }
+
+        if searchNeedle.isEmpty && !showDeleted && viewModel.incomingRequestsCount > 0 {
+            Button { activeSheet = .requests } label: {
+                RequestsCard(count: viewModel.incomingRequestsCount)
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 10, trailing: 16))
+        }
+
+        ForEach(visibleChats) { chat in
+            chatButton(chat)
+        }
+
+        if searchNeedle.isEmpty && showDeleted {
+            Text("Чаты пар, которые удалили вы или вас. Писать в них нельзя, переписка хранится 30 дней — чтобы можно было пожаловаться.")
+                .font(.app(.caption))
+                .foregroundStyle(.secondary)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 10, leading: 24, bottom: 10, trailing: 24))
+        }
+
+        if !searchNeedle.isEmpty && (!newPeople.isEmpty || userSearchError != nil) {
+            globalSearchSection
+        }
+    }
+
+    private func chatButton(_ chat: Chat) -> some View {
+        Button {
+            openedChat = chat
+        } label: {
+            ChatRow(chat: chat)
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(Color.clear)
+        .listRowSeparatorTint(Color.appLine)
+        .swipeActions(edge: .leading) {
+            Button {
+                Task { await viewModel.setPinned(chat, pinned: chat.pinnedAt == nil) }
+            } label: {
+                Label(chat.pinnedAt == nil ? "Закрепить" : "Открепить", systemImage: chat.pinnedAt == nil ? "pin" : "pin.slash")
+            }
+            .tint(.champagne)
+        }
+        .swipeActions(edge: .trailing) {
+            if chat.canDelete {
+                Button(role: .destructive) { chatPendingDeletion = chat } label: {
+                    Label(chat.isClosed ? "Убрать" : "Удалить", systemImage: "trash")
+                }
+            }
+            Button { chatPendingClear = chat } label: { Label("Очистить", systemImage: "eraser") }
+                .tint(.gray)
+        }
+    }
+
+    private var globalSearchSection: some View {
+        Section {
+            ForEach(newPeople) { user in
+                Button {
+                    // Бот — не человек с анкетой: ему пишут сразу.
+                    if user.isBot == true {
+                        Task { openedChat = await viewModel.startChat(with: user) }
+                    } else {
+                        activeSheet = .person(user)
                     }
+                } label: {
+                    FoundUserRow(user: user)
                 }
+                .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
+                .listRowSeparatorTint(Color.appLine)
             }
-            .listStyle(.plain)
-            .appScreenBackground()
-            .searchable(text: $query, prompt: "Чаты и люди по @username")
-            .task(id: searchNeedle) { await searchUsers(searchNeedle) }
-            .overlay {
-                if !searchNeedle.isEmpty && filteredChats.isEmpty && newPeople.isEmpty && userSearchError == nil {
-                    if isSearchingUsers { ProgressView() } else { ContentUnavailableView.search(text: query) }
-                } else if viewModel.chats.isEmpty && !viewModel.isLoading {
-                    ContentUnavailableView("Пока нет чатов", systemImage: "bubble.left.and.bubble.right", description: Text("Нажмите ✎, чтобы найти собеседника"))
-                }
-            }
-            .confirmationDialog(
-                "Очистить историю?",
-                isPresented: Binding(get: { chatPendingClear != nil }, set: { if !$0 { chatPendingClear = nil } }),
-                titleVisibility: .visible,
-                presenting: chatPendingClear
-            ) { chat in
-                Button("Очистить у себя", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: false) } }
-                // Очистить у всех сервер разрешает только в личном и секретном чате, и не в чате удалённой пары.
-                if chat.canDelete && !chat.isClosed {
-                    Button("Очистить у обоих", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: true) } }
-                }
-            }
-            .confirmationDialog(
-                chatPendingDeletion?.isClosed == true
-                    ? "Убрать чат у себя? У собеседника он останется, пока не истечёт срок хранения."
-                    : "Удалить чат вместе с перепиской у вас и у собеседника?",
-                isPresented: Binding(get: { chatPendingDeletion != nil }, set: { if !$0 { chatPendingDeletion = nil } }),
-                titleVisibility: .visible,
-                presenting: chatPendingDeletion
-            ) { chat in
-                Button(chat.isClosed ? "Убрать у себя" : "Удалить чат", role: .destructive) { Task { await viewModel.delete(chat) } }
-            }
-            .alert("Ошибка", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
-                Button("Ок") { viewModel.errorMessage = nil }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
-            }
-            .navigationTitle("Чаты")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button("Новый чат", systemImage: "person") { activeSheet = .newChat }
-                        Button("Новый канал", systemImage: "megaphone") { activeSheet = .newChannel }
-                        Button("Найти канал", systemImage: "magnifyingglass") { activeSheet = .channelDirectory }
-                        Button("Мои боты", systemImage: "cpu") { activeSheet = .bots }
-                    } label: {
-                        Image(systemName: "square.and.pencil")
-                    }
-                    .accessibilityLabel("Создать")
-                }
-            }
-            .task {
-                await viewModel.load()
-                await viewModel.loadRequestsCount()
-            }
-            // Незнакомому сервер не дал открыть чат — открываем переписку, где первое сообщение уйдёт запросом.
-            .onChange(of: viewModel.requestTarget) { _, user in
-                guard let user else { return }
-                viewModel.requestTarget = nil
-                pendingPerson = user
-            }
-            // «Написать» из анкеты во вкладке знакомств.
-            // Запрос — отдельной задачей: обнуление pending меняет id, и SwiftUI отменяет этот .task —
-            // запрос обрывался с URLError.cancelled и показывал «Ошибка: Cancelled».
-            .task(id: push.pendingConversation?.id) {
-                guard let user = push.pendingConversation else { return }
-                push.pendingConversation = nil
-                Task { openedChat = await viewModel.startChat(with: user) }
-            }
-            .task(id: push.pendingChatId) {
-                guard let chatId = push.pendingChatId else { return }
-                push.pendingChatId = nil
+        } header: {
+            Text("Глобальный поиск")
+        } footer: {
+            if let userSearchError { Text(userSearchError) }
+        }
+    }
+
+    @ViewBuilder
+    private func sheetContent(for sheet: ActiveSheet) -> some View {
+        switch sheet {
+        case .newChat:
+            NewChatView { user, isSecret in
+                activeSheet = nil
                 Task {
-                    if !viewModel.chats.contains(where: { $0.id == chatId }) {
-                        await viewModel.load()
-                    }
-                    openedChat = viewModel.chats.first { $0.id == chatId }
-                }
-            }
-            .refreshable {
-                await viewModel.load()
-                await viewModel.loadRequestsCount()
-            }
-            .sheet(item: $activeSheet) { sheet in
-                switch sheet {
-                case .newChat:
-                    NewChatView { user, isSecret in
-                        activeSheet = nil
-                        Task {
-                            if let chat = await viewModel.startChat(with: user, secret: isSecret) {
-                                openedChat = chat
-                            }
-                        }
-                    }
-                case .newChannel:
-                    NewChannelView { title, username in
-                        activeSheet = nil
-                        Task {
-                            if let chat = await viewModel.createChannel(title: title, username: username) {
-                                openedChat = chat
-                            }
-                        }
-                    }
-                case .bots:
-                    BotsView()
-                case .person(let user):
-                    NavigationStack {
-                        PersonCardView(user: user) {
-                            activeSheet = nil
-                            Task { openedChat = await viewModel.startChat(with: user) }
-                        }
-                    }
-                case .requests:
-                    NavigationStack {
-                        ChatRequestsView { chatId in
-                            activeSheet = nil
-                            Task {
-                                openedChat = await viewModel.chat(withId: chatId)
-                                await viewModel.loadRequestsCount()
-                            }
-                        }
-                    }
-                case .channelDirectory:
-                    ChannelDirectoryView { channel in
-                        activeSheet = nil
-                        Task {
-                            if let chat = await viewModel.joinChannel(channel) {
-                                openedChat = chat
-                            }
-                        }
+                    if let chat = await viewModel.startChat(with: user, secret: isSecret) {
+                        openedChat = chat
                     }
                 }
             }
-            .navigationDestination(item: $pendingPerson) { user in
-                PendingChatView(user: user) { chatId in
-                    pendingPerson = nil
-                    Task { openedChat = await viewModel.chat(withId: chatId) }
+        case .newChannel:
+            NewChannelView { title, username in
+                activeSheet = nil
+                Task {
+                    if let chat = await viewModel.createChannel(title: title, username: username) {
+                        openedChat = chat
+                    }
                 }
             }
-            .navigationDestination(item: $openedChat) { chat in
-                if let currentUserId = authViewModel.currentUser?.id {
-                    ChatView(viewModel: ChatViewModel(chat: chat, currentUserId: currentUserId)) {
-                        openedChat = nil
-                        viewModel.removeChat(id: chat.id)
+        case .bots:
+            BotsView()
+        case .person(let user):
+            NavigationStack {
+                PersonCardView(user: user) {
+                    activeSheet = nil
+                    Task { openedChat = await viewModel.startChat(with: user) }
+                }
+            }
+        case .requests:
+            NavigationStack {
+                ChatRequestsView { chatId in
+                    activeSheet = nil
+                    Task {
+                        openedChat = await viewModel.chat(withId: chatId)
+                        await viewModel.loadRequestsCount()
+                    }
+                }
+            }
+        case .channelDirectory:
+            ChannelDirectoryView { channel in
+                activeSheet = nil
+                Task {
+                    if let chat = await viewModel.joinChannel(channel) {
+                        openedChat = chat
                     }
                 }
             }
