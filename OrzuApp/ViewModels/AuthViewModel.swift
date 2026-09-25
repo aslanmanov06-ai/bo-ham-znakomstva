@@ -111,9 +111,9 @@ final class AuthViewModel: ObservableObject {
         try await APIClient.shared.requestRegistrationCode(email: email, username: username)
     }
 
-    func register(username: String, displayName: String, password: String, email: String, code: String) async throws {
+    func register(username: String, displayName: String, password: String, email: String, phone: String, code: String) async throws {
         let response = try await APIClient.shared.register(
-            username: username, displayName: displayName, password: password, email: email, code: code
+            username: username, displayName: displayName, password: password, email: email, phone: phone, code: code
         )
         didAuthenticate(response.user)
     }
@@ -144,9 +144,12 @@ final class AuthViewModel: ObservableObject {
         )
     }
 
-    func completeGoogleRegistration(_ registration: GoogleRegistration, username: String, displayName: String, email: String?, code: String) async throws {
+    func completeGoogleRegistration(
+        _ registration: GoogleRegistration, username: String, displayName: String, email: String?, phone: String, code: String
+    ) async throws {
         let response = try await APIClient.shared.completeGoogleRegistration(
-            registrationToken: registration.registrationToken, username: username, displayName: displayName, email: email, code: code
+            registrationToken: registration.registrationToken, username: username, displayName: displayName,
+            email: email, phone: phone, code: code
         )
         pendingGoogleRegistration = nil
         didAuthenticate(response.user)

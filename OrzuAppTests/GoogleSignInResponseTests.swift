@@ -56,4 +56,18 @@ final class GoogleSignInResponseTests: XCTestCase {
         // Отрезается только один «@» в начале: «@@alisa» остаётся недопустимым, а не превращается в чужой username.
         XCTAssertFalse(UsernameRules.isValid(UsernameRules.normalized("@@alisa")))
     }
+
+    func testPhoneNormalizationKeepsOnlyDigitsAfterPlus() {
+        XCTAssertEqual(PhoneRules.normalized("+992 (90) 123-45-67"), "+992901234567")
+        XCTAssertEqual(PhoneRules.normalized("992901234567"), "+992901234567")
+    }
+
+    func testPhoneValidationMatchesServer() {
+        XCTAssertTrue(PhoneRules.isValid("+992 90 123 45 67"))
+        XCTAssertTrue(PhoneRules.isValid("+123456789012345"))
+        XCTAssertFalse(PhoneRules.isValid(PhoneRules.defaultPrefix), "только код страны — номера ещё нет")
+        XCTAssertFalse(PhoneRules.isValid("+1234567"), "меньше 8 цифр")
+        XCTAssertFalse(PhoneRules.isValid("+1234567890123456"), "больше 15 цифр")
+        XCTAssertFalse(PhoneRules.isValid("+0901234567"), "код страны не начинается с 0")
+    }
 }

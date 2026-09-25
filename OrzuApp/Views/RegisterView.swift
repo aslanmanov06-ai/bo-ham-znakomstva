@@ -8,6 +8,7 @@ struct RegisterView: View {
     @State private var username = ""
     @State private var displayName = ""
     @State private var email = ""
+    @State private var phone = PhoneRules.defaultPrefix
     @State private var password = ""
     @State private var isBusy = false
     @State private var usernameError: String?
@@ -51,6 +52,11 @@ struct RegisterView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .onChange(of: email) { emailError = nil }
+                    }
+                    LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
+                        TextField("+992 90 123 45 67", text: $phone)
+                            .textContentType(.telephoneNumber)
+                            .keyboardType(.phonePad)
                     }
                     LabeledAppField(title: "Пароль") {
                         SecureField("Не меньше 8 символов", text: $password)
@@ -96,7 +102,8 @@ struct RegisterView: View {
                     resend: { try await authViewModel.requestRegistrationCode(email: normalizedEmail, username: username) },
                     confirm: { code in
                         try await authViewModel.register(
-                            username: username, displayName: displayName, password: password, email: normalizedEmail, code: code
+                            username: username, displayName: displayName, password: password, email: normalizedEmail,
+                            phone: PhoneRules.normalized(phone), code: code
                         )
                         dismiss()
                     }
@@ -115,6 +122,7 @@ struct RegisterView: View {
         UsernameRules.isValid(username)
             && !displayName.trimmingCharacters(in: .whitespaces).isEmpty
             && normalizedEmail.contains("@")
+            && PhoneRules.isValid(phone)
             && password.count >= 8
     }
 

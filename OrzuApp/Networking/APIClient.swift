@@ -71,8 +71,8 @@ actor APIClient {
         let _: EmptyResponse = try await request(path: "/auth/register/code", method: "POST", body: body, authorized: false)
     }
 
-    func register(username: String, displayName: String, password: String, email: String, code: String) async throws -> AuthResponse {
-        let body = ["username": username, "displayName": displayName, "password": password, "email": email, "code": code]
+    func register(username: String, displayName: String, password: String, email: String, phone: String, code: String) async throws -> AuthResponse {
+        let body = ["username": username, "displayName": displayName, "password": password, "email": email, "phone": phone, "code": code]
         let response: AuthResponse = try await request(path: "/auth/register", method: "POST", body: body, authorized: false)
         TokenStore.shared.save(tokens: response.tokens)
         return response
@@ -100,8 +100,10 @@ actor APIClient {
         let _: EmptyResponse = try await request(path: "/auth/google/register/code", method: "POST", body: body, authorized: false)
     }
 
-    func completeGoogleRegistration(registrationToken: String, username: String, displayName: String, email: String?, code: String) async throws -> AuthResponse {
-        var body = ["registrationToken": registrationToken, "username": username, "displayName": displayName, "code": code]
+    func completeGoogleRegistration(
+        registrationToken: String, username: String, displayName: String, email: String?, phone: String, code: String
+    ) async throws -> AuthResponse {
+        var body = ["registrationToken": registrationToken, "username": username, "displayName": displayName, "phone": phone, "code": code]
         body["email"] = email
         let response: AuthResponse = try await request(path: "/auth/google/register", method: "POST", body: body, authorized: false)
         TokenStore.shared.save(tokens: response.tokens)

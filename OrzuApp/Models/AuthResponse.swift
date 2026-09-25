@@ -67,3 +67,20 @@ enum UsernameRules {
         return value
     }
 }
+
+/// Телефон в анкете регистрации — как на сервере (src/users/phone.ts): E.164, «+», код страны и до 15 цифр.
+enum PhoneRules {
+    /// Рынок — Таджикистан: поле открывается с кодом страны, человеку остаётся ввести номер.
+    static let defaultPrefix = "+992 "
+    private static let digitCount = 8...15
+
+    /// «+992 (90) 123-45-67» → «+992901234567»: пробелы, скобки и дефисы убираем, «+» ставим сами.
+    static func normalized(_ input: String) -> String {
+        "+" + input.filter { $0.isASCII && $0.isNumber }
+    }
+
+    static func isValid(_ input: String) -> Bool {
+        let digits = normalized(input).dropFirst()
+        return digitCount.contains(digits.count) && digits.first != "0"
+    }
+}

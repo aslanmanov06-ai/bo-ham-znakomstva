@@ -9,6 +9,7 @@ struct GoogleRegistrationView: View {
     @State private var username: String
     @State private var displayName: String
     @State private var typedEmail = ""
+    @State private var phone = PhoneRules.defaultPrefix
     @State private var isBusy = false
     @State private var usernameError: String?
     @State private var emailError: String?
@@ -58,6 +59,11 @@ struct GoogleRegistrationView: View {
                         TextField("Как к вам обращаться", text: $displayName)
                             .textContentType(.givenName)
                     }
+                    LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
+                        TextField("+992 90 123 45 67", text: $phone)
+                            .textContentType(.telephoneNumber)
+                            .keyboardType(.phonePad)
+                    }
 
                     Text("Пароль можно задать позже в настройках.")
                         .font(.app(.caption))
@@ -103,7 +109,8 @@ struct GoogleRegistrationView: View {
                     resend: { try await authViewModel.requestGoogleRegistrationCode(registration, username: username, email: typedEmailIfNeeded) },
                     confirm: { code in
                         try await authViewModel.completeGoogleRegistration(
-                            registration, username: username, displayName: displayName, email: typedEmailIfNeeded, code: code
+                            registration, username: username, displayName: displayName, email: typedEmailIfNeeded,
+                            phone: PhoneRules.normalized(phone), code: code
                         )
                     }
                 )
@@ -154,6 +161,7 @@ struct GoogleRegistrationView: View {
         UsernameRules.isValid(username)
             && !displayName.trimmingCharacters(in: .whitespaces).isEmpty
             && codeEmail.contains("@")
+            && PhoneRules.isValid(phone)
     }
 
     private func requestCode() async {
