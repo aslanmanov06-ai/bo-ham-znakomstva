@@ -68,7 +68,7 @@ struct NewChatView: View {
                     ContentUnavailableView.search
                 }
             }
-            .searchable(text: $query, prompt: "Найти по username или имени")
+            .searchable(text: $query, prompt: "Точный @username")
             .onChange(of: query) { _, newValue in
                 searchTask?.cancel()
                 searchTask = Task { await search(newValue) }

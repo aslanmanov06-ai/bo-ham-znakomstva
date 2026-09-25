@@ -241,7 +241,7 @@ struct SafetyView: View {
     }
 }
 
-/// Поиск человека для доверенного контакта — по username или имени, как в «Новом чате».
+/// Поиск человека для доверенного контакта — по точному @username, как в «Новом чате».
 struct TrustedContactSearchView: View {
     let onPick: (User) -> Void
 
@@ -269,7 +269,7 @@ struct TrustedContactSearchView: View {
             }
         }
         .appScreenBackground()
-        .searchable(text: $query, prompt: "Имя или username")
+        .searchable(text: $query, prompt: "Точный @username")
         .navigationTitle("Доверенный контакт")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

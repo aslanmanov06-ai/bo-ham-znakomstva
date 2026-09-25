@@ -149,18 +149,6 @@ struct PrivacySettingsView: View {
                 }
 
                 Section {
-                    Toggle("Скрыть меня из поиска по имени", isOn: Binding(
-                        get: { settings.hiddenFromSearch },
-                        set: { value in Task { await viewModel.updatePrivacy(PrivacyUpdate(hiddenFromSearch: value)) } }
-                    ))
-                    .disabled(!settings.messengerSearchByUsername)
-                } footer: {
-                    Text(settings.messengerSearchByUsername
-                        ? "По имени вас не найдут; найти можно только по точному @\(settings.username)."
-                        : "Поиск по @username в мессенджере выключен — вас и так не найдут.")
-                }
-
-                Section {
                     NavigationLink { BlockedUsersView(viewModel: viewModel) } label: {
                         SettingsLabel("Чёрный список", systemImage: "hand.raised.fill", color: .brand)
                     }

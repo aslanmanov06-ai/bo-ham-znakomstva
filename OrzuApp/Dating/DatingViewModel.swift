@@ -171,14 +171,14 @@ final class DatingViewModel: ObservableObject {
         ))
     }
 
-    /// Анкета — профиль человека и обязательна: пока нет анкеты с хотя бы одним фото, вместо вкладок — её заполнение
-    /// (сервер без неё не даёт искать людей, писать незнакомым и знакомиться). Пока анкета не загрузилась
+    /// Анкета — профиль человека и обязательна: пока нет анкеты с хотя бы одним неотклонённым фото, вместо вкладок —
+    /// её заполнение (сервер без неё не даёт искать людей, писать незнакомым и знакомиться). Пока анкета не загрузилась
     /// (в том числе без сети), не запираем: показываем вкладки с сохранёнными данными.
     var needsOnboarding: Bool {
         switch stage {
         case .loading: return false
         case .rules, .noProfile: return true
-        case .ready: return profile?.photos.isEmpty ?? false
+        case .ready: return profile?.photos.allSatisfy { $0.status == .rejected } ?? false
         }
     }
 

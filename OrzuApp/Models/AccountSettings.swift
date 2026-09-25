@@ -25,7 +25,6 @@ struct AccountSettings: Decodable, Equatable {
     let email: String?
     let messagePrivacy: PrivacyLevel
     let groupInvitePrivacy: PrivacyLevel
-    let hiddenFromSearch: Bool
     /// false — в мессенджере не находят вовсе, даже по точному @username.
     let messengerSearchByUsername: Bool
     /// false — анкету не найти поиском по @username в знакомствах.

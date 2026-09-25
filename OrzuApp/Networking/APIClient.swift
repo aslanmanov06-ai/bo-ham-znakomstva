@@ -676,7 +676,6 @@ struct ChatSummary: Decodable {
 struct PrivacyUpdate: Encodable {
     var messagePrivacy: PrivacyLevel?
     var groupInvitePrivacy: PrivacyLevel?
-    var hiddenFromSearch: Bool?
     var messengerSearchByUsername: Bool?
     var datingSearchByUsername: Bool?
 }
