@@ -40,9 +40,9 @@ struct GoogleRegistration: Decodable, Identifiable {
 
     var id: String { registrationToken }
 
-    /// Подсказка из почты: «ivan.petrov@gmail.com» → «ivanpetrov». Пустая, если из адреса не выходит допустимый username.
+    /// Подсказка из почты: «Ivan.Petrov@gmail.com» → «ivanpetrov». Пустая, если из адреса не выходит допустимый username.
     var suggestedUsername: String {
-        guard let local = profile.email?.split(separator: "@").first else { return "" }
+        guard let local = profile.email?.split(separator: "@").first?.lowercased() else { return "" }
         let candidate = String(local.filter(UsernameRules.isAllowedCharacter).prefix(UsernameRules.length.upperBound))
         return UsernameRules.length.contains(candidate.count) ? candidate : ""
     }

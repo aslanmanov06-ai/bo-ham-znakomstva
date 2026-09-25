@@ -37,6 +37,7 @@ final class GoogleSignInResponseTests: XCTestCase {
             GoogleRegistration(registrationToken: "t", profile: .init(email: email, displayName: nil)).suggestedUsername
         }
         XCTAssertEqual(suggestion(nil), "")
+        XCTAssertEqual(suggestion("Ivan.Petrov@gmail.com"), "ivanpetrov", "сервер хранит username строчными")
         XCTAssertEqual(suggestion("а.б@gmail.com"), "", "кириллица в username не допускается")
         XCTAssertEqual(suggestion("ab@gmail.com"), "", "короче 3 символов")
         XCTAssertEqual(suggestion(String(repeating: "x", count: 40) + "@gmail.com").count, 32)

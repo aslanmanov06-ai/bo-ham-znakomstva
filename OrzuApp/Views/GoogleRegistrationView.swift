@@ -53,7 +53,11 @@ struct GoogleRegistrationView: View {
                         TextField("латиница, цифры и «_»", text: $username)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .onChange(of: username) { usernameError = nil }
+                            // Сервер хранит username строчными — показываем сразу так, как он сохранится.
+                            .onChange(of: username) {
+                                usernameError = nil
+                                username = username.lowercased()
+                            }
                     }
                     LabeledAppField(title: "Имя") {
                         TextField("Как к вам обращаться", text: $displayName)

@@ -188,6 +188,8 @@ struct UsernameSettingsView: View {
                     TextField("username", text: $username)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        // Сервер хранит username строчными — показываем сразу так, как он сохранится.
+                        .onChange(of: username) { username = username.lowercased() }
                         .submitLabel(.done)
                         .onSubmit(save)
                 }
