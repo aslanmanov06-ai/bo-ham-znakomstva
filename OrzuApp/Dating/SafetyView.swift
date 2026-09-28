@@ -1,5 +1,16 @@
 import SwiftUI
 
+/// Своя открытая тревога переживает закрытие экрана и перезапуск приложения: иначе до «Я в безопасности»
+/// было бы не добраться, а контакты продолжали бы считать, что вы в опасности.
+enum OwnSosAlertStore {
+    private static let key = "com.orzuapp.messenger.openSosAlertId"
+
+    static var alertId: String? {
+        get { UserDefaults.standard.string(forKey: key) }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+}
+
 /// Безопасность: доверенные контакты и тревожная кнопка. Контактам уходит геопозиция, пока тревога открыта.
 struct SafetyView: View {
     @Environment(\.dismiss) private var dismiss
@@ -86,7 +97,11 @@ struct SafetyView: View {
                 Button("Закрыть") { dismiss() }
             }
         }
-        .task { await loadContacts() }
+        .task {
+            await restoreOpenAlert()
+            await loadContacts()
+        }
+        .task(id: openAlertId) { await trackLocation() }
         .sheet(isPresented: $showContactSearch) {
             NavigationStack {
                 TrustedContactSearchView { user in
@@ -119,7 +134,7 @@ struct SafetyView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(isAlertOpen ? "Тревога отправлена" : "Тревога SOS")
                         .font(.display(.headline))
-                    Text(isAlertOpen ? "Геопозиция ушла доверенным контактам и модераторам." : "Геопозиция уйдёт доверенным контактам и модераторам")
+                    Text(isAlertOpen ? "Геопозиция ушла доверенным контактам и модераторам и обновляется, пока открыт этот экран." : "Геопозиция уйдёт доверенным контактам и модераторам")
                         .font(.app(.footnote))
                         .foregroundStyle(.white.opacity(0.75))
                 }
@@ -154,6 +169,49 @@ struct SafetyView: View {
 
     private var isAlertOpen: Bool {
         alert?.status == .open
+    }
+
+    private var openAlertId: String? {
+        isAlertOpen ? alert?.id : nil
+    }
+
+    /// Пока тревога открыта и экран на виду, место уходит контактам само, без нажатий: человеку в опасности
+    /// может быть не до кнопки. Сбои молча пропускаем — следующая попытка через тот же интервал.
+    private static let locationUpdateInterval: Duration = .seconds(30)
+
+    private func trackLocation() async {
+        guard let alertId = openAlertId else { return }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: Self.locationUpdateInterval)
+            guard !Task.isCancelled, openAlertId == alertId else { return }
+            // Идёт ручное обновление или закрытие тревоги — второй запрос координат не нужен.
+            guard !isBusy, let location = try? await LocationProvider.shared.current() else { continue }
+            guard !Task.isCancelled, openAlertId == alertId else { return }
+            if let updated = try? await APIClient.shared.updateSosLocation(
+                alertId: alertId,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
+                accuracyM: location.horizontalAccuracy > 0 ? location.horizontalAccuracy : nil
+            ) {
+                alert = updated
+            }
+        }
+    }
+
+    private func restoreOpenAlert() async {
+        guard alert == nil, let alertId = OwnSosAlertStore.alertId else { return }
+        do {
+            let restored = try await APIClient.shared.fetchSosAlert(alertId: alertId)
+            if restored.status == .open {
+                alert = restored
+            } else {
+                OwnSosAlertStore.alertId = nil
+            }
+        } catch let error as APIError where error.isTransient {
+            // Нет связи — id не трогаем, тревогу покажем, когда сервер ответит.
+        } catch {
+            OwnSosAlertStore.alertId = nil
+        }
     }
 
     /// Красный тревоги — не фирменный гранат: SOS должен отличаться от лайка с первого взгляда.
@@ -203,6 +261,7 @@ struct SafetyView: View {
                     withUserId: nil
                 )
                 alert = raised.alert
+                OwnSosAlertStore.alertId = raised.alert.status == .open ? raised.alert.id : nil
                 emergencyNumbers = raised.emergencyNumbers
             } catch {
                 errorMessage = error.localizedDescription
@@ -234,6 +293,7 @@ struct SafetyView: View {
             defer { isBusy = false }
             do {
                 alert = try await APIClient.shared.closeSos(alertId: alertId)
+                OwnSosAlertStore.alertId = nil
             } catch {
                 errorMessage = error.localizedDescription
             }

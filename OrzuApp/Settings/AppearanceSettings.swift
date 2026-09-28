@@ -1,3 +1,4 @@
+import LocalAuthentication
 import SwiftUI
 
 /// Оформление хранится только на этом устройстве (UserDefaults) — это личная настройка, сервер о ней не знает.
@@ -187,6 +188,126 @@ struct AppearanceView: View {
             ZStack {
                 Color.appBackground
                 appearance.wallpaper.gradient
+            }
+        }
+    }
+}
+
+// MARK: - Блокировка приложения
+
+/// Блокировка по Face ID, Touch ID или коду-паролю телефона. Настройка этого устройства: переписку и анкету
+/// не увидит тот, кому дали подержать разблокированный телефон. В переключателе приложений экран тоже закрыт.
+@MainActor
+final class AppLock: ObservableObject {
+    static let shared = AppLock()
+
+    private static let enabledKey = "appLock.enabled"
+
+    @Published private(set) var isEnabled: Bool
+    /// Приложение закрыто экраном блокировки: после запуска и после возвращения из фона.
+    @Published private(set) var isLocked: Bool
+    @Published private(set) var isAuthenticating = false
+
+    private init() {
+        let enabled = UserDefaults.standard.bool(forKey: Self.enabledKey)
+        isEnabled = enabled
+        isLocked = enabled
+    }
+
+    /// На телефоне без код-пароля блокировать нечем — переключатель не показываем.
+    var isAvailable: Bool {
+        LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
+    }
+
+    /// Какой способ предложит система — для подписи переключателя.
+    var methodName: String {
+        let context = LAContext()
+        _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
+        switch context.biometryType {
+        case .faceID: return "Face ID"
+        case .touchID: return "Touch ID"
+        case .opticID: return "Optic ID"
+        default: return "код-пароль"
+        }
+    }
+
+    /// Включение подтверждается сразу: иначе можно включить блокировку, которую потом не снять.
+    func setEnabled(_ enabled: Bool) async {
+        if enabled {
+            guard await authenticate(reason: "Включить блокировку приложения") else { return }
+        }
+        isEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
+        if !enabled { isLocked = false }
+    }
+
+    /// Приложение ушло в фон — при возвращении снова спросим Face ID.
+    func lockIfEnabled() {
+        if isEnabled { isLocked = true }
+    }
+
+    func unlock() async {
+        guard isLocked, !isAuthenticating else { return }
+        if await authenticate(reason: "Разблокировать приложение") {
+            isLocked = false
+        }
+    }
+
+    /// Выход из аккаунта: блокировку включал прошлый пользователь.
+    func reset() {
+        isEnabled = false
+        isLocked = false
+        UserDefaults.standard.removeObject(forKey: Self.enabledKey)
+    }
+
+    /// deviceOwnerAuthentication: если Face ID не узнал, система сама предложит код-пароль телефона.
+    private func authenticate(reason: String) async -> Bool {
+        isAuthenticating = true
+        defer { isAuthenticating = false }
+        do {
+            return try await LAContext().evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+        } catch {
+            return false
+        }
+    }
+}
+
+/// Строка в настройках «Приложение».
+struct AppLockToggle: View {
+    @ObservedObject private var appLock = AppLock.shared
+
+    var body: some View {
+        if appLock.isAvailable || appLock.isEnabled {
+            Toggle(isOn: Binding(get: { appLock.isEnabled }, set: { value in Task { await appLock.setEnabled(value) } })) {
+                SettingsLabel("Блокировка: \(appLock.methodName)", systemImage: "lock.fill", color: .champagne)
+            }
+            .disabled(appLock.isAuthenticating)
+        }
+    }
+}
+
+/// Накрывает всё приложение, пока оно заблокировано или не на экране (снимок для переключателя приложений).
+struct AppLockView: View {
+    @ObservedObject var appLock: AppLock
+
+    var body: some View {
+        ZStack {
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+            VStack(spacing: 16) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 40, weight: .semibold))
+                    .foregroundStyle(Color.brand)
+                Text("Бо Хам заблокирован")
+                    .font(.display(.title3))
+                if appLock.isLocked {
+                    Button("Разблокировать") {
+                        Task { await appLock.unlock() }
+                    }
+                    .buttonStyle(.appPrimary)
+                    .disabled(appLock.isAuthenticating)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
+                }
             }
         }
     }

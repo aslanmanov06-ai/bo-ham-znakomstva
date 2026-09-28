@@ -38,6 +38,7 @@ struct ChatView: View {
     // («unable to type-check this expression in reasonable time»).
     var body: some View {
         chatWithDialogs
+            .hiddenWhileScreenCaptured(viewModel.isSecret)
             .sheet(isPresented: $showPeerReport) {
                 if let peer = viewModel.chat.peer {
                     NavigationStack { ReportUserView(userId: peer.id, displayName: peer.displayName) }

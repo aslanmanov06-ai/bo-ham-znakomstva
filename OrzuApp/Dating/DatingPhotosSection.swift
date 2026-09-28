@@ -259,35 +259,21 @@ struct DatingPhotosSection: View {
                 errorMessage = "Не удалось прочитать видео"
                 return
             }
-            let mimeType = item.supportedContentTypes.first?.preferredMIMEType ?? "video/mp4"
             do {
                 // Длительность сервер сам не измеряет — считаем её здесь и отправляем вместе с файлом.
-                let duration = try await videoDuration(data: data)
-                guard duration > 0, duration <= maxVideoDurationSec else {
-                    errorMessage = "Видео должно быть не длиннее \(maxVideoDurationSec) секунд"
-                    return
-                }
+                let video = try await ProfileVideoExporter.export(data, maxDurationSec: maxVideoDurationSec)
                 let attachment = try await APIClient.shared.uploadAttachment(
-                    data: data,
+                    data: video.data,
                     fileName: "profile-video.mp4",
-                    mimeType: mimeType,
+                    mimeType: "video/mp4",
                     mediaKind: .video,
-                    durationSec: duration
+                    durationSec: video.durationSec
                 )
                 dating.apply(try await APIClient.shared.setDatingVideo(attachmentId: attachment.id))
             } catch {
                 errorMessage = error.localizedDescription
             }
         }
-    }
-
-    /// AVFoundation читает длительность только из файла, поэтому ролик сначала ложится во временную папку.
-    private func videoDuration(data: Data) async throws -> Int {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dating-video-\(UUID().uuidString).mov")
-        try data.write(to: url, options: .atomic)
-        defer { try? FileManager.default.removeItem(at: url) }
-        let seconds = try await AVURLAsset(url: url).load(.duration).seconds
-        return Int(seconds.rounded(.up))
     }
 
     private func removeVideo() {
@@ -298,5 +284,63 @@ struct DatingPhotosSection: View {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+}
+
+/// Ролик анкеты перед загрузкой: H.264 mp4 не больше 720p и без метаданных. В оригинале из «Фото» лежат
+/// координаты места съёмки, модель телефона и дата — чужим людям из знакомств их видеть незачем.
+/// Заодно файл становится в разы меньше, а HEVC (.mov с iPhone) — mp4, который проигрывается везде.
+enum ProfileVideoExporter {
+    struct Exported {
+        let data: Data
+        let durationSec: Int
+    }
+
+    enum ExportError: LocalizedError {
+        case failed
+        case tooLong(maxSec: Int)
+
+        var errorDescription: String? {
+            switch self {
+            case .failed: return "Не удалось подготовить видео, попробуйте другое"
+            case .tooLong(let maxSec): return "Видео должно быть не длиннее \(maxSec) секунд"
+            }
+        }
+    }
+
+    /// Длинный ролик отклоняем до перекодирования — незачем минуту жать видео, которое всё равно не подойдёт.
+    static func export(_ original: Data, maxDurationSec: Int) async throws -> Exported {
+        let directory = FileManager.default.temporaryDirectory
+        let sourceURL = directory.appendingPathComponent("dating-video-\(UUID().uuidString).mov")
+        let outputURL = directory.appendingPathComponent("dating-video-\(UUID().uuidString).mp4")
+        // AVFoundation работает только с файлами, поэтому ролик сначала ложится во временную папку.
+        try original.write(to: sourceURL, options: .atomic)
+        defer {
+            try? FileManager.default.removeItem(at: sourceURL)
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+
+        let asset = AVURLAsset(url: sourceURL)
+        let sourceSeconds = try await asset.load(.duration).seconds
+        guard sourceSeconds.isFinite, sourceSeconds > 0 else { throw ExportError.failed }
+        guard Int(sourceSeconds.rounded(.up)) <= maxDurationSec else { throw ExportError.tooLong(maxSec: maxDurationSec) }
+
+        // Пресет с размером не растягивает маленькое видео, а только уменьшает большое.
+        guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPreset1280x720) else {
+            throw ExportError.failed
+        }
+        session.outputURL = outputURL
+        session.outputFileType = .mp4
+        session.shouldOptimizeForNetworkUse = true
+        session.metadata = []
+        session.metadataItemFilter = .forSharing()
+        await session.export()
+        guard session.status == .completed else {
+            throw session.error ?? ExportError.failed
+        }
+
+        let seconds = try await AVURLAsset(url: outputURL).load(.duration).seconds
+        guard seconds.isFinite, seconds > 0 else { throw ExportError.failed }
+        return Exported(data: try Data(contentsOf: outputURL), durationSec: min(Int(seconds.rounded(.up)), maxDurationSec))
     }
 }

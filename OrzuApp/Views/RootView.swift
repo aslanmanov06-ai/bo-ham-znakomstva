@@ -5,6 +5,8 @@ struct RootView: View {
     @ObservedObject private var callManager = CallManager.shared
     @ObservedObject private var appearance = AppearanceSettings.shared
     @ObservedObject private var appStatus = AppStatus.shared
+    @ObservedObject private var appLock = AppLock.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -18,6 +20,18 @@ struct RootView: View {
         }
         // Служебные экраны накрывают приложение, не пересоздавая его: после обслуживания всё на своих местах.
         .overlay { appWideScreen }
+        .overlay {
+            if authViewModel.isAuthenticated && (appLock.isLocked || (appLock.isEnabled && scenePhase != .active)) {
+                AppLockView(appLock: appLock)
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background: appLock.lockIfEnabled()
+            case .active: Task { await appLock.unlock() }
+            default: break
+            }
+        }
         .task { await appStatus.refresh() }
         .fullScreenCover(isPresented: isCallActive) {
             CallOverlayView()

@@ -21,6 +21,10 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
 
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocation, Error>?
+    /// Без спутников и Wi-Fi Core Location может молчать минутами — в SOS столько ждать нельзя.
+    /// Время на системный вопрос о доступе сюда не входит: отсчёт идёт с момента запроса координат.
+    private static let timeout: Duration = .seconds(15)
+    private var timeoutTask: Task<Void, Never>?
 
     private override init() {
         super.init()
@@ -51,9 +55,24 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
                 // Ждём ответа пользователя: запрос координат до разрешения завершился бы ошибкой.
                 manager.requestWhenInUseAuthorization()
             case .authorizedWhenInUse, .authorizedAlways:
-                manager.requestLocation()
+                requestLocation()
             default:
                 finish(.failure(LocationError.denied))
+            }
+        }
+    }
+
+    private func requestLocation() {
+        manager.requestLocation()
+        timeoutTask?.cancel()
+        timeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.timeout)
+            guard !Task.isCancelled, let self else { return }
+            // Точной точки нет, но система могла недавно определить место — для SOS это лучше, чем ничего.
+            if let recent = self.manager.location, recent.timestamp.timeIntervalSinceNow > -300 {
+                self.finish(.success(recent))
+            } else {
+                self.finish(.failure(LocationError.unavailable))
             }
         }
     }
@@ -66,7 +85,7 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
             case .notDetermined:
                 break
             case .authorizedWhenInUse, .authorizedAlways:
-                self.manager.requestLocation()
+                self.requestLocation()
             default:
                 finish(.failure(LocationError.denied))
             }
@@ -88,6 +107,8 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
     }
 
     private func finish(_ result: Result<CLLocation, Error>) {
+        timeoutTask?.cancel()
+        timeoutTask = nil
         continuation?.resume(with: result)
         continuation = nil
     }

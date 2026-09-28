@@ -252,6 +252,7 @@ struct TimedPhotoViewer: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { dismiss() }
         }
+        .hiddenWhileScreenCaptured()
     }
 }
 
@@ -273,5 +274,57 @@ private struct CountdownRing: View {
         }
         .frame(width: 36, height: 36)
         .accessibilityLabel("Осталось \(Int(clamped.rounded(.up))) секунд")
+    }
+}
+
+// MARK: - Запись экрана
+
+/// Идёт ли запись, трансляция или AirPlay-повтор экрана. Скриншот так не запретить, а вот видео — закрыть заглушкой.
+@MainActor
+final class ScreenCaptureMonitor: ObservableObject {
+    static let shared = ScreenCaptureMonitor()
+
+    @Published private(set) var isCaptured = false
+    private var observer: NSObjectProtocol?
+
+    private init() {
+        isCaptured = UIScreen.main.isCaptured
+        observer = NotificationCenter.default.addObserver(forName: UIScreen.capturedDidChangeNotification, object: nil, queue: .main) { _ in
+            Task { @MainActor in ScreenCaptureMonitor.shared.update() }
+        }
+    }
+
+    private func update() {
+        isCaptured = UIScreen.main.isCaptured
+    }
+}
+
+/// Фото с таймером и секретная переписка не должны оказаться в чужой записи экрана.
+private struct ScreenCaptureShield: ViewModifier {
+    let isEnabled: Bool
+    @ObservedObject private var monitor = ScreenCaptureMonitor.shared
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if isEnabled && monitor.isCaptured {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 10) {
+                        Image(systemName: "eye.slash").font(.system(size: 34, weight: .semibold))
+                        Text("Идёт запись экрана — содержимое скрыто")
+                            .font(.app(.body, weight: .semibold))
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(24)
+                }
+            }
+        }
+    }
+}
+
+extension View {
+    func hiddenWhileScreenCaptured(_ isEnabled: Bool = true) -> some View {
+        modifier(ScreenCaptureShield(isEnabled: isEnabled))
     }
 }

@@ -45,6 +45,7 @@ struct SettingsView: View {
                     NavigationLink { AppearanceView() } label: {
                         SettingsLabel("Оформление", systemImage: "paintpalette.fill", color: .brand)
                     }
+                    AppLockToggle()
                 }
                 Section("Помощь") {
                     NavigationLink { SupportView() } label: {
