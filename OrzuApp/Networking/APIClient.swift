@@ -95,9 +95,8 @@ actor APIClient {
 
     /// Сервер проверяет подпись identityToken у Apple и что его nonce — SHA-256 от нашего `nonce`.
     /// fullName Apple отдаёт только при самом первом входе — сервер сохраняет его для анкеты.
-    func appleSignIn(identityToken: String, authorizationCode: String?, nonce: String, fullName: String?) async throws -> GoogleSignInResponse {
-        var body = ["identityToken": identityToken, "nonce": nonce]
-        body["authorizationCode"] = authorizationCode
+    func appleSignIn(identityToken: String, authorizationCode: String, nonce: String, fullName: String?) async throws -> GoogleSignInResponse {
+        var body = ["identityToken": identityToken, "authorizationCode": authorizationCode, "nonce": nonce]
         body["fullName"] = fullName
         let response: GoogleSignInResponse = try await request(path: "/auth/apple", method: "POST", body: body, authorized: false)
         if case .authenticated(let auth) = response {

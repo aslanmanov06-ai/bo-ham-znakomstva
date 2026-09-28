@@ -172,12 +172,15 @@ final class AuthViewModel: ObservableObject {
             case .failure(let error):
                 throw error
             }
+            // authorizationCode сервер обязательно меняет на refresh-токен Apple: без него при удалении аккаунта
+            // нечего отзывать (требование App Store), поэтому вход без кода не отправляем.
             guard
                 let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
                 let tokenData = credential.identityToken,
-                let identityToken = String(data: tokenData, encoding: .utf8)
+                let identityToken = String(data: tokenData, encoding: .utf8),
+                let codeData = credential.authorizationCode,
+                let authorizationCode = String(data: codeData, encoding: .utf8)
             else { throw APIError.invalidResponse }
-            let authorizationCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
             let fullName = credential.fullName
                 .map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
                 .flatMap { $0.isEmpty ? nil : $0 }

@@ -18,7 +18,7 @@
 
 ```http
 POST /auth/apple
-{ "identityToken": "<JWT строкой>", "authorizationCode": "<строка или отсутствует>",
+{ "identityToken": "<JWT строкой>", "authorizationCode": "<строка>",
   "nonce": "<исходная случайная строка, base64>", "fullName": "<«Имя Фамилия» или отсутствует>" }
 ```
 
@@ -126,7 +126,7 @@ DELETE /dating/profile/me/voice                              → MyDatingProfile
   ```
 
 - **Публичная анкета**: `"voiceId": "…"` и `"voiceDurationSec": 12`, только одобренное модератором.
-- Модерация — как у видео анкеты. WS `dating.voiceModerated` клиент пока не слушает; используйте уже известные `dating.videoModerated` или `dating.photoModerated` либо скажите, если заведёте новое событие.
+- Модерация — как у видео анкеты. По WS `dating.voiceModerated` (а также `dating.promptModerated` и `dating.profileEdited`) клиент перечитывает анкету.
 
 ### 2.5. Активность («в сети / сегодня / на этой неделе»)
 

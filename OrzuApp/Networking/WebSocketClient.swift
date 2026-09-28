@@ -420,7 +420,8 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "chat.request", "chat.requestAccepted":
             events.send(.chatRequestsChanged)
 
-        case "dating.verification", "dating.photoModerated", "dating.videoModerated", "dating.selfieRequested", "dating.verificationRevoked":
+        case "dating.verification", "dating.photoModerated", "dating.videoModerated", "dating.voiceModerated",
+             "dating.promptModerated", "dating.profileEdited", "dating.selfieRequested", "dating.verificationRevoked":
             // Что именно проверили, клиенту не важно: он перечитывает анкету целиком.
             events.send(.datingModerated)
 
