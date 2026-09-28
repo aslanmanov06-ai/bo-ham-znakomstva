@@ -16,7 +16,14 @@ struct OrzuAppApp: App {
                 // Onest — шрифт по умолчанию для всего текста без явного стиля; гранат — цвет кнопок и переключателей.
                 .font(.app(.body))
                 .tint(.brand)
-                .onOpenURL { GoogleAuth.handle($0) }
+                .onOpenURL { url in
+                    // Ссылки на людей и каналы (в том числе Universal Links) — остальное отдаём Google Sign-In.
+                    if let link = DeepLink.parse(url) {
+                        PushManager.shared.pendingDeepLink = link
+                    } else {
+                        GoogleAuth.handle(url)
+                    }
+                }
         }
     }
 }

@@ -26,6 +26,8 @@ targets:
         product: WebRTC
       - package: GoogleSignIn
         product: GoogleSignIn
+      # Расширение уведомлений встраивается в приложение (Embed Foundation Extensions).
+      - target: OrzuNotificationService
     settings:
       base:
         # Google Cloud Console → Credentials → OAuth client ID типа iOS (bundle id com.orzuapp.messenger).
@@ -72,8 +74,12 @@ targets:
           - Onest-SemiBold.ttf
           - Onest-Bold.ttf
         GIDClientID: $(GOOGLE_IOS_CLIENT_ID)
+        # Второй — ссылки boham://u/<username> и boham://c/<username> (то же, что Universal Links, без сайта).
         CFBundleURLTypes:
           - CFBundleURLSchemes: [$(GOOGLE_REVERSED_CLIENT_ID)]
+          - CFBundleURLSchemes: [boham]
+        # Префикс команды для общей группы Keychain (см. SharedE2EStore): его знает только сборка.
+        AppIdentifierPrefix: $(AppIdentifierPrefix)
     # Push на реальном устройстве требует платный Apple Developer-аккаунт; для Симулятора подпись не проверяется.
     entitlements:
       path: OrzuApp/OrzuApp.entitlements
@@ -81,10 +87,48 @@ targets:
         aps-environment: development
         # «Войти через Apple»: обязателен, раз есть вход через Google (App Store Review Guideline 4.8).
         com.apple.developer.applesignin: [Default]
+        # Universal Links: https://adm.orzu.pro/u/… и /c/… открывают приложение. Сервер отдаёт /.well-known/apple-app-site-association.
+        com.apple.developer.associated-domains: ["applinks:adm.orzu.pro"]
+        # Общие с расширением уведомлений: id вошедшего и ключи собеседников (App Group), приватный ключ (Keychain).
+        com.apple.security.application-groups: [group.com.orzuapp.messenger]
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.orzuapp.messenger.shared"]
     # AppConfig.apiBaseURL указывает на https-домен с валидным сертификатом, а ATS не блокирует
     # http://localhost для отладки через SSH-туннель — исключение здесь не нужно. Если решите
     # открыть backend по обычному http на внешнем IP/домене без TLS, верните сюда
     # info.properties.NSAppTransportSecurity.NSAllowsArbitraryLoads: true.
+  # Правит push до показа: расшифровывает превью секретных чатов и прикрепляет миниатюру фото (сервер ставит mutable-content).
+  OrzuNotificationService:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - OrzuNotificationService
+      # Общий с приложением код: схема шифрования, хранилище ключей и адрес сервера.
+      - path: OrzuApp/E2E/SecretChatCrypto.swift
+      - path: OrzuApp/E2E/SharedE2EStore.swift
+      - path: OrzuApp/Networking/AppConfig.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orzuapp.messenger.NotificationService
+        PRODUCT_NAME: OrzuNotificationService
+        SWIFT_VERSION: "5.9"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "Бо Хам"
+    info:
+      path: OrzuNotificationService/Info.plist
+      properties:
+        AppIdentifierPrefix: $(AppIdentifierPrefix)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationService
+    entitlements:
+      path: OrzuNotificationService/OrzuNotificationService.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.orzuapp.messenger]
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.orzuapp.messenger.shared"]
   # Unit-тесты чистой логики (декодирование, шифрование E2E) — запускаются в Симуляторе, в том числе в CI.
   OrzuAppTests:
     type: bundle.unit-test

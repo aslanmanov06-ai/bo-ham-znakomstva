@@ -18,8 +18,6 @@ final class E2EKeyStore {
 
     static let shared = E2EKeyStore()
 
-    private let service = "com.orzuapp.messenger.e2e"
-    private let pinnedKeysDefaultsKey = "e2e.pinnedPeerKeys"
     private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "E2E")
     private var cache: [String: Curve25519.KeyAgreement.PrivateKey] = [:]
 
@@ -27,8 +25,10 @@ final class E2EKeyStore {
 
     func privateKey(for userId: String) throws -> Curve25519.KeyAgreement.PrivateKey {
         if let cached = cache[userId] { return cached }
-        if let raw = readKeychain(account: userId) {
+        if let raw = SharedE2EStore.readPrivateKey(account: userId) {
             let key = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: raw)
+            // Ключ мог быть создан до общей группы Keychain — тогда расширение уведомлений его не видит.
+            SharedE2EStore.moveToSharedGroupIfNeeded(account: userId)
             cache[userId] = key
             return key
         }
@@ -56,38 +56,19 @@ final class E2EKeyStore {
         return pinned == key ? .unchanged : .changed
     }
 
+    /// Запомненные ключи видит и расширение уведомлений: превью расшифровывается, только если ключ совпал.
     func pin(peerKey key: String, userId: String) {
         var keys = pinnedKeys
         keys[userId] = key
-        UserDefaults.standard.set(keys, forKey: pinnedKeysDefaultsKey)
+        SharedE2EStore.pinnedKeys = keys
     }
 
     private var pinnedKeys: [String: String] {
-        UserDefaults.standard.dictionary(forKey: pinnedKeysDefaultsKey) as? [String: String] ?? [:]
-    }
-
-    private func readKeychain(account: String) -> Data? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess else { return nil }
-        return result as? Data
+        SharedE2EStore.pinnedKeys
     }
 
     private func writeKeychain(account: String, data: Data) throws {
-        let attributes: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-        ]
-        let status = SecItemAdd(attributes as CFDictionary, nil)
+        let status = SharedE2EStore.writePrivateKey(data, account: account)
         guard status == errSecSuccess else {
             throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: String(localized: "Не удалось сохранить ключ шифрования")])
         }

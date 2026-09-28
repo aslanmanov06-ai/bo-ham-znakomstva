@@ -21,6 +21,7 @@ struct DatingFeedView: View {
     @ObservedObject var matches: MatchesViewModel
 
     @StateObject private var feed = DatingFeedViewModel()
+    @ObservedObject private var push = PushManager.shared
     @StateObject private var likes = LikedMeViewModel()
     @State private var showLikedMe = false
     @State private var showProfileEditor = false
@@ -67,6 +68,12 @@ struct DatingFeedView: View {
             await likes.load()
         }
         .task(id: visibleCards.first?.id) { prefetchUpcomingPhotos() }
+        // Нажали на push «Вас лайкнули».
+        .task(id: push.pendingLikedMe) {
+            guard push.pendingLikedMe else { return }
+            push.pendingLikedMe = false
+            showLikedMe = true
+        }
         .sensoryFeedback(.selection, trigger: pastThreshold) { _, isPast in isPast }
         .sheet(isPresented: $showProfileEditor) {
             NavigationStack { DatingProfileEditorView(dating: dating) }

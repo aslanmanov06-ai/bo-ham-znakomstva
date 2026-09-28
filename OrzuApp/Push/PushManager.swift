@@ -3,6 +3,45 @@ import UIKit
 import UserNotifications
 import os
 
+/// Ссылка, открывшая приложение: https://adm.orzu.pro/u/<username> — человек, /c/<username> — канал.
+/// Схема boham:// — то же самое без веб-домена (для проверки и ссылок из других приложений).
+enum DeepLink: Equatable {
+    case user(username: String)
+    case channel(username: String)
+
+    static let scheme = "boham"
+
+    static func parse(_ url: URL) -> DeepLink? {
+        let parts: [String]
+        switch url.scheme?.lowercased() {
+        case "https", "http":
+            guard url.host?.lowercased() == AppConfig.apiBaseURL.host?.lowercased() else { return nil }
+            parts = url.pathComponents.filter { $0 != "/" }
+        case scheme:
+            // boham://u/alisa: «u» — это host, имя — путь.
+            parts = [url.host ?? ""] + url.pathComponents.filter { $0 != "/" }
+        default:
+            return nil
+        }
+        guard parts.count == 2 else { return nil }
+        let username = UsernameRules.normalized(parts[1]).lowercased()
+        guard UsernameRules.isValid(username) else { return nil }
+        switch parts[0].lowercased() {
+        case "u": return .user(username: username)
+        case "c": return .channel(username: username)
+        default: return nil
+        }
+    }
+
+    /// Ссылка «Поделиться» — веб-адрес: откроет приложение, если оно стоит, иначе страницу на сайте.
+    var url: URL {
+        switch self {
+        case .user(let username): return AppConfig.apiBaseURL.appendingPathComponent("u").appendingPathComponent(username)
+        case .channel(let username): return AppConfig.apiBaseURL.appendingPathComponent("c").appendingPathComponent(username)
+        }
+    }
+}
+
 @MainActor
 final class PushManager: NSObject, ObservableObject {
     static let shared = PushManager()
@@ -22,6 +61,10 @@ final class PushManager: NSObject, ObservableObject {
     @Published var pendingSosId: String?
     /// Модератор попросил новое селфи — открыть «Мой профиль» и экран проверки.
     @Published var pendingSelfieRequest = false
+    /// Push «Вас лайкнули» — открыть знакомства и список лайкнувших.
+    @Published var pendingLikedMe = false
+    /// Открыли ссылку на человека или канал. Ждёт, пока пользователь войдёт, — потом её разберут вкладки.
+    @Published var pendingDeepLink: DeepLink?
 
     private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "Push")
     private var deviceToken: String?
@@ -103,11 +146,13 @@ extension PushManager: UNUserNotificationCenterDelegate {
         // Первое сообщение, встреча и «Путь к браку» ведут во вкладку «Знакомства», а не в чат.
         let dating = chatId == nil && (info["introId"] != nil || info["meetingId"] != nil || info["matchId"] != nil)
         let selfieRequest = info["moderation"] as? String == "dating.selfieRequested"
+        let likedMe = info["type"] as? String == "dating.liked"
         await MainActor.run {
             self.pendingChatId = chatId
             self.pendingSosId = sosId
-            self.pendingDating = dating
+            self.pendingDating = dating || likedMe
             if selfieRequest { self.pendingSelfieRequest = true }
+            if likedMe { self.pendingLikedMe = true }
         }
     }
 }

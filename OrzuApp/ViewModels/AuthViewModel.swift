@@ -11,6 +11,8 @@ final class AuthViewModel: ObservableObject {
     @Published var currentUser: User? {
         didSet {
             userCache.save(currentUser)
+            // Расширению уведомлений — чтобы найти приватный ключ для превью секретных чатов.
+            SharedE2EStore.currentUserId = currentUser?.id
             if currentUser == nil { forgetOfflineData() }
         }
     }

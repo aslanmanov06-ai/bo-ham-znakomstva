@@ -465,6 +465,11 @@ struct ChatView: View {
                 Button("Поиск", systemImage: "magnifyingglass") { showSearch = true }
             }
             muteMenu
+            if viewModel.chat.type == .channel, let username = viewModel.chat.username {
+                ShareLink(item: DeepLink.channel(username: username).url) {
+                    Label("Поделиться каналом", systemImage: "square.and.arrow.up")
+                }
+            }
             Button("Очистить историю", systemImage: "eraser") { showClearConfirmation = true }
             if viewModel.chat.canDelete {
                 Button(viewModel.chat.isClosed ? "Убрать у себя" : "Удалить чат", systemImage: "trash", role: .destructive) { showDeleteConfirmation = true }

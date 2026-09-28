@@ -122,6 +122,10 @@ private struct MainTabView: View {
     @StateObject private var dating = DatingViewModel()
     /// «Соединение…» показываем не сразу: обычно сокет подключается за доли секунды, и плашка только мигнула бы.
     @State private var isConnectingTooLong = false
+    /// Человек или канал из открытой ссылки.
+    @State private var linkedUser: User?
+    @State private var linkedChannel: PublicChannel?
+    @State private var linkError: String?
 
     private static let connectingBannerDelay: Duration = .seconds(1)
 
@@ -192,6 +196,34 @@ private struct MainTabView: View {
         .onChange(of: push.pendingSelfieRequest) { _, pending in
             if pending { selection = .profile }
         }
+        .task(id: push.pendingDeepLink) {
+            guard let link = push.pendingDeepLink else { return }
+            push.pendingDeepLink = nil
+            await open(link)
+        }
+        .sheet(item: $linkedUser) { user in
+            NavigationStack {
+                PersonCardView(user: user) {
+                    linkedUser = nil
+                    push.pendingConversation = user
+                }
+            }
+        }
+        .alert(
+            linkedChannel?.title ?? "",
+            isPresented: Binding(get: { linkedChannel != nil }, set: { if !$0 { linkedChannel = nil } }),
+            presenting: linkedChannel
+        ) { channel in
+            Button("Подписаться") { Task { await join(channel) } }
+            Button("Отмена", role: .cancel) {}
+        } message: { channel in
+            Text("Канал · \(channel.subscriberCount) подписчиков")
+        }
+        .alert("Ссылка не открылась", isPresented: .constant(linkError != nil)) {
+            Button("Ок") { linkError = nil }
+        } message: {
+            Text(linkError ?? "")
+        }
         .task(id: push.pendingSosId) {
             guard let sosId = push.pendingSosId else { return }
             push.pendingSosId = nil
@@ -215,6 +247,42 @@ private struct MainTabView: View {
             Button("Понятно") { safetyAlerts.sharedMeeting = nil }
         } message: { meeting in
             Text("Кто: \(meeting.withDisplayName)\nГде: \(meeting.place)\nКогда: \(meeting.startsAt.formatted(date: .long, time: .shortened))")
+        }
+    }
+}
+
+extension MainTabView {
+    /// Поиск — по точному username: ссылка ведёт на конкретного человека или канал, а не на похожие.
+    fileprivate func open(_ link: DeepLink) async {
+        do {
+            switch link {
+            case .user(let username):
+                let users = try await APIClient.shared.searchUsers(query: username)
+                guard let user = users.first(where: { $0.username.lowercased() == username }) else {
+                    linkError = String(localized: "Человек не найден — возможно, он сменил username или скрыл профиль.")
+                    return
+                }
+                linkedUser = user
+            case .channel(let username):
+                let channels = try await APIClient.shared.searchChannels(query: username)
+                guard let channel = channels.first(where: { $0.username?.lowercased() == username }) else {
+                    linkError = String(localized: "Канал не найден.")
+                    return
+                }
+                linkedChannel = channel
+            }
+        } catch {
+            linkError = error.localizedDescription
+        }
+    }
+
+    /// Подписка открывает канал так же, как push о сообщении: через вкладку «Чаты».
+    fileprivate func join(_ channel: PublicChannel) async {
+        do {
+            try await APIClient.shared.subscribeToChannel(chatId: channel.id)
+            push.pendingChatId = channel.id
+        } catch {
+            linkError = error.localizedDescription
         }
     }
 }

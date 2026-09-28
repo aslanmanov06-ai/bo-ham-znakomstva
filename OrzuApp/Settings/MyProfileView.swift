@@ -138,6 +138,10 @@ struct MyProfileView: View {
             NavigationLink { UsernameSettingsView(viewModel: viewModel, current: settings.username) } label: {
                 LabeledContent("Имя пользователя", value: "@\(settings.username)")
             }
+            // Ссылка откроет вашу карточку в приложении у того, у кого оно стоит, и страницу на сайте — у остальных.
+            ShareLink(item: DeepLink.user(username: settings.username).url) {
+                Label("Поделиться профилем", systemImage: "square.and.arrow.up")
+            }
         }
     }
 

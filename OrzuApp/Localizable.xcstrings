@@ -4521,6 +4521,38 @@
         }
       }
     },
+    "Канал · %lld подписчиков" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Channel · %lld subscribers"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Канал · %lld обуначӣ"
+          }
+        }
+      }
+    },
+    "Канал не найден." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Channel not found."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Канал ёфт нашуд."
+          }
+        }
+      }
+    },
     "Каналы" : {
       "localizations" : {
         "en" : {
@@ -8585,6 +8617,38 @@
         }
       }
     },
+    "Поделиться каналом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share channel"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мубодилаи канал"
+          }
+        }
+      }
+    },
+    "Поделиться профилем" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мубодилаи профил"
+          }
+        }
+      }
+    },
     "Поделиться с близкими" : {
       "localizations" : {
         "en" : {
@@ -11001,6 +11065,22 @@
         }
       }
     },
+    "Ссылка не открылась" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The link didn't open"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Истинод кушода нашуд"
+          }
+        }
+      }
+    },
     "Страна" : {
       "localizations" : {
         "en" : {
@@ -12181,6 +12261,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Чатҳои ҷуфтҳое, ки шумо ё шуморо нест карданд. Ба онҳо навиштан мумкин нест, мукотиба 30 рӯз нигоҳ дошта мешавад — то шикоят кардан мумкин бошад."
+          }
+        }
+      }
+    },
+    "Человек не найден — возможно, он сменил username или скрыл профиль." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Person not found — they may have changed their username or hidden their profile."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шахс ёфт нашуд — шояд ӯ username-ро иваз карда ё профилро пинҳон кардааст."
           }
         }
       }

@@ -98,4 +98,29 @@ final class ChatFeaturesTests: XCTestCase {
         ]
         XCTAssertEqual(chats.sortedForList().map(\.id), ["pinnedLate", "pinnedEarly", "fresh", "old", "empty"])
     }
+
+    // MARK: - Ссылки на людей и каналы
+
+    func testParsesUniversalAndSchemeLinks() {
+        XCTAssertEqual(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/Alisa")!), .user(username: "alisa"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "https://adm.orzu.pro/c/news_tj")!), .channel(username: "news_tj"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "boham://u/alisa")!), .user(username: "alisa"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "boham://c/news_tj/")!), .channel(username: "news_tj"))
+    }
+
+    func testRejectsForeignAndMalformedLinks() {
+        XCTAssertNil(DeepLink.parse(URL(string: "https://evil.example/u/alisa")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/x/alisa")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/a")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "boham://u/alisa/extra")!))
+        // Обратный адрес Google Sign-In ссылкой не считается — его разбирает GIDSignIn.
+        XCTAssertNil(DeepLink.parse(URL(string: "com.googleusercontent.apps.123:/oauth2redirect")!))
+    }
+
+    func testShareLinkRoundTrips() {
+        let link = DeepLink.user(username: "alisa")
+        XCTAssertEqual(link.url.absoluteString, "https://adm.orzu.pro/u/alisa")
+        XCTAssertEqual(DeepLink.parse(link.url), link)
+    }
 }
