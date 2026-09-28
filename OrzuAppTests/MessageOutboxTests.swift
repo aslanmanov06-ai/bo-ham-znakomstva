@@ -49,4 +49,31 @@ final class MessageOutboxTests: XCTestCase {
 
         XCTAssertEqual(restored, original)
     }
+
+    /// Пауза перед повтором растёт вдвое и упирается в потолок — сервер не долбят каждые 15 секунд вечно.
+    func testBackoffDoublesUpToLimit() {
+        let delays = (0..<7).map { RetryBackoff.delay(attempt: $0, base: 15, maxDelay: 300) }
+
+        XCTAssertEqual(delays, [15, 30, 60, 120, 240, 300, 300])
+        XCTAssertEqual(RetryBackoff.delay(attempt: 1_000, base: 1, maxDelay: 30), 30)
+    }
+
+    /// Разброс ±20% — чтобы клиенты после сбоя сервера не возвращались к нему одновременно.
+    func testBackoffJitterAndReset() {
+        var backoff = RetryBackoff(base: 10, maxDelay: 100)
+
+        let first = seconds(backoff.next())
+        let second = seconds(backoff.next())
+        XCTAssertEqual(first, 10, accuracy: 2.001)
+        XCTAssertEqual(second, 20, accuracy: 4.001)
+        XCTAssertEqual(backoff.attempt, 2)
+
+        backoff.reset()
+        XCTAssertEqual(backoff.attempt, 0)
+        XCTAssertEqual(seconds(backoff.next()), 10, accuracy: 2.001)
+    }
+
+    private func seconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    }
 }

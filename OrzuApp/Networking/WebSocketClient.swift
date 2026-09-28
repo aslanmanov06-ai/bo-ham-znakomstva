@@ -124,6 +124,9 @@ final class WebSocketClient: NSObject, ObservableObject {
     /// Код, которым RealtimeGateway закрывает сокет при протухшем или невалидном access-токене.
     private static let unauthorizedCloseCode = 4001
     private static let maxQueuedSignals = 100
+    /// URLSessionWebSocketTask сам не шлёт ping: после смены сети «мёртвое» соединение выглядело бы живым,
+    /// пока сервер его не закроет. Не пришёл pong до следующего ping — переподключаемся.
+    private static let pingInterval: Duration = .seconds(20)
 
     /// Сервер прислал "ready": сокет авторизован. До этого сигналы звонка копятся в очереди — после VoIP-push
     /// приложение отправляет call.check/call.accept раньше, чем соединение успело установиться.
@@ -135,24 +138,50 @@ final class WebSocketClient: NSObject, ObservableObject {
 
     private var task: URLSessionWebSocketTask?
     private let session = URLSession(configuration: .default)
+    /// 1 с, 2 с, 4 с… до 30 с между попытками; сбрасывается, когда сервер прислал "ready".
+    private var reconnectBackoff = RetryBackoff(base: 1, maxDelay: 30)
+    private var reconnectTask: Task<Void, Never>?
+    private var heartbeatTask: Task<Void, Never>?
+    private var isAwaitingPong = false
+    private var networkObserver: NSObjectProtocol?
 
     private lazy var decoder = ISO8601Coding.makeDecoder()
 
-    private override init() {}
+    private override init() {
+        super.init()
+        // Сеть вернулась, а переподключение ещё ждёт своей паузы — незачем ждать дальше.
+        networkObserver = NotificationCenter.default.addObserver(forName: .networkBecameAvailable, object: nil, queue: .main) { _ in
+            Task { @MainActor in
+                let client = WebSocketClient.shared
+                guard client.reconnectTask != nil else { return }
+                client.connect()
+            }
+        }
+    }
 
     func connect() {
         guard task == nil, let accessToken = TokenStore.shared.accessToken else { return }
+        reconnectTask?.cancel()
+        reconnectTask = nil
 
+        // Токен — в заголовке Authorization, а не в адресе: адреса с query попадают в логи прокси.
+        // ?token= остаётся для сервера, который ещё не читает заголовок; убрать, когда backend перейдёт.
         var components = URLComponents(url: AppConfig.wsBaseURL, resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "token", value: accessToken)]
+        var request = URLRequest(url: components.url!)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        let webSocketTask = session.webSocketTask(with: components.url!)
+        let webSocketTask = session.webSocketTask(with: request)
         task = webSocketTask
         webSocketTask.resume()
         listen()
+        startHeartbeat(for: webSocketTask)
     }
 
     func disconnect() {
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        stopHeartbeat()
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
         isReady = false
@@ -178,10 +207,45 @@ final class WebSocketClient: NSObject, ObservableObject {
         guard let task, let data = try? JSONSerialization.data(withJSONObject: payload) else { return }
 
         task.send(.data(data)) { [weak self] error in
-            if error != nil {
-                Task { @MainActor in self?.reconnect() }
+            guard error != nil else { return }
+            Task { @MainActor in
+                // Ошибка отправки по старому сокету не должна рвать уже новое соединение.
+                guard let self, self.task === task else { return }
+                self.reconnect()
             }
         }
+    }
+
+    private func startHeartbeat(for socket: URLSessionWebSocketTask) {
+        heartbeatTask?.cancel()
+        isAwaitingPong = false
+        heartbeatTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: Self.pingInterval)
+                guard !Task.isCancelled, let self, self.task === socket else { return }
+                if self.isAwaitingPong {
+                    self.reconnect()
+                    return
+                }
+                self.isAwaitingPong = true
+                socket.sendPing { [weak self] error in
+                    Task { @MainActor in
+                        guard let self, self.task === socket else { return }
+                        if error == nil {
+                            self.isAwaitingPong = false
+                        } else {
+                            self.reconnect()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func stopHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = nil
+        isAwaitingPong = false
     }
 
     private func listen() {
@@ -207,15 +271,25 @@ final class WebSocketClient: NSObject, ObservableObject {
     }
 
     private func reconnect(closeCode: URLSessionWebSocketTask.CloseCode = .invalid) {
+        stopHeartbeat()
+        // Сокет мог и не упасть сам (не ответил на ping) — закрываем, чтобы он не отдал событий в обход нового.
+        task?.cancel(with: .goingAway, reason: nil)
         task = nil
         isReady = false
-        Task { @MainActor in
+        reconnectTask?.cancel()
+        let delay = reconnectBackoff.next()
+        reconnectTask = Task { @MainActor [weak self] in
             // Без обновления токена переподключение с протухшим access-токеном зациклилось бы: сервер снова закрыл бы сокет с 4001.
             if closeCode.rawValue == Self.unauthorizedCloseCode {
-                let isSessionAlive = await refreshTokens()
-                guard isSessionAlive else { return }
+                let isSessionAlive = await self?.refreshTokens() ?? false
+                guard isSessionAlive else {
+                    if !Task.isCancelled { self?.reconnectTask = nil }
+                    return
+                }
             }
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self else { return }
+            self.reconnectTask = nil
             self.connect()
         }
     }
@@ -249,6 +323,7 @@ final class WebSocketClient: NSObject, ObservableObject {
         switch type {
         case "ready":
             isReady = true
+            reconnectBackoff.reset()
             if hasBeenReady {
                 NotificationCenter.default.post(name: .realtimeReconnected, object: nil)
             }

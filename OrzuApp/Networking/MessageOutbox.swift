@@ -56,14 +56,41 @@ struct OutgoingMessage: Codable, Identifiable, Hashable {
     }
 }
 
+/// Пауза перед повтором, растущая вдвое после каждой неудачи: base, 2·base, 4·base… но не больше maxDelay.
+/// Случайный разброс ±20% нужен, чтобы после сбоя сервера клиенты не возвращались к нему все в одну секунду.
+struct RetryBackoff {
+    let base: TimeInterval
+    let maxDelay: TimeInterval
+    private(set) var attempt = 0
+
+    init(base: TimeInterval, maxDelay: TimeInterval) {
+        self.base = base
+        self.maxDelay = maxDelay
+    }
+
+    /// Пауза без разброса перед попыткой номер attempt (считая с нуля).
+    static func delay(attempt: Int, base: TimeInterval, maxDelay: TimeInterval) -> TimeInterval {
+        let exponent = Double(min(max(attempt, 0), 30))
+        return min(base * pow(2, exponent), maxDelay)
+    }
+
+    mutating func next() -> Duration {
+        let delay = Self.delay(attempt: attempt, base: base, maxDelay: maxDelay)
+        attempt += 1
+        return .milliseconds(Int(delay * Double.random(in: 0.8...1.2) * 1000))
+    }
+
+    mutating func reset() {
+        attempt = 0
+    }
+}
+
 /// Очередь исходящих сообщений. Переживает перезапуск приложения и отправляет всё по порядку, как только
 /// появится связь. Повтор безопасен: сервер узнаёт уже сохранённое сообщение по clientMessageId.
 @MainActor
 final class MessageOutbox {
     static let shared = MessageOutbox()
 
-    /// Сервер недоступен при живой сети — не долбим его, но и не ждём смены сети, которой может не быть.
-    private static let retryDelay: Duration = .seconds(15)
     private static let queueKey = "queue"
 
     private(set) var items: [OutgoingMessage] = []
@@ -72,6 +99,9 @@ final class MessageOutbox {
     private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "Outbox")
     private var isSending = false
     private var retryTask: Task<Void, Never>?
+    /// Сервер недоступен при живой сети — не долбим его, но и не ждём смены сети, которой может не быть:
+    /// 15 с, 30 с, 1 мин… до 5 мин между попытками. Первое же принятое сообщение сбрасывает паузу.
+    private var retryBackoff = RetryBackoff(base: 15, maxDelay: 300)
     private var networkObserver: NSObjectProtocol?
 
     private init() {
@@ -105,6 +135,7 @@ final class MessageOutbox {
         retryTask?.cancel()
         retryTask = nil
         items = []
+        retryBackoff.reset()
         store.removeAll()
     }
 
@@ -115,6 +146,7 @@ final class MessageOutbox {
         while let item = items.first {
             do {
                 let message = try await send(item)
+                retryBackoff.reset()
                 remove(id: item.id)
                 NotificationCenter.default.post(name: .ownMessagesSentViaREST, object: [message])
             } catch let error as APIError where error.isTransient {
@@ -157,8 +189,9 @@ final class MessageOutbox {
     }
 
     private func scheduleRetry() {
+        let delay = retryBackoff.next()
         retryTask = Task { [weak self] in
-            try? await Task.sleep(for: Self.retryDelay)
+            try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
             self?.flush()
         }

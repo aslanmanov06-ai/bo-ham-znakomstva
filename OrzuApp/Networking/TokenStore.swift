@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import os
 
 /// Хранит access/refresh токены в Keychain, а не в UserDefaults — токены не должны лежать в открытом виде на диске.
 final class TokenStore {
@@ -8,6 +9,7 @@ final class TokenStore {
     private let service = "com.orzuapp.messenger.tokens"
     private let accessKey = "accessToken"
     private let refreshKey = "refreshToken"
+    private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "TokenStore")
 
     private init() {}
 
@@ -53,13 +55,28 @@ final class TokenStore {
             kSecAttrAccount as String: key,
         ]
 
-        SecItemDelete(query as CFDictionary)
+        guard let value, let data = value.data(using: .utf8) else {
+            let status = SecItemDelete(query as CFDictionary)
+            if status != errSecSuccess && status != errSecItemNotFound {
+                logger.error("Не удалось удалить \(key, privacy: .public) из Keychain: \(status, privacy: .public)")
+            }
+            return
+        }
 
-        guard let value, let data = value.data(using: .utf8) else { return }
-
-        var attributes = query
-        attributes[kSecValueData as String] = data
-        attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(attributes as CFDictionary, nil)
+        // ThisDeviceOnly: токены не переезжают с бэкапом на другой телефон — там нужно войти заново.
+        // Обновляем запись на месте, а не «удалить и добавить»: при сбое добавления старый токен не пропадёт.
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        var status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if status == errSecItemNotFound {
+            var item = query
+            item.merge(attributes) { _, new in new }
+            status = SecItemAdd(item as CFDictionary, nil)
+        }
+        if status != errSecSuccess {
+            logger.error("Не удалось сохранить \(key, privacy: .public) в Keychain: \(status, privacy: .public)")
+        }
     }
 }
