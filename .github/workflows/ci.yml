@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, "feature/**"]
+    branches: [main, master, "feature/**", "claude/**"]
   pull_request:
 
 # Новый push в ту же ветку отменяет прошлую сборку — macOS-минуты дорогие.
