@@ -119,7 +119,7 @@ struct DatingProfilePublic: Codable, Identifiable, Hashable {
 
     /// «12 км» для подписи под именем; сервер уже округлил до километра.
     var distanceText: String? {
-        distanceKm.map { "\($0) км" }
+        distanceKm.map { String(localized: "\($0) км") }
     }
 
     /// «Душанбе · 3 км» — подпись под именем в карточках анкет.
@@ -148,12 +148,12 @@ enum VisibilityIssue: String, Codable, Hashable {
 
     var explanation: String {
         switch self {
-        case .hidden: return "Анкета скрыта вами — включите её в «Моём профиле»"
-        case .deactivated: return "Аккаунт деактивирован"
-        case .notVerified: return "Нужно подтвердить анкету селфи"
-        case .noApprovedPhotos: return "Нет ни одного фото, одобренного модератором"
-        case .restricted: return "Анкета временно скрыта модератором"
-        case .inCouple: return "Вы отметили, что нашли пару"
+        case .hidden: return String(localized: "Анкета скрыта вами — включите её в «Моём профиле»")
+        case .deactivated: return String(localized: "Аккаунт деактивирован")
+        case .notVerified: return String(localized: "Нужно подтвердить анкету селфи")
+        case .noApprovedPhotos: return String(localized: "Нет ни одного фото, одобренного модератором")
+        case .restricted: return String(localized: "Анкета временно скрыта модератором")
+        case .inCouple: return String(localized: "Вы отметили, что нашли пару")
         }
     }
 }
@@ -573,13 +573,13 @@ enum ReportCategory: String, CaseIterable, Identifiable, Encodable {
 
     var title: String {
         switch self {
-        case .fake: return "Фейковая анкета"
-        case .spam: return "Спам и реклама"
-        case .harassment: return "Оскорбления и преследование"
-        case .inappropriateContent: return "Непристойный контент"
-        case .scam: return "Просит деньги, мошенничество"
-        case .underage: return "Несовершеннолетний"
-        case .other: return "Другое"
+        case .fake: return String(localized: "Фейковая анкета")
+        case .spam: return String(localized: "Спам и реклама")
+        case .harassment: return String(localized: "Оскорбления и преследование")
+        case .inappropriateContent: return String(localized: "Непристойный контент")
+        case .scam: return String(localized: "Просит деньги, мошенничество")
+        case .underage: return String(localized: "Несовершеннолетний")
+        case .other: return String(localized: "Другое")
         }
     }
 }

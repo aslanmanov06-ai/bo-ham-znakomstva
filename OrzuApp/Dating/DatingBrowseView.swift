@@ -5,7 +5,7 @@ struct DatingBrowseTabView: View {
     @ObservedObject var dating: DatingViewModel
 
     var body: some View {
-        DatingGate(dating: dating, title: "Анкеты") {
+        DatingGate(dating: dating, title: String(localized: "Анкеты")) {
             DatingBrowseView(dating: dating)
         }
     }
@@ -241,7 +241,7 @@ private struct DatingBrowseTile: View {
                 .background(DatingStyle.rose, in: Circle())
                 .padding(8)
         } else if item.card.isNew {
-            DatingChip(text: "Новенький", systemImage: "sparkle", onPhoto: true)
+            DatingChip(text: String(localized: "Новенький"), systemImage: "sparkle", onPhoto: true)
                 .padding(8)
         }
     }
@@ -254,8 +254,8 @@ private struct DatingBrowseTile: View {
 
     private var accessibilityText: String {
         var parts = ["\(profile.displayName), \(profile.age)", location]
-        if profile.verified { parts.append("проверен") }
-        if item.liked { parts.append("вы поставили лайк") }
+        if profile.verified { parts.append(String(localized: "проверен")) }
+        if item.liked { parts.append(String(localized: "вы поставили лайк")) }
         return parts.joined(separator: ", ")
     }
 }

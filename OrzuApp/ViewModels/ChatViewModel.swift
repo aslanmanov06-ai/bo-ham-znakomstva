@@ -186,14 +186,14 @@ final class ChatViewModel: ObservableObject {
 
     /// Имя для цитаты, пометки «переслано» и строки «печатает».
     func displayName(of userId: String) -> String {
-        if userId == currentUserId { return "Вы" }
-        return participantsById[userId]?.displayName ?? "Участник"
+        if userId == currentUserId { return String(localized: "Вы") }
+        return participantsById[userId]?.displayName ?? String(localized: "Участник")
     }
 
     /// Подпись под названием чата: «печатает…» важнее, чем «в сети».
     var headerStatus: String? {
         if let typingId = typingUserIds.first {
-            return chat.type == .group ? "\(displayName(of: typingId)) печатает…" : "печатает…"
+            return chat.type == .group ? String(localized: "\(displayName(of: typingId)) печатает…") : String(localized: "печатает…")
         }
         return peerPresence?.subtitle()
     }
@@ -276,7 +276,7 @@ final class ChatViewModel: ObservableObject {
     func forward(_ selected: [Message], toChatId: String) async -> Bool {
         let ids = selected.filter(canForward).map(\.id)
         guard !ids.isEmpty, ids.count <= Self.maxForwardBatch else {
-            errorMessage = "Переслать можно от 1 до \(Self.maxForwardBatch) сообщений за раз"
+            errorMessage = String(localized: "Переслать можно от 1 до \(Self.maxForwardBatch) сообщений за раз")
             return false
         }
         do {
@@ -379,7 +379,7 @@ final class ChatViewModel: ObservableObject {
         guard let peer = chat.participants.first else { return }
         do {
             try await APIClient.shared.blockUser(id: peer.id)
-            errorMessage = "\(peer.displayName) заблокирован"
+            errorMessage = String(localized: "\(peer.displayName) заблокирован")
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -409,7 +409,7 @@ final class ChatViewModel: ObservableObject {
         // Файлы лежат на сервере в открытом виде — в секретный чат их не пускаем.
         guard chat.canPost, !isSecret else { return }
         guard data.count <= Self.maxAttachmentBytes else {
-            errorMessage = "Файл больше 20 МБ"
+            errorMessage = String(localized: "Файл больше 20 МБ")
             return
         }
 
@@ -435,12 +435,12 @@ final class ChatViewModel: ObservableObject {
             let data = try? await item.loadTransferable(type: Data.self),
             let image = UIImage(data: data)
         else {
-            errorMessage = "Не удалось прочитать фото"
+            errorMessage = String(localized: "Не удалось прочитать фото")
             return
         }
         // Пересжимаем в JPEG: фото из библиотеки часто HEIC на десятки МБ, а в чате хватает 2048 px.
         guard let jpeg = image.downscaled(maxDimension: Self.maxPhotoDimension).jpegData(compressionQuality: 0.8) else {
-            errorMessage = "Не удалось подготовить фото"
+            errorMessage = String(localized: "Не удалось подготовить фото")
             return
         }
         await sendAttachment(data: jpeg, fileName: "photo.jpg", mimeType: "image/jpeg", viewTimerSec: viewTimerSec)
@@ -459,7 +459,7 @@ final class ChatViewModel: ObservableObject {
                 durationSec: recording.durationSec
             )
         } catch {
-            errorMessage = "Не удалось прочитать запись: \(error.localizedDescription)"
+            errorMessage = String(localized: "Не удалось прочитать запись: \(error.localizedDescription)")
         }
     }
 
@@ -489,14 +489,14 @@ final class ChatViewModel: ObservableObject {
         do {
             let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
             guard size <= Self.maxAttachmentBytes else {
-                errorMessage = "Файл больше 20 МБ"
+                errorMessage = String(localized: "Файл больше 20 МБ")
                 return
             }
             let data = try Data(contentsOf: url)
             let mimeType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             await sendAttachment(data: data, fileName: url.lastPathComponent, mimeType: mimeType)
         } catch {
-            errorMessage = "Не удалось прочитать файл: \(error.localizedDescription)"
+            errorMessage = String(localized: "Не удалось прочитать файл: \(error.localizedDescription)")
         }
     }
 
@@ -558,7 +558,7 @@ final class ChatViewModel: ObservableObject {
         guard failure.chatId == chat.id, pendingIds.contains(failure.id) else { return }
         messages.removeAll { $0.id == failure.id }
         pendingIds.remove(failure.id)
-        errorMessage = "Сообщение не отправлено: \(failure.reason)"
+        errorMessage = String(localized: "Сообщение не отправлено: \(failure.reason)")
     }
 
     private func handle(event: ServerEvent) {
@@ -737,7 +737,7 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func decryptedText(_ ciphertext: String, senderId: String, senderKey: String?) -> String {
-        (try? decryptText(ciphertext, senderId: senderId, senderKey: senderKey)) ?? "⚠️ Не удалось расшифровать сообщение"
+        (try? decryptText(ciphertext, senderId: senderId, senderKey: senderKey)) ?? String(localized: "⚠️ Не удалось расшифровать сообщение")
     }
 
     private func decryptText(_ ciphertext: String, senderId: String, senderKey: String?) throws -> String {
@@ -768,10 +768,10 @@ enum MuteOption: CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .hour: return "На 1 час"
-        case .eightHours: return "На 8 часов"
-        case .week: return "На неделю"
-        case .forever: return "Навсегда"
+        case .hour: return String(localized: "На 1 час")
+        case .eightHours: return String(localized: "На 8 часов")
+        case .week: return String(localized: "На неделю")
+        case .forever: return String(localized: "Навсегда")
         }
     }
 

@@ -13,8 +13,8 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
 
         var errorDescription: String? {
             switch self {
-            case .denied: return "Разрешите доступ к геопозиции в настройках"
-            case .unavailable: return "Не удалось определить геопозицию"
+            case .denied: return String(localized: "Разрешите доступ к геопозиции в настройках")
+            case .unavailable: return String(localized: "Не удалось определить геопозицию")
             }
         }
     }

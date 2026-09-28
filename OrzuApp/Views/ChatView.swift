@@ -390,13 +390,13 @@ struct ChatView: View {
     }
 
     private var headerSubtitle: String? {
-        if viewModel.chat.isClosed { return "пара удалена" }
+        if viewModel.chat.isClosed { return String(localized: "пара удалена") }
         if let status = viewModel.headerStatus { return status }
         switch viewModel.chat.type {
-        case .secret: return "секретный чат"
-        case .channel: return "канал"
-        case .group: return "группа"
-        case .direct: return viewModel.chat.participants.first?.isBot == true ? "бот" : nil
+        case .secret: return String(localized: "секретный чат")
+        case .channel: return String(localized: "канал")
+        case .group: return String(localized: "группа")
+        case .direct: return viewModel.chat.participants.first?.isBot == true ? String(localized: "бот") : nil
         }
     }
 
@@ -442,13 +442,13 @@ struct ChatView: View {
     }
 
     private var closedChatHint: String {
-        let deletes = viewModel.chat.deletesAt.map { "Чат исчезнет \(Self.dayMonth.string(from: $0)). " } ?? ""
-        return deletes + "Если вас обидели — пожалуйтесь, модератор увидит переписку."
+        let deletes = viewModel.chat.deletesAt.map { String(localized: "Чат исчезнет \(Self.dayMonth.string(from: $0)). ") } ?? ""
+        return deletes + String(localized: "Если вас обидели — пожалуйтесь, модератор увидит переписку.")
     }
 
     private var removeClosedTitle: String {
-        guard let deletesAt = viewModel.chat.deletesAt else { return "Убрать чат у себя? У собеседника он останется." }
-        return "Убрать чат у себя? У собеседника он останется до \(Self.dayMonth.string(from: deletesAt))."
+        guard let deletesAt = viewModel.chat.deletesAt else { return String(localized: "Убрать чат у себя? У собеседника он останется.") }
+        return String(localized: "Убрать чат у себя? У собеседника он останется до \(Self.dayMonth.string(from: deletesAt)).")
     }
 
     /// «25 сентября» — даты закрытия и удаления чата удалённой пары.
@@ -492,9 +492,9 @@ struct ChatView: View {
     }
 
     private var muteStatus: String {
-        guard viewModel.isMuted, let until = viewModel.mutedUntil else { return "Уведомления о сообщениях этого чата" }
-        if until.isEffectivelyForever { return "Без звука навсегда" }
-        return "Без звука до \(until.formatted(Calendar.current.isDateInToday(until) ? .dateTime.hour().minute() : .dateTime.day().month().hour().minute()))"
+        guard viewModel.isMuted, let until = viewModel.mutedUntil else { return String(localized: "Уведомления о сообщениях этого чата") }
+        if until.isEffectivelyForever { return String(localized: "Без звука навсегда") }
+        return String(localized: "Без звука до \(until.formatted(Calendar.current.isDateInToday(until) ? .dateTime.hour().minute() : .dateTime.day().month().hour().minute()))")
     }
 
     /// В режиме выделения пузырь не реагирует на нажатия (не открывает вложения), а строка целиком отмечает сообщение.
@@ -523,7 +523,7 @@ struct ChatView: View {
         if ids.contains(message.id) {
             ids.remove(message.id)
         } else if selectedMessages(ids).count >= ChatViewModel.maxForwardBatch {
-            viewModel.errorMessage = "За раз можно переслать не больше \(ChatViewModel.maxForwardBatch) сообщений"
+            viewModel.errorMessage = String(localized: "За раз можно переслать не больше \(ChatViewModel.maxForwardBatch) сообщений")
             return
         } else {
             ids.insert(message.id)
@@ -562,7 +562,7 @@ struct ChatView: View {
             return
         }
         guard let message else {
-            viewModel.errorMessage = "Сообщение выше по переписке — найдите его через поиск"
+            viewModel.errorMessage = String(localized: "Сообщение выше по переписке — найдите его через поиск")
             return
         }
         Task {
@@ -654,7 +654,7 @@ struct ChatView: View {
     private var composer: some View {
         ComposerBar(
             text: $draft,
-            placeholder: "Сообщение",
+            placeholder: String(localized: "Сообщение"),
             canSend: canSend,
             sendSystemImage: editingMessage == nil ? "arrow.up" : "checkmark",
             showsSendButton: !showsMediaButtons,
@@ -688,7 +688,7 @@ struct ChatView: View {
 
     private func startVoiceRecording() {
         guard !isInCall else {
-            viewModel.errorMessage = "Во время звонка запись недоступна"
+            viewModel.errorMessage = String(localized: "Во время звонка запись недоступна")
             return
         }
         VoicePlayer.shared.stop()
@@ -708,7 +708,7 @@ struct ChatView: View {
 
     private func startVideoNote() {
         guard !isInCall else {
-            viewModel.errorMessage = "Во время звонка запись недоступна"
+            viewModel.errorMessage = String(localized: "Во время звонка запись недоступна")
             return
         }
         VoicePlayer.shared.stop()
@@ -1028,10 +1028,10 @@ private struct DeliveryStatusIcon: View {
 
     private var accessibilityText: String {
         switch status {
-        case .sending: return "Отправляется"
-        case .sent: return "Отправлено"
-        case .delivered: return "Доставлено"
-        case .read: return "Прочитано"
+        case .sending: return String(localized: "Отправляется")
+        case .sent: return String(localized: "Отправлено")
+        case .delivered: return String(localized: "Доставлено")
+        case .read: return String(localized: "Прочитано")
         }
     }
 }
@@ -1055,7 +1055,7 @@ private struct ReactionChips: View {
                 .padding(.vertical, 3)
                 .background(chipBackground(highlighted: reaction.isMine), in: Capsule())
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(reaction.emoji) \(reaction.count)\(reaction.isMine ? ", ваша реакция" : "")")
+                .accessibilityLabel("\(reaction.emoji) \(reaction.count)\(reaction.isMine ? String(localized: ", ваша реакция") : "")")
             }
         }
     }

@@ -15,8 +15,8 @@ enum SecretChatCrypto {
 
         var errorDescription: String? {
             switch self {
-            case .invalidKey: return "Некорректный ключ шифрования"
-            case .invalidCiphertext: return "Не удалось расшифровать сообщение"
+            case .invalidKey: return String(localized: "Некорректный ключ шифрования")
+            case .invalidCiphertext: return String(localized: "Не удалось расшифровать сообщение")
             }
         }
     }

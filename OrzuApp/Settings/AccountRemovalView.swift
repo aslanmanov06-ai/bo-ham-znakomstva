@@ -37,7 +37,7 @@ struct AccountRemovalView: View {
     private var pauseCard: some View {
         let deactivated = settings?.deactivated == true
         return VStack(alignment: .leading, spacing: 12) {
-            header(deactivated ? "Аккаунт отключён" : "Отключить на время", systemImage: "pause.circle.fill", color: .champagne)
+            header(deactivated ? String(localized: "Аккаунт отключён") : String(localized: "Отключить на время"), systemImage: "pause.circle.fill", color: .champagne)
             Text(deactivated
                 ? "Анкету не видят в ленте и поиске, новые чаты с вами не начать. Включите аккаунт, когда будете готовы."
                 : "Анкета пропадёт из ленты и поиска, новые чаты с вами не начать. Переписки, пары и фото сохранятся — вернуться можно в любой момент.")
@@ -56,7 +56,7 @@ struct AccountRemovalView: View {
 
     private var deleteCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            header("Удалить навсегда", systemImage: "trash.fill", color: .red)
+            header(String(localized: "Удалить навсегда"), systemImage: "trash.fill", color: .red)
             Text("Аккаунт, анкета и фото сразу исчезнут для других, восстановить их будет нельзя. Переписку, фото и видео мы храним ещё год — только для разбора жалоб и запросов по закону, — затем удаляем безвозвратно.")
                 .font(.app(.subheadline))
                 .foregroundStyle(.secondary)

@@ -34,16 +34,16 @@ struct NotificationSettingsView: View {
 
             if let notifications = viewModel.settings?.notifications {
                 Section("О чём сообщать") {
-                    toggle("Сообщения", subtitle: "В чатах и ответы на ваши запросы", systemImage: "message.fill", color: .brand, keyPath: \.messages, in: notifications)
-                    toggle("Пары и «Путь к браку»", subtitle: "Взаимный лайк, новые шаги пары", systemImage: "heart.fill", color: .brand, keyPath: \.matches, in: notifications)
-                    toggle("Первые сообщения", subtitle: "И запросы на переписку", systemImage: "sparkles", color: .champagne, keyPath: \.intros, in: notifications)
-                    toggle("Встречи", subtitle: "Приглашения и напоминания", systemImage: "calendar", color: .champagne, keyPath: \.meetings, in: notifications)
+                    toggle(String(localized: "Сообщения"), subtitle: String(localized: "В чатах и ответы на ваши запросы"), systemImage: "message.fill", color: .brand, keyPath: \.messages, in: notifications)
+                    toggle(String(localized: "Пары и «Путь к браку»"), subtitle: String(localized: "Взаимный лайк, новые шаги пары"), systemImage: "heart.fill", color: .brand, keyPath: \.matches, in: notifications)
+                    toggle(String(localized: "Первые сообщения"), subtitle: String(localized: "И запросы на переписку"), systemImage: "sparkles", color: .champagne, keyPath: \.intros, in: notifications)
+                    toggle(String(localized: "Встречи"), subtitle: String(localized: "Приглашения и напоминания"), systemImage: "calendar", color: .champagne, keyPath: \.meetings, in: notifications)
                 }
                 Section("От команды Бо Хам") {
-                    toggle("Новости приложения", subtitle: "Новые функции и важные объявления", systemImage: "megaphone.fill", color: .champagne, keyPath: \.news, in: notifications)
+                    toggle(String(localized: "Новости приложения"), subtitle: String(localized: "Новые функции и важные объявления"), systemImage: "megaphone.fill", color: .champagne, keyPath: \.news, in: notifications)
                 }
                 Section {
-                    toggle("Показывать имя и текст", subtitle: "Иначе — только «Бо Хам · Новое сообщение»", systemImage: nil, color: .brand, keyPath: \.preview, in: notifications)
+                    toggle(String(localized: "Показывать имя и текст"), subtitle: String(localized: "Иначе — только «Бо Хам · Новое сообщение»"), systemImage: nil, color: .brand, keyPath: \.preview, in: notifications)
                 } header: {
                     Text("Экран блокировки")
                 } footer: {

@@ -10,9 +10,9 @@ enum PrivacyLevel: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .everyone: return "Все"
-        case .contacts: return "Знакомые"
-        case .nobody: return "Никто"
+        case .everyone: return String(localized: "Все")
+        case .contacts: return String(localized: "Знакомые")
+        case .nobody: return String(localized: "Никто")
         }
     }
 }

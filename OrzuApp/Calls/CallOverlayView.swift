@@ -13,10 +13,10 @@ struct CallOverlayView: View {
             IncomingCallView(peerName: title, isVideo: isVideo)
 
         case .outgoingRinging(let title, let isVideo):
-            ActiveCallView(peerName: title, isVideo: isVideo, statusText: "Звоним…", startedAt: nil)
+            ActiveCallView(peerName: title, isVideo: isVideo, statusText: String(localized: "Звоним…"), startedAt: nil)
 
         case .connecting(let title, let isVideo):
-            ActiveCallView(peerName: title, isVideo: isVideo, statusText: "Соединение…", startedAt: nil)
+            ActiveCallView(peerName: title, isVideo: isVideo, statusText: String(localized: "Соединение…"), startedAt: nil)
 
         case .active(let title, let isVideo, let startedAt):
             ActiveCallView(peerName: title, isVideo: isVideo, statusText: nil, startedAt: startedAt)
@@ -42,11 +42,11 @@ private struct IncomingCallView: View {
             Spacer()
             GlassGroup(spacing: 60) {
                 HStack(spacing: 96) {
-                    labeled("Отклонить") {
-                        CallButton(systemImage: "phone.down.fill", tint: .red, title: "Отклонить", size: 76) { callManager.declineIncomingCall() }
+                    labeled(String(localized: "Отклонить")) {
+                        CallButton(systemImage: "phone.down.fill", tint: .red, title: String(localized: "Отклонить"), size: 76) { callManager.declineIncomingCall() }
                     }
-                    labeled("Принять") {
-                        CallButton(systemImage: isVideo ? "video.fill" : "phone.fill", tint: .green, title: "Принять", size: 76) { callManager.acceptIncomingCall() }
+                    labeled(String(localized: "Принять")) {
+                        CallButton(systemImage: isVideo ? "video.fill" : "phone.fill", tint: .green, title: String(localized: "Принять"), size: 76) { callManager.acceptIncomingCall() }
                     }
                 }
             }
@@ -144,7 +144,7 @@ private struct ActiveCallView: View {
                 CallButton(
                     systemImage: callManager.isMuted ? "mic.slash.fill" : "mic.fill",
                     isOn: callManager.isMuted,
-                    title: callManager.isMuted ? "Включить микрофон" : "Выключить микрофон"
+                    title: callManager.isMuted ? String(localized: "Включить микрофон") : String(localized: "Выключить микрофон")
                 ) {
                     callManager.toggleMute()
                 }
@@ -152,7 +152,7 @@ private struct ActiveCallView: View {
                     CallButton(
                         systemImage: callManager.isCameraOff ? "video.slash.fill" : "video.fill",
                         isOn: callManager.isCameraOff,
-                        title: callManager.isCameraOff ? "Включить камеру" : "Выключить камеру"
+                        title: callManager.isCameraOff ? String(localized: "Включить камеру") : String(localized: "Выключить камеру")
                     ) {
                         callManager.toggleCamera()
                     }
@@ -160,12 +160,12 @@ private struct ActiveCallView: View {
                     CallButton(
                         systemImage: callManager.isSpeakerOn ? "speaker.wave.2.fill" : "speaker.fill",
                         isOn: callManager.isSpeakerOn,
-                        title: callManager.isSpeakerOn ? "Выключить динамик" : "Включить динамик"
+                        title: callManager.isSpeakerOn ? String(localized: "Выключить динамик") : String(localized: "Включить динамик")
                     ) {
                         callManager.toggleSpeaker()
                     }
                 }
-                CallButton(systemImage: "phone.down.fill", tint: .red, title: "Завершить") { callManager.endCall() }
+                CallButton(systemImage: "phone.down.fill", tint: .red, title: String(localized: "Завершить")) { callManager.endCall() }
             }
         }
         .padding(.bottom, 48)
@@ -188,14 +188,14 @@ private struct EndedCallBanner: View {
 
     private var reasonText: String {
         switch reason {
-        case "declined": return "Собеседник отклонил звонок"
-        case "busy": return "Собеседник сейчас занят"
-        case "unavailable": return "Собеседник недоступен"
-        case "timeout": return "Никто не ответил"
-        case "connection-lost": return "Соединение потеряно"
-        case "full": return "В звонке уже максимум участников"
-        case "gone": return "Звонок уже завершён"
-        default: return "Звонок завершён"
+        case "declined": return String(localized: "Собеседник отклонил звонок")
+        case "busy": return String(localized: "Собеседник сейчас занят")
+        case "unavailable": return String(localized: "Собеседник недоступен")
+        case "timeout": return String(localized: "Никто не ответил")
+        case "connection-lost": return String(localized: "Соединение потеряно")
+        case "full": return String(localized: "В звонке уже максимум участников")
+        case "gone": return String(localized: "Звонок уже завершён")
+        default: return String(localized: "Звонок завершён")
         }
     }
 }

@@ -18,24 +18,24 @@ struct Presence: Codable, Hashable {
 
     /// Подпись под именем. Точное время показываем, только когда сервер его отдал, — иначе приблизительную давность.
     func subtitle(now: Date = Date()) -> String {
-        if online { return "в сети" }
-        if let lastSeenAt { return "был(а) \(Self.exactLabel(for: lastSeenAt, now: now))" }
+        if online { return String(localized: "в сети") }
+        if let lastSeenAt { return String(localized: "был(а) \(Self.exactLabel(for: lastSeenAt, now: now))") }
         switch lastSeen {
-        case .online: return "в сети"
-        case .recently: return "был(а) недавно"
-        case .withinWeek: return "был(а) на этой неделе"
-        case .withinMonth: return "был(а) в этом месяце"
-        case .longAgo: return "был(а) давно"
+        case .online: return String(localized: "в сети")
+        case .recently: return String(localized: "был(а) недавно")
+        case .withinWeek: return String(localized: "был(а) на этой неделе")
+        case .withinMonth: return String(localized: "был(а) в этом месяце")
+        case .longAgo: return String(localized: "был(а) давно")
         }
     }
 
     private static func exactLabel(for date: Date, now: Date) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
-            return "в \(date.formatted(date: .omitted, time: .shortened))"
+            return String(localized: "в \(date.formatted(date: .omitted, time: .shortened))")
         }
         if calendar.isDateInYesterday(date) {
-            return "вчера в \(date.formatted(date: .omitted, time: .shortened))"
+            return String(localized: "вчера в \(date.formatted(date: .omitted, time: .shortened))")
         }
         if calendar.isDate(date, equalTo: now, toGranularity: .year) {
             return date.formatted(.dateTime.day().month(.abbreviated))

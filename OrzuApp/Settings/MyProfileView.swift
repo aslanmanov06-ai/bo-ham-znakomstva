@@ -153,7 +153,7 @@ struct MyProfileView: View {
                     .foregroundStyle(.secondary)
             case .noProfile:
                 Button { showDatingEditor = true } label: {
-                    SettingsLabel("Заполнить анкету", systemImage: "heart.text.square.fill", color: .brand)
+                    SettingsLabel(String(localized: "Заполнить анкету"), systemImage: "heart.text.square.fill", color: .brand)
                 }
             case .ready:
                 if let lookingFor = dating.lookingFor {
@@ -162,15 +162,15 @@ struct MyProfileView: View {
                             Text(gender.name).tag(gender.code)
                         }
                     } label: {
-                        SettingsLabel("Кого ищу", systemImage: "person.2.fill", color: .champagne)
+                        SettingsLabel(String(localized: "Кого ищу"), systemImage: "person.2.fill", color: .champagne)
                     }
                 }
                 Toggle(isOn: Binding(get: { dating.profile?.hasLocation ?? false }, set: saveShowsDistance)) {
-                    SettingsLabel("Расстояние до анкет", systemImage: "location.fill", color: .brand)
+                    SettingsLabel(String(localized: "Расстояние до анкет"), systemImage: "location.fill", color: .brand)
                 }
                 .tint(DatingStyle.rose)
                 Toggle(isOn: Binding(get: { dating.profile?.hidden ?? false }, set: saveHidden)) {
-                    SettingsLabel("Скрыть анкету", systemImage: "eye.slash.fill", color: .champagne)
+                    SettingsLabel(String(localized: "Скрыть анкету"), systemImage: "eye.slash.fill", color: .champagne)
                 }
                 .tint(DatingStyle.rose)
             }
@@ -188,22 +188,22 @@ struct MyProfileView: View {
     private var statusChips: some View {
         HStack(spacing: 8) {
             if dating.needsSelfie {
-                statusChip(dating.selfiePending ? "Селфи на проверке" : "Не проверена", systemImage: dating.selfiePending ? "clock.fill" : "seal", tint: .secondary)
+                statusChip(dating.selfiePending ? String(localized: "Селфи на проверке") : String(localized: "Не проверена"), systemImage: dating.selfiePending ? "clock.fill" : "seal", tint: .secondary)
             } else {
-                statusChip("Проверена", systemImage: "checkmark.seal.fill", tint: .champagne)
+                statusChip(String(localized: "Проверена"), systemImage: "checkmark.seal.fill", tint: .champagne)
             }
             if dating.profile?.visibleToOthers == true {
-                statusChip("Видна в ленте", systemImage: "eye.fill", tint: .brand)
+                statusChip(String(localized: "Видна в ленте"), systemImage: "eye.fill", tint: .brand)
             } else {
-                statusChip("Скрыта", systemImage: "eye.slash.fill", tint: .secondary)
+                statusChip(String(localized: "Скрыта"), systemImage: "eye.slash.fill", tint: .secondary)
             }
         }
     }
 
     private var selfieTileSubtitle: String {
-        if dating.selfieRequested { return "Нужно новое селфи" }
-        if dating.needsSelfie { return dating.selfiePending ? "Ждёт модератора" : "Пройти по селфи" }
-        return "Пройдена"
+        if dating.selfieRequested { return String(localized: "Нужно новое селфи") }
+        if dating.needsSelfie { return dating.selfiePending ? String(localized: "Ждёт модератора") : String(localized: "Пройти по селфи") }
+        return String(localized: "Пройдена")
     }
 
     private func statusChip(_ title: String, systemImage: String, tint: Color) -> some View {
@@ -219,10 +219,10 @@ struct MyProfileView: View {
     private var quickActions: some View {
         Section {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                actionTile("Анкета", subtitle: "Фото и о себе", systemImage: "heart.text.square.fill", tint: .brand) { showDatingEditor = true }
-                actionTile("Как меня видят", subtitle: "Глазами других", systemImage: "eye.fill", tint: .brand) { showPreview = true }
-                actionTile("Проверка", subtitle: selfieTileSubtitle, systemImage: "checkmark.seal.fill", tint: .champagne) { showSelfie = true }
-                actionTile("Безопасность", subtitle: "Контакты и SOS", systemImage: "shield.lefthalf.filled", tint: .champagne) { showSafety = true }
+                actionTile(String(localized: "Анкета"), subtitle: String(localized: "Фото и о себе"), systemImage: "heart.text.square.fill", tint: .brand) { showDatingEditor = true }
+                actionTile(String(localized: "Как меня видят"), subtitle: String(localized: "Глазами других"), systemImage: "eye.fill", tint: .brand) { showPreview = true }
+                actionTile(String(localized: "Проверка"), subtitle: selfieTileSubtitle, systemImage: "checkmark.seal.fill", tint: .champagne) { showSelfie = true }
+                actionTile(String(localized: "Безопасность"), subtitle: String(localized: "Контакты и SOS"), systemImage: "shield.lefthalf.filled", tint: .champagne) { showSafety = true }
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets())

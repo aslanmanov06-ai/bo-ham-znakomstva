@@ -57,9 +57,9 @@ struct SelfieVerificationView: View {
                 rejectedLabel
                 gestureCard
                 VStack(alignment: .leading, spacing: 12) {
-                    step(1, "Покажите жест рядом с лицом")
-                    step(2, "Модератор сверит селфи с фото анкеты")
-                    step(3, "Рядом с именем появится значок «проверен»")
+                    step(1, String(localized: "Покажите жест рядом с лицом"))
+                    step(2, String(localized: "Модератор сверит селфи с фото анкеты"))
+                    step(3, String(localized: "Рядом с именем появится значок «проверен»"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .appCard(cornerRadius: 20)
@@ -93,8 +93,8 @@ struct SelfieVerificationView: View {
                 rejectedLabel
                 gestureCard
                 VStack(alignment: .leading, spacing: 12) {
-                    step(1, "Покажите жест рядом с лицом")
-                    step(2, "Модератор сверит его с фото анкеты")
+                    step(1, String(localized: "Покажите жест рядом с лицом"))
+                    step(2, String(localized: "Модератор сверит его с фото анкеты"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .appCard(cornerRadius: 20)
@@ -150,14 +150,14 @@ struct SelfieVerificationView: View {
     }
 
     private var statusTitle: String {
-        dating.verification?.verified == true ? "Анкета подтверждена" : "Селфи на проверке"
+        dating.verification?.verified == true ? String(localized: "Анкета подтверждена") : String(localized: "Селфи на проверке")
     }
 
     private var statusDescription: String {
         if dating.verification?.verified == true {
-            return "Рядом с вашим именем стоит значок «проверен» — такие анкеты вызывают больше доверия."
+            return String(localized: "Рядом с вашим именем стоит значок «проверен» — такие анкеты вызывают больше доверия.")
         }
-        return "Проверим в течение 24 часов: модератор сверит селфи с фото анкеты и жестом."
+        return String(localized: "Проверим в течение 24 часов: модератор сверит селфи с фото анкеты и жестом.")
     }
 
     // MARK: - Общие части
@@ -273,7 +273,7 @@ struct SelfieVerificationView: View {
 
     private var rejectReason: String? {
         guard latest?.status == .rejected else { return nil }
-        return latest?.rejectReason ?? "Селфи отклонено — попробуйте ещё раз"
+        return latest?.rejectReason ?? String(localized: "Селфи отклонено — попробуйте ещё раз")
     }
 
     private func changeGesture() {
@@ -290,7 +290,7 @@ struct SelfieVerificationView: View {
 
     private func openCamera() {
         guard SelfieCamera.isAvailable else {
-            errorMessage = "На этом устройстве нет фронтальной камеры — пройдите проверку с iPhone"
+            errorMessage = String(localized: "На этом устройстве нет фронтальной камеры — пройдите проверку с iPhone")
             return
         }
         Task {
@@ -305,7 +305,7 @@ struct SelfieVerificationView: View {
 
     private func submit(_ image: UIImage) {
         guard let jpeg = image.downscaled(maxDimension: maxSelfieDimension).jpegData(compressionQuality: 0.85) else {
-            errorMessage = "Не удалось сохранить снимок — попробуйте ещё раз"
+            errorMessage = String(localized: "Не удалось сохранить снимок — попробуйте ещё раз")
             return
         }
         isSending = true

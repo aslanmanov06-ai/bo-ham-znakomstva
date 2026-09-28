@@ -22,11 +22,11 @@ struct PendingUpload: Codable, Hashable {
     /// Пока файла нет на сервере, пузырь показывает подпись вместо превью.
     var placeholder: String {
         switch mediaKind {
-        case .voice: return "🎤 Голосовое сообщение"
-        case .videoNote: return "📹 Видеосообщение"
-        case .video: return "🎬 Видео"
-        case .image: return "📷 Фото"
-        case .file, nil: return mimeType.hasPrefix("image/") ? "📷 Фото" : "📎 \(fileName)"
+        case .voice: return String(localized: "🎤 Голосовое сообщение")
+        case .videoNote: return String(localized: "📹 Видеосообщение")
+        case .video: return String(localized: "🎬 Видео")
+        case .image: return String(localized: "📷 Фото")
+        case .file, nil: return mimeType.hasPrefix("image/") ? String(localized: "📷 Фото") : "📎 \(fileName)"
         }
     }
 }
@@ -169,7 +169,7 @@ final class MessageOutbox {
         var item = item
         if let upload = item.upload {
             guard let data = store.load(Self.fileKey(item.id)) else {
-                throw APIError.server("Файл для отправки больше недоступен")
+                throw APIError.server(String(localized: "Файл для отправки больше недоступен"))
             }
             item.attachment = try await APIClient.shared.uploadAttachment(
                 data: data, fileName: upload.fileName, mimeType: upload.mimeType, mediaKind: upload.mediaKind, durationSec: upload.durationSec

@@ -440,8 +440,8 @@ private struct ChatRow: View {
     }
 
     private var closedSubtitle: String {
-        guard let deletesAt = chat.deletesAt else { return "Пара удалена" }
-        return "Пара удалена · исчезнет \(deletesAt.formatted(.dateTime.day().month(.abbreviated)))"
+        guard let deletesAt = chat.deletesAt else { return String(localized: "Пара удалена") }
+        return String(localized: "Пара удалена · исчезнет \(deletesAt.formatted(.dateTime.day().month(.abbreviated)))")
     }
 
     /// Сегодня — время, в этом году — день и месяц, раньше — полная дата (как в «Сообщениях»).
@@ -451,7 +451,7 @@ private struct ChatRow: View {
             return date.formatted(date: .omitted, time: .shortened)
         }
         if calendar.isDateInYesterday(date) {
-            return "Вчера"
+            return String(localized: "Вчера")
         }
         if calendar.isDate(date, equalTo: .now, toGranularity: .year) {
             return date.formatted(.dateTime.day().month(.abbreviated))
@@ -478,8 +478,8 @@ private struct ChatTabs: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            tab("Все", selected: !showDeleted) { showDeleted = false }
-            tab("Удалённые", count: deletedCount, selected: showDeleted) { showDeleted = true }
+            tab(String(localized: "Все"), selected: !showDeleted) { showDeleted = false }
+            tab(String(localized: "Удалённые"), count: deletedCount, selected: showDeleted) { showDeleted = true }
         }
         .padding(4)
         .frame(height: 40)

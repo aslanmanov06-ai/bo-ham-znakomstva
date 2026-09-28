@@ -54,7 +54,7 @@ struct SessionsView: View {
         .task { await load() }
         .refreshable { await load() }
         .confirmationDialog(
-            "Завершить сеанс на «\(sessionPendingRevoke?.deviceName ?? "устройстве")»?",
+            String(localized: "Завершить сеанс на «\(sessionPendingRevoke?.deviceName ?? String(localized: "устройстве"))»?"),
             isPresented: Binding(get: { sessionPendingRevoke != nil }, set: { if !$0 { sessionPendingRevoke = nil } }),
             titleVisibility: .visible,
             presenting: sessionPendingRevoke
@@ -74,7 +74,7 @@ struct SessionsView: View {
                 .frame(width: 38, height: 38)
                 .background((session.current ? Color.brand : Color.champagne).opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.deviceName ?? "Неизвестное устройство").font(.app(.body, weight: .semibold))
+                Text(session.deviceName ?? String(localized: "Неизвестное устройство")).font(.app(.body, weight: .semibold))
                 Text(subtitle(for: session)).font(.app(.caption)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
@@ -96,8 +96,8 @@ struct SessionsView: View {
     }
 
     private func subtitle(for session: AccountSession) -> String {
-        let signedIn = "вход \(session.createdAt.formatted(.dateTime.day().month()))"
-        if session.current { return "Сейчас · \(signedIn)" }
+        let signedIn = String(localized: "вход \(session.createdAt.formatted(.dateTime.day().month()))")
+        if session.current { return String(localized: "Сейчас · \(signedIn)") }
         return "\(session.lastUsedAt.formatted(.relative(presentation: .named))) · \(signedIn)"
     }
 

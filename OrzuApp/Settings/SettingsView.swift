@@ -11,45 +11,46 @@ struct SettingsView: View {
             if let settings = viewModel.settings {
                 Section("Аккаунт") {
                     NavigationLink { PrivacySettingsView(viewModel: viewModel) } label: {
-                        SettingsLabel("Приватность", systemImage: "hand.raised.fill", color: .brand)
+                        SettingsLabel(String(localized: "Приватность"), systemImage: "hand.raised.fill", color: .brand)
                     }
                     NavigationLink { EmailSettingsView(viewModel: viewModel) } label: {
                         LabeledContent {
-                            Text(settings.email ?? "не указана")
+                            Text(settings.email ?? String(localized: "не указана"))
                         } label: {
-                            SettingsLabel("Резервная почта", systemImage: "envelope.fill", color: .champagne)
+                            SettingsLabel(String(localized: "Резервная почта"), systemImage: "envelope.fill", color: .champagne)
                         }
                     }
                     NavigationLink { ChangePasswordView(viewModel: viewModel, hasPassword: settings.hasPassword) } label: {
                         LabeledContent {
                             Text(settings.hasPassword ? "" : "не задан")
                         } label: {
-                            SettingsLabel("Пароль", systemImage: "key.fill", color: .champagne)
+                            SettingsLabel(String(localized: "Пароль"), systemImage: "key.fill", color: .champagne)
                         }
                     }
                     if settings.googleLinked {
                         LabeledContent {
                             Text("привязан")
                         } label: {
-                            SettingsLabel("Google", systemImage: "g.circle.fill", color: .brand)
+                            SettingsLabel(String(localized: "Google"), systemImage: "g.circle.fill", color: .brand)
                         }
                     }
                     NavigationLink { SessionsView() } label: {
-                        SettingsLabel("Активные сеансы", systemImage: "iphone", color: .brand)
+                        SettingsLabel(String(localized: "Активные сеансы"), systemImage: "iphone", color: .brand)
                     }
                 }
                 Section("Приложение") {
                     NavigationLink { NotificationSettingsView(viewModel: viewModel) } label: {
-                        SettingsLabel("Уведомления", systemImage: "bell.fill", color: .champagne)
+                        SettingsLabel(String(localized: "Уведомления"), systemImage: "bell.fill", color: .champagne)
                     }
                     NavigationLink { AppearanceView() } label: {
-                        SettingsLabel("Оформление", systemImage: "paintpalette.fill", color: .brand)
+                        SettingsLabel(String(localized: "Оформление"), systemImage: "paintpalette.fill", color: .brand)
                     }
+                    AppLanguagePicker()
                     AppLockToggle()
                 }
                 Section("Помощь") {
                     NavigationLink { SupportView() } label: {
-                        SettingsLabel("Поддержка", systemImage: "questionmark.circle.fill", color: .brand)
+                        SettingsLabel(String(localized: "Поддержка"), systemImage: "questionmark.circle.fill", color: .brand)
                     }
                     ForEach([LegalDocumentKind.rules, .privacy, .terms]) { kind in
                         NavigationLink { LegalDocumentView(kind: kind) } label: {
@@ -67,14 +68,14 @@ struct SettingsView: View {
 
             Section {
                 Button(role: .destructive) { confirmLogout = true } label: {
-                    SettingsLabel("Выйти из аккаунта", systemImage: "rectangle.portrait.and.arrow.right", color: .red)
+                    SettingsLabel(String(localized: "Выйти из аккаунта"), systemImage: "rectangle.portrait.and.arrow.right", color: .red)
                 }
                 if viewModel.settings != nil {
                     NavigationLink { AccountRemovalView(viewModel: viewModel) } label: {
                         LabeledContent {
                             Text(viewModel.settings?.deactivated == true ? "отключён" : "")
                         } label: {
-                            SettingsLabel("Отключить или удалить аккаунт", systemImage: "trash.fill", color: .red)
+                            SettingsLabel(String(localized: "Отключить или удалить аккаунт"), systemImage: "trash.fill", color: .red)
                                 .foregroundStyle(.red)
                         }
                     }
@@ -151,7 +152,7 @@ struct PrivacySettingsView: View {
 
                 Section {
                     NavigationLink { BlockedUsersView(viewModel: viewModel) } label: {
-                        SettingsLabel("Чёрный список", systemImage: "hand.raised.fill", color: .brand)
+                        SettingsLabel(String(localized: "Чёрный список"), systemImage: "hand.raised.fill", color: .brand)
                     }
                     DataExportButton()
                 } footer: {

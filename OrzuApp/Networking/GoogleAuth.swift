@@ -15,7 +15,7 @@ enum GoogleAuth {
     @MainActor
     static func requestIDToken() async throws -> String? {
         guard let clientID, let presenter = topViewController() else {
-            throw APIError.server("Вход через Google недоступен")
+            throw APIError.server(String(localized: "Вход через Google недоступен"))
         }
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
 

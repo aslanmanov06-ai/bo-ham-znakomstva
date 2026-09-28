@@ -37,8 +37,11 @@ struct LikedMeBanner: View {
     static func peopleCount(_ count: Int) -> String {
         let lastTwo = count % 100
         let last = count % 10
-        let word = (2...4).contains(last) && !(12...14).contains(lastTwo) ? "человека" : "человек"
-        return "\(count) \(word)"
+        // Форма выбирается по-русски, а перевод каждой формы (и английское «person/people») — в каталоге строк.
+        if (2...4).contains(last) && !(12...14).contains(lastTwo) {
+            return String(localized: "\(count) человека")
+        }
+        return String(localized: "\(count) человек")
     }
 }
 
@@ -185,8 +188,8 @@ struct LikedMeView: View {
     /// «сегодня», «вчера», «23 сент.» — когда поставлен лайк.
     private static func whenLabel(_ date: Date) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "сегодня" }
-        if calendar.isDateInYesterday(date) { return "вчера" }
+        if calendar.isDateInToday(date) { return String(localized: "сегодня") }
+        if calendar.isDateInYesterday(date) { return String(localized: "вчера") }
         return date.formatted(.dateTime.day().month(.abbreviated))
     }
 }

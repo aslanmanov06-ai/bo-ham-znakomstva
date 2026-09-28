@@ -31,22 +31,22 @@ struct DatingProfileDetailView: View {
                     compatibilityCard(compatibility)
                 }
                 if !profile.bio.isEmpty {
-                    card("О себе", systemImage: "quote.opening") {
+                    card(String(localized: "О себе"), systemImage: "quote.opening") {
                         Text(profile.bio)
                             .font(.app(.body))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 if let videoId = profile.videoId {
-                    card("Видео", systemImage: "play.rectangle") {
+                    card(String(localized: "Видео"), systemImage: "play.rectangle") {
                         DatingVideoView(attachmentId: videoId)
                             .frame(height: 260)
                     }
                 }
                 factsCard
-                chips("Интересы", systemImage: "star", codes: profile.interests, items: catalog?.interests ?? [])
-                chips("Занятия", systemImage: "figure.walk", codes: profile.hobbies, items: catalog?.hobbies ?? [])
-                chips("Любимая кухня", systemImage: "fork.knife", codes: profile.cuisines, items: catalog?.cuisines ?? [])
+                chips(String(localized: "Интересы"), systemImage: "star", codes: profile.interests, items: catalog?.interests ?? [])
+                chips(String(localized: "Занятия"), systemImage: "figure.walk", codes: profile.hobbies, items: catalog?.hobbies ?? [])
+                chips(String(localized: "Любимая кухня"), systemImage: "fork.knife", codes: profile.cuisines, items: catalog?.cuisines ?? [])
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 24)
@@ -156,7 +156,7 @@ struct DatingProfileDetailView: View {
     }
 
     private func compatibilityCard(_ compatibility: Compatibility) -> some View {
-        card("Совместимость", systemImage: "sparkles") {
+        card(String(localized: "Совместимость"), systemImage: "sparkles") {
             HStack(alignment: .top, spacing: 16) {
                 CompatibilityRing(score: compatibility.score, size: 72, lineWidth: 7, trackColor: DatingStyle.rose.opacity(0.15))
                     .foregroundStyle(.primary)
@@ -180,7 +180,7 @@ struct DatingProfileDetailView: View {
     private var factsCard: some View {
         let facts = self.facts
         if !facts.isEmpty {
-            card("Главное", systemImage: "person.text.rectangle") {
+            card(String(localized: "Главное"), systemImage: "person.text.rectangle") {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                     ForEach(facts, id: \.title) { fact in
                         FactTile(fact: fact)
@@ -192,16 +192,16 @@ struct DatingProfileDetailView: View {
 
     private var facts: [ProfileFact] {
         let candidates: [ProfileFact?] = [
-            fact("Цель", "heart.circle", catalog?.relationshipGoals.name(of: profile.relationshipGoal)),
-            fact("Семейное положение", "person.2", catalog?.maritalStatuses.name(of: profile.maritalStatus)),
-            fact("Дети", "figure.and.child.holdinghands", catalog?.children.name(of: profile.children)),
-            fact("Хочет детей", "house", catalog?.wantsChildren.name(of: profile.wantsChildren)),
-            fact("Образование", "graduationcap", catalog?.education.name(of: profile.education)),
-            fact("Профессия", "briefcase", profile.profession),
-            fact("Рост", "ruler", profile.heightCm.map { "\($0) см" }),
-            fact("Курение", "smoke", catalog?.habitFrequencies.name(of: profile.smoking)),
-            fact("Алкоголь", "wineglass", catalog?.habitFrequencies.name(of: profile.alcohol)),
-            fact("Спорт", "figure.run", catalog?.habitFrequencies.name(of: profile.sport)),
+            fact(String(localized: "Цель"), "heart.circle", catalog?.relationshipGoals.name(of: profile.relationshipGoal)),
+            fact(String(localized: "Семейное положение"), "person.2", catalog?.maritalStatuses.name(of: profile.maritalStatus)),
+            fact(String(localized: "Дети"), "figure.and.child.holdinghands", catalog?.children.name(of: profile.children)),
+            fact(String(localized: "Хочет детей"), "house", catalog?.wantsChildren.name(of: profile.wantsChildren)),
+            fact(String(localized: "Образование"), "graduationcap", catalog?.education.name(of: profile.education)),
+            fact(String(localized: "Профессия"), "briefcase", profile.profession),
+            fact(String(localized: "Рост"), "ruler", profile.heightCm.map { String(localized: "\($0) см") }),
+            fact(String(localized: "Курение"), "smoke", catalog?.habitFrequencies.name(of: profile.smoking)),
+            fact(String(localized: "Алкоголь"), "wineglass", catalog?.habitFrequencies.name(of: profile.alcohol)),
+            fact(String(localized: "Спорт"), "figure.run", catalog?.habitFrequencies.name(of: profile.sport)),
         ]
         return candidates.compactMap { $0 }
     }
@@ -271,7 +271,7 @@ struct DatingProfileDetailView: View {
     private var location: String {
         var parts = [catalog?.cityName(countryCode: profile.countryCode, cityCode: profile.cityCode) ?? profile.cityCode]
         if let distance = profile.distanceText {
-            parts.append("\(distance) от вас")
+            parts.append(String(localized: "\(distance) от вас"))
         }
         return parts.joined(separator: " · ")
     }

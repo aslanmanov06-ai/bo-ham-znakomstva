@@ -226,7 +226,7 @@ private struct ProfileOnboardingView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
 
     var body: some View {
-        DatingGate(dating: dating, title: "Анкета") {
+        DatingGate(dating: dating, title: String(localized: "Анкета")) {
             // Анкета создана, но без фото: без него человека не узнать ни в чатах, ни в знакомствах.
             DatingProfileEditorView(dating: dating)
                 .safeAreaInset(edge: .top) {

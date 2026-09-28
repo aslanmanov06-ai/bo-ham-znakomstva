@@ -69,9 +69,9 @@ struct SupportView: View {
                 Text(ticket.category.title).font(.app(.subheadline, weight: .semibold))
                 Spacer()
                 if ticket.reply != nil {
-                    statusPill("Ответили", color: .champagne, background: .champagneSoft)
+                    statusPill(String(localized: "Ответили"), color: .champagne, background: .champagneSoft)
                 } else {
-                    statusPill("Ждёт ответа", color: .secondary, background: .appElevated)
+                    statusPill(String(localized: "Ждёт ответа"), color: .secondary, background: .appElevated)
                 }
             }
             Text(ticket.text)
@@ -159,7 +159,7 @@ struct NewSupportTicketView: View {
             }
         }
         .appScreenBackground()
-        .navigationTitle(fixedCategory?.title ?? "Новое обращение")
+        .navigationTitle(fixedCategory?.title ?? String(localized: "Новое обращение"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

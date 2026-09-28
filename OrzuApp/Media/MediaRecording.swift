@@ -35,8 +35,8 @@ enum MediaPermissionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .microphone: return "Нет доступа к микрофону — разрешите его в Настройках iPhone"
-        case .camera: return "Нет доступа к камере — разрешите его в Настройках iPhone"
+        case .microphone: return String(localized: "Нет доступа к микрофону — разрешите его в Настройках iPhone")
+        case .camera: return String(localized: "Нет доступа к камере — разрешите его в Настройках iPhone")
         }
     }
 }

@@ -19,7 +19,7 @@ struct VoiceMessageView: View {
                     do {
                         try await player.toggle(attachment)
                     } catch {
-                        onError("Не удалось воспроизвести: \(error.localizedDescription)")
+                        onError(String(localized: "Не удалось воспроизвести: \(error.localizedDescription)"))
                     }
                 }
             } label: {

@@ -6,7 +6,7 @@ struct DatingTabView: View {
     @StateObject private var matches = MatchesViewModel()
 
     var body: some View {
-        DatingGate(dating: dating, title: "Знакомства") {
+        DatingGate(dating: dating, title: String(localized: "Знакомства")) {
             DatingFeedView(dating: dating, matches: matches)
         }
         .task(id: dating.stage) {
@@ -101,9 +101,9 @@ private struct DatingWelcomeView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    feature("checkmark.seal.fill", "Проверка по селфи", "Каждое селфи сверяет модератор")
-                    feature("sparkles", "Совместимость по ценностям", "Подсказываем, что у вас общего")
-                    feature("signpost.right.fill", "Путь к браку", "От первого сообщения до никаха")
+                    feature("checkmark.seal.fill", String(localized: "Проверка по селфи"), String(localized: "Каждое селфи сверяет модератор"))
+                    feature("sparkles", String(localized: "Совместимость по ценностям"), String(localized: "Подсказываем, что у вас общего"))
+                    feature("signpost.right.fill", String(localized: "Путь к браку"), String(localized: "От первого сообщения до никаха"))
                 }
                 .padding(18)
                 .appCard(cornerRadius: DatingStyle.tileCornerRadius, padding: nil)

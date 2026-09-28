@@ -269,9 +269,9 @@ struct DatingFeedView: View {
 
     private func limitsText(_ limits: DailyLimits) -> String {
         if limits.likesLeft == 0 {
-            return "Лайки закончились — вернутся \(limits.resetsAt.formatted(date: .omitted, time: .shortened))"
+            return String(localized: "Лайки закончились — вернутся \(limits.resetsAt.formatted(date: .omitted, time: .shortened))")
         }
-        return "Лайков сегодня: \(limits.likesLeft) из \(limits.likesPerDay) · сообщений: \(limits.introsLeft) из \(limits.introsPerDay)"
+        return String(localized: "Лайков сегодня: \(limits.likesLeft) из \(limits.likesPerDay) · сообщений: \(limits.introsLeft) из \(limits.introsPerDay)")
     }
 
     private func dragGesture(for card: DatingFeedCard) -> some Gesture {
@@ -509,10 +509,10 @@ private struct DatingCardView: View {
         if card.isNew || card.expanded {
             HStack(spacing: 6) {
                 if card.isNew {
-                    DatingChip(text: "Новенький", systemImage: "sparkle", onPhoto: true)
+                    DatingChip(text: String(localized: "Новенький"), systemImage: "sparkle", onPhoto: true)
                 }
                 if card.expanded {
-                    DatingChip(text: "Шире фильтров", systemImage: "arrow.up.left.and.arrow.down.right", onPhoto: true)
+                    DatingChip(text: String(localized: "Шире фильтров"), systemImage: "arrow.up.left.and.arrow.down.right", onPhoto: true)
                 }
             }
         }
@@ -541,9 +541,9 @@ private struct DatingCardView: View {
             Color.black
                 .opacity(Double(max(-swipeProgress, 0)) * 0.25)
             HStack(alignment: .top) {
-                SwipeStamp(text: "НРАВИТСЯ", angle: -14, progress: max(swipeProgress, 0), isLike: true)
+                SwipeStamp(text: String(localized: "НРАВИТСЯ"), angle: -14, progress: max(swipeProgress, 0), isLike: true)
                 Spacer()
-                SwipeStamp(text: "ПРОПУСК", angle: 14, progress: max(-swipeProgress, 0), isLike: false)
+                SwipeStamp(text: String(localized: "ПРОПУСК"), angle: 14, progress: max(-swipeProgress, 0), isLike: false)
             }
             .padding(.horizontal, 22)
             .padding(.top, 44)

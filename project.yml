@@ -1,6 +1,8 @@
 name: OrzuApp
 options:
   bundleIdPrefix: com.orzuapp
+  # Строки в коде — на русском, переводы (tg, en) — в Localizable.xcstrings и InfoPlist.xcstrings.
+  developmentLanguage: ru
 packages:
   # Swift-пакет — stasel/WebRTC (сборки Google WebRTC). stasel/WebRTC-iOS — демо-приложение автора, тегов там нет.
   # Каждый релиз WebRTC — новая мажорная версия, поэтому from: "120.0.0" резолвится только в 120.x:
@@ -104,3 +106,6 @@ schemes:
     test:
       targets:
         - OrzuAppTests
+      # Тесты сверяют русские строки: на симуляторе с английским языком String(localized:) вернул бы перевод.
+      language: ru
+      region: RU

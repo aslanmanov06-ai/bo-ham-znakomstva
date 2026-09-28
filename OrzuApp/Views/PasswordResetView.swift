@@ -54,14 +54,14 @@ struct PasswordResetView: View {
         await run {
             try await APIClient.shared.requestPasswordReset(email: email.trimmingCharacters(in: .whitespaces))
             codeSent = true
-            message = "Если почта привязана к аккаунту, письмо с кодом уже в пути."
+            message = String(localized: "Если почта привязана к аккаунту, письмо с кодом уже в пути.")
         }
     }
 
     private func confirm() async {
         await run {
             try await APIClient.shared.confirmPasswordReset(email: email.trimmingCharacters(in: .whitespaces), code: code, newPassword: newPassword)
-            message = "Пароль изменён — войдите с новым паролем."
+            message = String(localized: "Пароль изменён — войдите с новым паролем.")
             codeSent = false
         }
     }

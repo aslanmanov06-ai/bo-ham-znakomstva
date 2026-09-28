@@ -322,16 +322,16 @@ struct MatchDetailView: View {
     private func statusText(_ meeting: DatingMeeting) -> String {
         switch meeting.status {
         case .proposed:
-            if meeting.expired { return "Не состоялось — никто не ответил вовремя" }
-            return meeting.byMe ? "Вы пригласили, ждём ответа" : "Вас пригласили"
+            if meeting.expired { return String(localized: "Не состоялось — никто не ответил вовремя") }
+            return meeting.byMe ? String(localized: "Вы пригласили, ждём ответа") : String(localized: "Вас пригласили")
         case .accepted:
-            return "Встреча назначена"
+            return String(localized: "Встреча назначена")
         case .declined:
-            return "Отклонено"
+            return String(localized: "Отклонено")
         case .cancelled:
-            return meeting.cancelledByMe == true ? "Вы отменили" : "Отменено собеседником"
+            return meeting.cancelledByMe == true ? String(localized: "Вы отменили") : String(localized: "Отменено собеседником")
         case .rescheduled:
-            return "Предложено другое время"
+            return String(localized: "Предложено другое время")
         }
     }
 

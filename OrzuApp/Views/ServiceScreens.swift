@@ -103,7 +103,7 @@ struct MaintenanceView: View {
     var body: some View {
         ServiceScreenLayout {
             HaloIcon(systemImage: "wrench.adjustable", tint: .champagne, fill: .champagneSoft)
-            ServiceTitle(text: "Скоро вернёмся")
+            ServiceTitle(text: String(localized: "Скоро вернёмся"))
             ServiceText(text: status.maintenanceMessage)
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "bubble.left")
@@ -152,11 +152,11 @@ struct UpdateRequiredView: View {
     var body: some View {
         ServiceScreenLayout {
             HaloIcon(systemImage: "arrow.down.app")
-            ServiceTitle(text: "Обновите приложение")
-            ServiceText(text: "Эта версия Бо Хам больше не работает. Установите новую из App Store — переписки, пары и анкета сохранятся.")
+            ServiceTitle(text: String(localized: "Обновите приложение"))
+            ServiceText(text: String(localized: "Эта версия Бо Хам больше не работает. Установите новую из App Store — переписки, пары и анкета сохранятся."))
             HStack(spacing: 8) {
-                versionPill("У вас", AppVersion.current, highlighted: false)
-                versionPill("Нужна", minimumVersion, highlighted: true)
+                versionPill(String(localized: "У вас"), AppVersion.current, highlighted: false)
+                versionPill(String(localized: "Нужна"), minimumVersion, highlighted: true)
             }
             .padding(.top, 6)
         } actions: {
@@ -200,7 +200,7 @@ struct AccountBannedView: View {
         ServiceScreenLayout(topPadding: 80) {
             HaloIcon(systemImage: "xmark.shield")
             if let until = notice.bannedUntil, !notice.permanent {
-                ServiceTitle(text: "Аккаунт временно заблокирован", size: 21)
+                ServiceTitle(text: String(localized: "Аккаунт временно заблокирован"), size: 21)
                 Label("до \(Self.untilFormat.string(from: until))", systemImage: "clock")
                     .font(.app(.subheadline))
                     .padding(.horizontal, 16)
@@ -208,16 +208,16 @@ struct AccountBannedView: View {
                     .background(Color.brand.opacity(0.14), in: Capsule())
                     .overlay(Capsule().strokeBorder(Color.brand.opacity(0.35), lineWidth: 1))
             } else {
-                ServiceTitle(text: "Аккаунт заблокирован", size: 21)
-                ServiceText(text: "Бессрочно — за нарушение правил сообщества")
+                ServiceTitle(text: String(localized: "Аккаунт заблокирован"), size: 21)
+                ServiceText(text: String(localized: "Бессрочно — за нарушение правил сообщества"))
             }
             if let reason = notice.reason {
                 ReasonCard(reason: reason)
                     .padding(.top, 6)
             }
             ServiceText(text: appealSent
-                ? "Обжалование отправлено. Модератор пересмотрит решение, ответ придёт на почту аккаунта."
-                : "Считаете решение ошибкой — напишите нам, модератор пересмотрит его.")
+                ? String(localized: "Обжалование отправлено. Модератор пересмотрит решение, ответ придёт на почту аккаунта.")
+                : String(localized: "Считаете решение ошибкой — напишите нам, модератор пересмотрит его."))
         } actions: {
             // Без пропуска обжаловать нечем: он приходит с отказом сервера и живёт час.
             if let token = notice.appealToken, !appealSent {
@@ -253,9 +253,9 @@ struct RegistrationClosedView: View {
     var body: some View {
         ServiceScreenLayout(topPadding: 50) {
             HaloIcon(systemImage: "person.crop.circle.badge.xmark")
-            ServiceTitle(text: "Регистрация временно закрыта", size: 21)
-            ServiceText(text: "Новые аккаунты сейчас не создаются. Загляните позже — обычно это ненадолго.")
-            ServiceText(text: "Если аккаунт у вас уже есть, вход работает как обычно.")
+            ServiceTitle(text: String(localized: "Регистрация временно закрыта"), size: 21)
+            ServiceText(text: String(localized: "Новые аккаунты сейчас не создаются. Загляните позже — обычно это ненадолго."))
+            ServiceText(text: String(localized: "Если аккаунт у вас уже есть, вход работает как обычно."))
                 .padding(.top, 4)
         } actions: {
             Button("Войти в аккаунт", action: onBack)

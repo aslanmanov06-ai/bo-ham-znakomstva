@@ -22,7 +22,7 @@ struct GroupInfoView: View {
                         HStack(spacing: 12) {
                             AvatarView(avatarUrl: member.avatarUrl, name: member.displayName, size: 40)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(member.id == viewModel.currentUserId ? "Вы" : member.displayName)
+                                Text(member.id == viewModel.currentUserId ? String(localized: "Вы") : member.displayName)
                                     .font(.app(.body, weight: .semibold))
                                 Text("@\(member.username)").font(.app(.footnote)).foregroundStyle(.secondary)
                             }
@@ -37,8 +37,8 @@ struct GroupInfoView: View {
                             if viewModel.isCurrentUserAdmin && member.id != viewModel.currentUserId {
                                 let newRole: ParticipantRole = member.role == .admin ? .member : .admin
                                 let label = isChannel
-                                    ? (newRole == .admin ? "Разрешить публиковать" : "Запретить публиковать")
-                                    : (newRole == .admin ? "Сделать админом" : "Снять админа")
+                                    ? (newRole == .admin ? String(localized: "Разрешить публиковать") : String(localized: "Запретить публиковать"))
+                                    : (newRole == .admin ? String(localized: "Сделать админом") : String(localized: "Снять админа"))
                                 Button {
                                     Task { await viewModel.setRole(newRole, for: member) }
                                 } label: {
@@ -74,7 +74,7 @@ struct GroupInfoView: View {
             }
         }
         .appScreenBackground()
-        .navigationTitle(viewModel.detail?.title ?? (isChannel ? "Канал" : "Группа"))
+        .navigationTitle(viewModel.detail?.title ?? (isChannel ? String(localized: "Канал") : String(localized: "Группа")))
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.load() }
         .refreshable { await viewModel.load() }
@@ -105,10 +105,10 @@ struct GroupInfoView: View {
     private func header(_ detail: ChatDetail) -> some View {
         VStack(spacing: 8) {
             AvatarView(avatarUrl: nil, name: detail.title ?? "", size: 92)
-            Text(detail.title ?? (isChannel ? "Канал" : "Группа"))
+            Text(detail.title ?? (isChannel ? String(localized: "Канал") : String(localized: "Группа")))
                 .font(.display(.title3))
                 .multilineTextAlignment(.center)
-            Text("\(isChannel ? "канал" : "группа") · \(detail.participants.count) \(isChannel ? "подписчиков" : "участников")")
+            Text(isChannel ? "канал · \(detail.participants.count) подписчиков" : "группа · \(detail.participants.count) участников")
                 .font(.app(.footnote))
                 .foregroundStyle(.secondary)
             if viewModel.isCurrentUserAdmin {

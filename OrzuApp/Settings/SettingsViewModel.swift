@@ -51,7 +51,7 @@ final class SettingsViewModel: ObservableObject {
         var sent = false
         await run {
             try await APIClient.shared.requestEmailVerification(email: email.trimmingCharacters(in: .whitespaces))
-            self.infoMessage = "Код отправлен на \(email). Проверьте и папку «Спам»."
+            self.infoMessage = String(localized: "Код отправлен на \(email). Проверьте и папку «Спам».")
             sent = true
         }
         return sent
@@ -82,7 +82,7 @@ final class SettingsViewModel: ObservableObject {
         var changed = false
         await run {
             try await APIClient.shared.changePassword(current: current, new: new)
-            self.infoMessage = "Пароль сохранён. На других устройствах нужно войти заново."
+            self.infoMessage = String(localized: "Пароль сохранён. На других устройствах нужно войти заново.")
             changed = true
             self.settings = try await APIClient.shared.fetchSettings()
         }

@@ -89,7 +89,7 @@ struct DatingVideoView: View {
                 let url = try await AttachmentLoader.shared.temporaryFileURL(attachmentId: attachmentId, fileName: "video.mp4")
                 player = AVPlayer(url: url)
             } catch {
-                errorMessage = "Не удалось загрузить видео"
+                errorMessage = String(localized: "Не удалось загрузить видео")
             }
         }
         .onDisappear { player?.pause() }

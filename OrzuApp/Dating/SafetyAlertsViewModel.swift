@@ -55,11 +55,11 @@ struct SanctionNotice: Identifiable {
 
     var title: String {
         switch type {
-        case "WARNING": return "Предупреждение"
-        case "FEED_HIDDEN": return "Анкета скрыта"
-        case "SUSPENSION": return "Аккаунт временно заблокирован"
-        case "BAN": return "Аккаунт заблокирован"
-        default: return "Решение модератора"
+        case "WARNING": return String(localized: "Предупреждение")
+        case "FEED_HIDDEN": return String(localized: "Анкета скрыта")
+        case "SUSPENSION": return String(localized: "Аккаунт временно заблокирован")
+        case "BAN": return String(localized: "Аккаунт заблокирован")
+        default: return String(localized: "Решение модератора")
         }
     }
 }

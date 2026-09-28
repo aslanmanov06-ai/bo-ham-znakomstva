@@ -13,12 +13,12 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unauthorized: return "Сессия истекла, войдите заново"
+        case .unauthorized: return String(localized: "Сессия истекла, войдите заново")
         case .server(let message): return message
         case .rejected(_, let message): return message
-        case .invalidResponse: return "Некорректный ответ сервера"
-        case .offline: return "Нет подключения к интернету"
-        case .unavailable(let status): return "Сервер временно недоступен (\(status)), попробуйте позже"
+        case .invalidResponse: return String(localized: "Некорректный ответ сервера")
+        case .offline: return String(localized: "Нет подключения к интернету")
+        case .unavailable(let status): return String(localized: "Сервер временно недоступен (\(status)), попробуйте позже")
         }
     }
 
@@ -551,6 +551,8 @@ actor APIClient {
         if authorized, let token = TokenStore.shared.accessToken {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
+        // Тексты ошибок, каталог анкет и правила сервер отдаёт на языке интерфейса (ru, tg или en).
+        request.setValue(AppLanguage.current, forHTTPHeaderField: "Accept-Language")
 
         let (data, httpResponse) = try await perform(request)
 
@@ -563,7 +565,7 @@ actor APIClient {
         let body = try? decoder.decode(ServerErrorBody.self, from: data)
         announceAppWideRejection(code: body?.code, message: body?.readableMessage, data: data)
         if httpResponse.statusCode >= 500 { throw APIError.unavailable(status: httpResponse.statusCode) }
-        let message = body?.readableMessage ?? "Ошибка сервера (\(httpResponse.statusCode))"
+        let message = body?.readableMessage ?? String(localized: "Ошибка сервера (\(httpResponse.statusCode))")
         guard let code = body?.code else { throw APIError.server(message) }
         throw APIError.rejected(code: code, message: message)
     }
@@ -623,7 +625,7 @@ actor APIClient {
                 // Сбой сервера не значит, что сессия умерла: токены не трогаем, пусть вызывающий повторит позже.
                 throw APIError.unavailable(status: httpResponse.statusCode)
             default:
-                throw APIError.server("Ошибка сервера (\(httpResponse.statusCode))")
+                throw APIError.server(String(localized: "Ошибка сервера (\(httpResponse.statusCode))"))
             }
         }
 

@@ -80,6 +80,7 @@
 		81A81E4CE1BCCA04B8D3B8AC /* AccountSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D962672E62662EAF451944D /* AccountSettingsTests.swift */; };
 		85AC882D58DFFDBD110E6B77 /* MessageSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EB368F9B41637D3CADF6BE /* MessageSearchView.swift */; };
 		8769703856E6292FF9F62042 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B2B594CD92B3E407E766DD4 /* AppConfig.swift */; };
+		890B12D42443AB12D2F46488 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 14AEFA7F079B8F06713A3DAF /* Localizable.xcstrings */; };
 		891FBA520B6C3B01E6D032E0 /* BotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2304D7BDBE237520F576B270 /* BotsView.swift */; };
 		8B010558AA28957B3EF8C30D /* CurrentUserCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D61AC07CCA26A36947ABFE /* CurrentUserCache.swift */; };
 		8BEA9570C8852EBE609603DE /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFFC3168F96892A0B2254D38 /* TokenStore.swift */; };
@@ -128,6 +129,7 @@
 		DB295304F8CC3AA5B7E6E47E /* DatingBrowseFiltersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5961C80B60052BAE9630E2D3 /* DatingBrowseFiltersView.swift */; };
 		DBEE4CC6D4641F8189126363 /* DatingMediaViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FFB09E7B95F7F4BB381BF2 /* DatingMediaViews.swift */; };
 		DC01EB98AE9EF523E2D448AD /* DatingProfileDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFA43E88849A742584A67087 /* DatingProfileDetailView.swift */; };
+		DE1F32C3D4A5B9C9F90C08BD /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = FA51E98F9DC59FA12B86D2AE /* InfoPlist.xcstrings */; };
 		E426554E8B11EAB6EE73F51C /* PasswordResetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A1B9DC94001DD94CE3A04B /* PasswordResetView.swift */; };
 		E6F803FA2D27D196FC320367 /* CurrentUserCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2756995704E1529B3926054D /* CurrentUserCacheTests.swift */; };
 		E77D19FC4970A98134CC9D68 /* LikedMeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FB5C48BE50E1025F9490B8B /* LikedMeViewModel.swift */; };
@@ -165,6 +167,7 @@
 		0F1F7078E2ACF373EF0481C0 /* E2EKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = E2EKeyStore.swift; sourceTree = "<group>"; };
 		10C501AB4B9618ACC7A73F0E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		12051853D2E53F6B645756E8 /* DatingTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatingTabView.swift; sourceTree = "<group>"; };
+		14AEFA7F079B8F06713A3DAF /* Localizable.xcstrings */ = {isa = PBXFileReference; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		14D6EC107274A214F838B145 /* Onest-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Onest-Medium.ttf"; sourceTree = "<group>"; };
 		1820866B2F8FA053E786323A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		189E3D76DBCC431FBCEF6141 /* PushManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushManager.swift; sourceTree = "<group>"; };
@@ -299,6 +302,7 @@
 		F3A9E01C88221652A3D74E18 /* IceServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IceServer.swift; sourceTree = "<group>"; };
 		F7888EB575DCEF069CA36104 /* NewChannelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChannelView.swift; sourceTree = "<group>"; };
 		F993B33790DE2FAD7C59EBE9 /* AccountExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountExtras.swift; sourceTree = "<group>"; };
+		FA51E98F9DC59FA12B86D2AE /* InfoPlist.xcstrings */ = {isa = PBXFileReference; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		FC531EEA660B7358DD458778 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -518,6 +522,8 @@
 			children = (
 				5F827E53F6EC7A85594F0201 /* Assets.xcassets */,
 				B002D6BD4BFFACE85198D78C /* Info.plist */,
+				FA51E98F9DC59FA12B86D2AE /* InfoPlist.xcstrings */,
+				14AEFA7F079B8F06713A3DAF /* Localizable.xcstrings */,
 				2FD102BBD8745D9C487B91BA /* OrzuApp.entitlements */,
 				55351F48F6B425FC3BFE50F5 /* OrzuAppApp.swift */,
 				DB9877BC7E906E9D869A3CC5 /* PrivacyInfo.xcprivacy */,
@@ -643,11 +649,13 @@
 			};
 			buildConfigurationList = 58EC9A7B235DD005D745BBAF /* Build configuration list for PBXProject "OrzuApp" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = ru;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
+				ru,
+				tg,
 			);
 			mainGroup = 2F45F08B352D0657A95C7517;
 			minimizedProjectReferenceProxies = 1;
@@ -671,6 +679,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				E8A68ABDA2DE7489C06C0292 /* Assets.xcassets in Resources */,
+				DE1F32C3D4A5B9C9F90C08BD /* InfoPlist.xcstrings in Resources */,
+				890B12D42443AB12D2F46488 /* Localizable.xcstrings in Resources */,
 				0BE9B846155D83CF8FA9F715 /* OFL-Onest.txt in Resources */,
 				93CDE28EFB4B4FBE121F0ACC /* OFL-Unbounded.txt in Resources */,
 				7567DD011C8FA1EA0B561B55 /* Onest-Bold.ttf in Resources */,

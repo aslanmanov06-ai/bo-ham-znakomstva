@@ -160,7 +160,7 @@ struct PersonCardView: View {
                 if user.isBot == true { BotBadge() }
             }
             Text("@\(user.username)").foregroundStyle(.secondary)
-            Text(loadError ?? "Анкета скрыта или ещё не прошла проверку")
+            Text(loadError ?? String(localized: "Анкета скрыта или ещё не прошла проверку"))
                 .font(.app(.footnote))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

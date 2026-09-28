@@ -199,9 +199,9 @@ struct DatingActionButton: View {
 
     private var accessibilityTitle: String {
         switch kind {
-        case .skip: "Пропустить"
-        case .intro: "Написать"
-        case .like: "Лайк"
+        case .skip: String(localized: "Пропустить")
+        case .intro: String(localized: "Написать")
+        case .like: String(localized: "Лайк")
         }
     }
 }

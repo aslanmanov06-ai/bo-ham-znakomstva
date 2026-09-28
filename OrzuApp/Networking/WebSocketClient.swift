@@ -104,7 +104,7 @@ struct IncomingCall: Equatable {
     /// Заголовок экрана звонка: в группе — её название, в личном — имя звонящего.
     var displayTitle: String {
         guard isGroup else { return fromName }
-        return "\(title ?? "Группа") · \(fromName)"
+        return "\(title ?? String(localized: "Группа")) · \(fromName)"
     }
 }
 
@@ -440,7 +440,7 @@ final class WebSocketClient: NSObject, ObservableObject {
             events.send(.accountSanction(type: type, reason: sanction["reason"] as? String ?? ""))
 
         case "error":
-            let text = json["message"] as? String ?? "Неизвестная ошибка"
+            let text = json["message"] as? String ?? String(localized: "Неизвестная ошибка")
             events.send(.error(message: text))
 
         case "call.incoming":

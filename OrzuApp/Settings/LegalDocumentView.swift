@@ -100,7 +100,7 @@ struct DataExportButton: View {
                     Text("JSON")
                 }
             } label: {
-                SettingsLabel("Скачать мои данные", systemImage: "arrow.down.doc.fill", color: .champagne)
+                SettingsLabel(String(localized: "Скачать мои данные"), systemImage: "arrow.down.doc.fill", color: .champagne)
             }
         }
         .tint(.primary)

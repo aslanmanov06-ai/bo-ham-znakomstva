@@ -213,19 +213,19 @@ struct CompletenessCard: View {
 
     /// Ключи — из completeness.missing на backend (COMPLETENESS_CHECKS в dating-profile.service.ts).
     private static let missingFieldNames: [String: String] = [
-        "photos": "фото",
-        "video": "видео о себе",
-        "bio": "рассказ о себе",
-        "heightCm": "рост",
-        "interests": "интересы",
-        "education": "образование",
-        "profession": "профессию",
-        "relationshipGoal": "цель знакомства",
-        "maritalStatus": "семейное положение",
-        "children": "есть ли дети",
-        "wantsChildren": "хотите ли детей",
-        "habits": "привычки",
-        "cuisines": "любимую кухню",
-        "hobbies": "занятия",
+        "photos": String(localized: "фото"),
+        "video": String(localized: "видео о себе"),
+        "bio": String(localized: "рассказ о себе"),
+        "heightCm": String(localized: "рост"),
+        "interests": String(localized: "интересы"),
+        "education": String(localized: "образование"),
+        "profession": String(localized: "профессию"),
+        "relationshipGoal": String(localized: "цель знакомства"),
+        "maritalStatus": String(localized: "семейное положение"),
+        "children": String(localized: "есть ли дети"),
+        "wantsChildren": String(localized: "хотите ли детей"),
+        "habits": String(localized: "привычки"),
+        "cuisines": String(localized: "любимую кухню"),
+        "hobbies": String(localized: "занятия"),
     ]
 }

@@ -56,7 +56,7 @@ final class AppStatus: ObservableObject {
 
     /// Пока идёт обслуживание, сами перепроверяем сервер — человеку не нужно ничего нажимать.
     private static let maintenancePollInterval: Duration = .seconds(30)
-    static let defaultMaintenanceMessage = "Обновляем Бо Хам. Скоро вернёмся — спасибо, что подождёте."
+    static let defaultMaintenanceMessage = String(localized: "Обновляем Бо Хам. Скоро вернёмся — спасибо, что подождёте.")
 
     @Published private(set) var config: AppRuntimeConfig?
     @Published private(set) var isUnderMaintenance = false

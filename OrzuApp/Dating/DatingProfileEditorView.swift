@@ -88,23 +88,23 @@ struct DatingProfileEditorView: View {
                 DatingPhotosSection(dating: dating)
                 verificationCard
                 shortcuts
-                DatingSectionCard(title: "О себе", systemImage: "quote.opening") {
+                DatingSectionCard(title: String(localized: "О себе"), systemImage: "quote.opening") {
                     AboutFields(form: $form)
                 }
-                DatingSectionCard(title: "Семья и цели", systemImage: "heart.circle") {
+                DatingSectionCard(title: String(localized: "Семья и цели"), systemImage: "heart.circle") {
                     GoalsFields(form: $form, catalog: dating.catalog)
                 }
-                DatingSectionCard(title: "Образ жизни", systemImage: "leaf") {
+                DatingSectionCard(title: String(localized: "Образ жизни"), systemImage: "leaf") {
                     LifestyleFields(form: $form, catalog: dating.catalog)
                 }
                 DatingSectionCard(
-                    title: "Интересы и вкусы",
+                    title: String(localized: "Интересы и вкусы"),
                     systemImage: "star",
-                    subtitle: "По ним считается совместимость — чем больше отметите, тем точнее подбор."
+                    subtitle: String(localized: "По ним считается совместимость — чем больше отметите, тем точнее подбор.")
                 ) {
                     TastesFields(form: $form, catalog: dating.catalog)
                 }
-                DatingSectionCard(title: "Где вы", systemImage: "mappin.and.ellipse") {
+                DatingSectionCard(title: String(localized: "Где вы"), systemImage: "mappin.and.ellipse") {
                     LocationFields(form: $form, catalog: dating.catalog)
                     Divider()
                     Toggle("Показывать расстояние до анкет", isOn: locationBinding)
@@ -187,21 +187,21 @@ struct DatingProfileEditorView: View {
     }
 
     private var verificationTitle: String {
-        if !dating.needsSelfie { return "Анкета подтверждена" }
-        return dating.selfiePending ? "Селфи на проверке" : "Подтвердите анкету селфи"
+        if !dating.needsSelfie { return String(localized: "Анкета подтверждена") }
+        return dating.selfiePending ? String(localized: "Селфи на проверке") : String(localized: "Подтвердите анкету селфи")
     }
 
     private var verificationSubtitle: String {
-        if !dating.needsSelfie { return "Рядом с именем виден значок «проверен»." }
+        if !dating.needsSelfie { return String(localized: "Рядом с именем виден значок «проверен».") }
         return dating.selfiePending
-            ? "Модератор сравнит селфи с фото анкеты — обычно это занимает несколько часов."
-            : "Модератор сверит селфи с фото — так другие поймут, что вы настоящий."
+            ? String(localized: "Модератор сравнит селфи с фото анкеты — обычно это занимает несколько часов.")
+            : String(localized: "Модератор сверит селфи с фото — так другие поймут, что вы настоящий.")
     }
 
     private var shortcuts: some View {
         HStack(spacing: 10) {
-            shortcut("Как меня видят", systemImage: "eye") { showPreview = true }
-            shortcut("Безопасность", systemImage: "shield.lefthalf.filled") { showSafety = true }
+            shortcut(String(localized: "Как меня видят"), systemImage: "eye") { showPreview = true }
+            shortcut(String(localized: "Безопасность"), systemImage: "shield.lefthalf.filled") { showSafety = true }
         }
     }
 
@@ -223,7 +223,7 @@ struct DatingProfileEditorView: View {
     }
 
     private var visibilityCard: some View {
-        DatingSectionCard(title: "Видимость", systemImage: "eye.circle", subtitle: visibilityNote) {
+        DatingSectionCard(title: String(localized: "Видимость"), systemImage: "eye.circle", subtitle: visibilityNote) {
             Toggle("Скрыть анкету из ленты", isOn: $form.hidden)
                 .tint(DatingStyle.rose)
             if dating.profile?.inCouple == true {
@@ -236,7 +236,7 @@ struct DatingProfileEditorView: View {
         if let profile = dating.profile, !profile.visibleToOthers {
             return profile.visibilityIssues.map(\.explanation).joined(separator: "\n")
         }
-        return "Анкету видят те, кто подходит вашим фильтрам и чьим фильтрам подходите вы."
+        return String(localized: "Анкету видят те, кто подходит вашим фильтрам и чьим фильтрам подходите вы.")
     }
 
     @ViewBuilder
@@ -346,21 +346,21 @@ private struct ProfileCreationFlow: View {
 
         var title: String {
             switch self {
-            case .basics: "Давайте познакомимся"
-            case .goals: "Что вы ищете"
-            case .about: "Расскажите о себе"
-            case .lifestyle: "Ваш образ жизни"
-            case .tastes: "Что вам нравится"
+            case .basics: String(localized: "Давайте познакомимся")
+            case .goals: String(localized: "Что вы ищете")
+            case .about: String(localized: "Расскажите о себе")
+            case .lifestyle: String(localized: "Ваш образ жизни")
+            case .tastes: String(localized: "Что вам нравится")
             }
         }
 
         var subtitle: String {
             switch self {
-            case .basics: "Пол и дату рождения потом изменить нельзя — проверьте их внимательно."
-            case .goals: "Так мы покажем вас тем, кто ищет того же."
-            case .about: "Пара искренних фраз о себе работает лучше любого фото."
-            case .lifestyle: "Привычки — частая причина несовместимости, лучше знать заранее."
-            case .tastes: "По интересам считается совместимость — отметьте всё, что откликается."
+            case .basics: String(localized: "Пол и дату рождения потом изменить нельзя — проверьте их внимательно.")
+            case .goals: String(localized: "Так мы покажем вас тем, кто ищет того же.")
+            case .about: String(localized: "Пара искренних фраз о себе работает лучше любого фото.")
+            case .lifestyle: String(localized: "Привычки — частая причина несовместимости, лучше знать заранее.")
+            case .tastes: String(localized: "По интересам считается совместимость — отметьте всё, что откликается.")
             }
         }
 
@@ -439,19 +439,19 @@ private struct ProfileCreationFlow: View {
         case .basics:
             basics
         case .goals:
-            DatingSectionCard(title: "Семья и цели", systemImage: "heart.circle") {
+            DatingSectionCard(title: String(localized: "Семья и цели"), systemImage: "heart.circle") {
                 GoalsFields(form: $form, catalog: catalog)
             }
         case .about:
-            DatingSectionCard(title: "О себе", systemImage: "quote.opening") {
+            DatingSectionCard(title: String(localized: "О себе"), systemImage: "quote.opening") {
                 AboutFields(form: $form)
             }
         case .lifestyle:
-            DatingSectionCard(title: "Привычки и образование", systemImage: "leaf") {
+            DatingSectionCard(title: String(localized: "Привычки и образование"), systemImage: "leaf") {
                 LifestyleFields(form: $form, catalog: catalog)
             }
         case .tastes:
-            DatingSectionCard(title: "Интересы и вкусы", systemImage: "star") {
+            DatingSectionCard(title: String(localized: "Интересы и вкусы"), systemImage: "star") {
                 TastesFields(form: $form, catalog: catalog)
             }
         }
@@ -459,7 +459,7 @@ private struct ProfileCreationFlow: View {
 
     private var basics: some View {
         VStack(spacing: 14) {
-            DatingSectionCard(title: "Пол", systemImage: "person.2") {
+            DatingSectionCard(title: String(localized: "Пол"), systemImage: "person.2") {
                 HStack(spacing: 12) {
                     ForEach(catalog?.genders ?? []) { gender in
                         GenderCard(
@@ -473,22 +473,22 @@ private struct ProfileCreationFlow: View {
                 }
                 .sensoryFeedback(.selection, trigger: form.gender)
             }
-            DatingSectionCard(title: "Дата рождения", systemImage: "birthday.cake", subtitle: birthDateHint) {
+            DatingSectionCard(title: String(localized: "Дата рождения"), systemImage: "birthday.cake", subtitle: birthDateHint) {
                 DatePicker("Дата рождения", selection: $form.birthDate, in: birthDateRange, displayedComponents: .date)
                     .datePickerStyle(.wheel)
                     .labelsHidden()
                     .frame(maxWidth: .infinity)
                     .onChange(of: form.birthDate) { birthDateChosen = true }
             }
-            DatingSectionCard(title: "Город", systemImage: "mappin.and.ellipse") {
+            DatingSectionCard(title: String(localized: "Город"), systemImage: "mappin.and.ellipse") {
                 LocationFields(form: $form, catalog: catalog)
             }
         }
     }
 
     private var birthDateHint: String {
-        guard birthDateChosen else { return "Прокрутите до своей даты рождения. Знакомства доступны с \(DatingLimits.minAge) лет." }
-        return "Вам \(RussianPlural.years(age))"
+        guard birthDateChosen else { return String(localized: "Прокрутите до своей даты рождения. Знакомства доступны с \(DatingLimits.minAge) лет.") }
+        return String(localized: "Вам \(RussianPlural.years(age))")
     }
 
     private var age: Int {
@@ -627,16 +627,16 @@ private struct GoalsFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            FieldGroup(title: "Цель знакомства") {
+            FieldGroup(title: String(localized: "Цель знакомства")) {
                 ChoiceChips(items: catalog?.relationshipGoals ?? [], selection: $form.relationshipGoal)
             }
-            FieldGroup(title: "Семейное положение") {
+            FieldGroup(title: String(localized: "Семейное положение")) {
                 ChoiceChips(items: catalog?.maritalStatuses ?? [], selection: $form.maritalStatus)
             }
-            FieldGroup(title: "Дети") {
+            FieldGroup(title: String(localized: "Дети")) {
                 ChoiceChips(items: catalog?.children ?? [], selection: $form.children)
             }
-            FieldGroup(title: "Хочу детей") {
+            FieldGroup(title: String(localized: "Хочу детей")) {
                 ChoiceChips(items: catalog?.wantsChildren ?? [], selection: $form.wantsChildren)
             }
         }
@@ -650,11 +650,11 @@ private struct AboutFields: View {
 
     /// Начала фраз для тех, кто не знает, с чего начать рассказ о себе.
     private static let bioPrompts = [
-        "Мои выходные — это…",
-        "Я ценю в людях…",
-        "Меня легко рассмешить, если…",
-        "Мечтаю когда-нибудь…",
-        "В семье для меня важно…",
+        String(localized: "Мои выходные — это…"),
+        String(localized: "Я ценю в людях…"),
+        String(localized: "Меня легко рассмешить, если…"),
+        String(localized: "Мечтаю когда-нибудь…"),
+        String(localized: "В семье для меня важно…"),
     ]
 
     var body: some View {
@@ -683,7 +683,7 @@ private struct AboutFields: View {
                     }
                 }
             }
-            FieldGroup(title: "Профессия") {
+            FieldGroup(title: String(localized: "Профессия")) {
                 TextField("Например, врач или инженер", text: $form.profession)
                     .padding(12)
                     .background(Color.appElevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -707,16 +707,16 @@ private struct LifestyleFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            FieldGroup(title: "Образование") {
+            FieldGroup(title: String(localized: "Образование")) {
                 ChoiceChips(items: catalog?.education ?? [], selection: $form.education)
             }
-            FieldGroup(title: "Курение") {
+            FieldGroup(title: String(localized: "Курение")) {
                 ChoiceChips(items: catalog?.habitFrequencies ?? [], selection: $form.smoking)
             }
-            FieldGroup(title: "Алкоголь") {
+            FieldGroup(title: String(localized: "Алкоголь")) {
                 ChoiceChips(items: catalog?.habitFrequencies ?? [], selection: $form.alcohol)
             }
-            FieldGroup(title: "Спорт") {
+            FieldGroup(title: String(localized: "Спорт")) {
                 ChoiceChips(items: catalog?.habitFrequencies ?? [], selection: $form.sport)
             }
         }
@@ -729,13 +729,13 @@ private struct TastesFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            FieldGroup(title: "Интересы") {
+            FieldGroup(title: String(localized: "Интересы")) {
                 MultiChoiceChips(items: catalog?.interests ?? [], limit: DatingLimits.maxInterests, selection: $form.interests)
             }
-            FieldGroup(title: "Занятия") {
+            FieldGroup(title: String(localized: "Занятия")) {
                 MultiChoiceChips(items: catalog?.hobbies ?? [], limit: DatingLimits.maxHobbies, selection: $form.hobbies)
             }
-            FieldGroup(title: "Любимая кухня") {
+            FieldGroup(title: String(localized: "Любимая кухня")) {
                 MultiChoiceChips(items: catalog?.cuisines ?? [], limit: DatingLimits.maxCuisines, selection: $form.cuisines)
             }
         }
@@ -787,11 +787,11 @@ enum RussianPlural {
     static func years(_ count: Int) -> String {
         let lastTwo = count % 100
         let last = count % 10
-        if (11...14).contains(lastTwo) { return "\(count) лет" }
+        if (11...14).contains(lastTwo) { return String(localized: "\(count) лет") }
         switch last {
-        case 1: return "\(count) год"
-        case 2...4: return "\(count) года"
-        default: return "\(count) лет"
+        case 1: return String(localized: "\(count) год")
+        case 2...4: return String(localized: "\(count) года")
+        default: return String(localized: "\(count) лет")
         }
     }
 }

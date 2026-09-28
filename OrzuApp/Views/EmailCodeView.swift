@@ -150,7 +150,7 @@ struct EmailCodeView: View {
 
     private var rejectedFooter: some View {
         VStack(spacing: 10) {
-            Label(message ?? "Неверный или просроченный код", systemImage: "exclamationmark.circle")
+            Label(message ?? String(localized: "Неверный или просроченный код"), systemImage: "exclamationmark.circle")
                 .font(.app(.subheadline))
                 .foregroundStyle(.red)
             Button("Отправить новый код") { Task { await sendAgain() } }

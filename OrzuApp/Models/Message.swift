@@ -29,13 +29,13 @@ struct Message: Codable, Identifiable, Hashable {
 
     var previewText: String {
         if !text.isEmpty { return text }
-        if ciphertext != nil { return "🔒 Зашифрованное сообщение" }
+        if ciphertext != nil { return String(localized: "🔒 Зашифрованное сообщение") }
         switch attachment?.kind {
-        case .image: return viewTimerSec == nil ? "Фото" : "Фото с таймером"
-        case .file: return "Файл: \(attachment?.fileName ?? "")"
-        case .voice: return "Голосовое сообщение"
-        case .videoNote: return "Видеосообщение"
-        case .video: return "Видео"
+        case .image: return viewTimerSec == nil ? String(localized: "Фото") : String(localized: "Фото с таймером")
+        case .file: return String(localized: "Файл: \(attachment?.fileName ?? "")")
+        case .voice: return String(localized: "Голосовое сообщение")
+        case .videoNote: return String(localized: "Видеосообщение")
+        case .video: return String(localized: "Видео")
         case nil: return ""
         }
     }
@@ -91,13 +91,13 @@ struct ReplyPreview: Codable, Hashable {
 
     var previewText: String {
         if !text.isEmpty { return text }
-        if ciphertext != nil { return "🔒 Зашифрованное сообщение" }
+        if ciphertext != nil { return String(localized: "🔒 Зашифрованное сообщение") }
         switch attachment?.kind {
-        case .image: return "Фото"
-        case .file: return "Файл"
-        case .voice: return "Голосовое сообщение"
-        case .videoNote: return "Видеосообщение"
-        case .video: return "Видео"
+        case .image: return String(localized: "Фото")
+        case .file: return String(localized: "Файл")
+        case .voice: return String(localized: "Голосовое сообщение")
+        case .videoNote: return String(localized: "Видеосообщение")
+        case .video: return String(localized: "Видео")
         case nil: return ""
         }
     }

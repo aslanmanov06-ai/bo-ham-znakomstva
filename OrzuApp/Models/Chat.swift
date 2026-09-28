@@ -36,7 +36,7 @@ struct Chat: Codable, Identifiable, Hashable {
 
     var displayTitle: String {
         if let title, !title.isEmpty { return title }
-        return participants.first?.displayName ?? "Чат"
+        return participants.first?.displayName ?? String(localized: "Чат")
     }
 
     /// Собеседник в личном и секретном чате; в группе и канале его нет.

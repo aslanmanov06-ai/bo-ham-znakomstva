@@ -21,12 +21,12 @@ enum SupportCategory: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .account: return "Аккаунт и вход"
-        case .bug: return "Ошибка в приложении"
-        case .safety: return "Безопасность"
-        case .appeal: return "Несогласие с решением"
-        case .idea: return "Предложение"
-        case .other: return "Другое"
+        case .account: return String(localized: "Аккаунт и вход")
+        case .bug: return String(localized: "Ошибка в приложении")
+        case .safety: return String(localized: "Безопасность")
+        case .appeal: return String(localized: "Несогласие с решением")
+        case .idea: return String(localized: "Предложение")
+        case .other: return String(localized: "Другое")
         }
     }
 }
@@ -63,9 +63,9 @@ enum LegalDocumentKind: String, Identifiable {
 
     var title: String {
         switch self {
-        case .rules: return "Правила сообщества"
-        case .privacy: return "Конфиденциальность"
-        case .terms: return "Соглашение"
+        case .rules: return String(localized: "Правила сообщества")
+        case .privacy: return String(localized: "Конфиденциальность")
+        case .terms: return String(localized: "Соглашение")
         }
     }
 

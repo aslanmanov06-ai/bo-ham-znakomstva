@@ -43,7 +43,7 @@ struct GoogleRegistrationView: View {
                         if let googleEmail = registration.profile.email {
                             googleEmailCard(googleEmail)
                         } else {
-                            LabeledAppField(title: "Почта", hint: "\(registration.provider.title) не передал почту — укажите её, на неё придёт код.", error: emailError) {
+                            LabeledAppField(title: String(localized: "Почта"), hint: String(localized: "\(registration.provider.title) не передал почту — укажите её, на неё придёт код."), error: emailError) {
                                 TextField("name@mail.ru", text: $typedEmail)
                                     .textContentType(.emailAddress)
                                     .keyboardType(.emailAddress)
@@ -53,7 +53,7 @@ struct GoogleRegistrationView: View {
                             }
                         }
 
-                        LabeledAppField(title: "Username", hint: "По нему вас найдут в поиске.", error: usernameError) {
+                        LabeledAppField(title: "Username", hint: String(localized: "По нему вас найдут в поиске."), error: usernameError) {
                             TextField("латиница, цифры и «_»", text: $username)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
@@ -63,11 +63,11 @@ struct GoogleRegistrationView: View {
                                     username = username.lowercased()
                                 }
                         }
-                        LabeledAppField(title: "Имя") {
+                        LabeledAppField(title: String(localized: "Имя")) {
                             TextField("Как к вам обращаться", text: $displayName)
                                 .textContentType(.givenName)
                         }
-                        LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
+                        LabeledAppField(title: String(localized: "Телефон"), hint: String(localized: "Обязательно. Никому не показывается.")) {
                             TextField("+992 90 123 45 67", text: $phone)
                                 .textContentType(.telephoneNumber)
                                 .keyboardType(.phonePad)

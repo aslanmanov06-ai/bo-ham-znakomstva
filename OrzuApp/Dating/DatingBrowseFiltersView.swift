@@ -31,15 +31,15 @@ struct DatingBrowseFiltersView: View {
             }
 
             Section {
-                optionalNumber(title: "От", unit: "лет", value: $filters.ageMin, range: DatingLimits.minAge...(filters.ageMax ?? DatingLimits.maxAge), defaultValue: 20)
-                optionalNumber(title: "До", unit: "лет", value: $filters.ageMax, range: (filters.ageMin ?? DatingLimits.minAge)...DatingLimits.maxAge, defaultValue: 35)
+                optionalNumber(title: String(localized: "От"), unit: String(localized: "лет"), value: $filters.ageMin, range: DatingLimits.minAge...(filters.ageMax ?? DatingLimits.maxAge), defaultValue: 20)
+                optionalNumber(title: String(localized: "До"), unit: String(localized: "лет"), value: $filters.ageMax, range: (filters.ageMin ?? DatingLimits.minAge)...DatingLimits.maxAge, defaultValue: 35)
             } header: {
                 Label("Возраст", systemImage: "person.2")
             }
 
             Section {
-                optionalNumber(title: "От", unit: "см", value: $filters.heightMin, range: DatingLimits.minHeightCm...(filters.heightMax ?? DatingLimits.maxHeightCm), defaultValue: 160)
-                optionalNumber(title: "До", unit: "см", value: $filters.heightMax, range: (filters.heightMin ?? DatingLimits.minHeightCm)...DatingLimits.maxHeightCm, defaultValue: 190)
+                optionalNumber(title: String(localized: "От"), unit: String(localized: "см"), value: $filters.heightMin, range: DatingLimits.minHeightCm...(filters.heightMax ?? DatingLimits.maxHeightCm), defaultValue: 160)
+                optionalNumber(title: String(localized: "До"), unit: String(localized: "см"), value: $filters.heightMax, range: (filters.heightMin ?? DatingLimits.minHeightCm)...DatingLimits.maxHeightCm, defaultValue: 190)
             } header: {
                 Label("Рост", systemImage: "ruler")
             }
@@ -63,7 +63,7 @@ struct DatingBrowseFiltersView: View {
                         Text(item.name).tag(String?.some(item.code))
                     }
                 }
-                multiSelect(items: catalog?.wantsChildren ?? [], selection: $filters.wantsChildren, title: "Хочет детей")
+                multiSelect(items: catalog?.wantsChildren ?? [], selection: $filters.wantsChildren, title: String(localized: "Хочет детей"))
             } header: {
                 Label("Дети", systemImage: "figure.and.child.holdinghands")
             }

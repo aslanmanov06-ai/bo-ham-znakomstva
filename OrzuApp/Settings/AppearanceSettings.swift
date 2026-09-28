@@ -10,9 +10,9 @@ final class AppearanceSettings: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .system: return "Как в системе"
-            case .light: return "Светлая"
-            case .dark: return "Тёмная"
+            case .system: return String(localized: "Как в системе")
+            case .light: return String(localized: "Светлая")
+            case .dark: return String(localized: "Тёмная")
             }
         }
         var colorScheme: ColorScheme? {
@@ -42,13 +42,13 @@ final class AppearanceSettings: ObservableObject {
         /// Для VoiceOver: rawValue — английские ключи для UserDefaults.
         var title: String {
             switch self {
-            case .garnet: return "Гранат"
-            case .blue: return "Синий"
-            case .green: return "Зелёный"
-            case .purple: return "Фиолетовый"
-            case .orange: return "Оранжевый"
-            case .pink: return "Розовый"
-            case .graphite: return "Графит"
+            case .garnet: return String(localized: "Гранат")
+            case .blue: return String(localized: "Синий")
+            case .green: return String(localized: "Зелёный")
+            case .purple: return String(localized: "Фиолетовый")
+            case .orange: return String(localized: "Оранжевый")
+            case .pink: return String(localized: "Розовый")
+            case .graphite: return String(localized: "Графит")
             }
         }
     }
@@ -60,10 +60,10 @@ final class AppearanceSettings: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .none: return "Без фона"
-            case .garnet: return "Гранат"
-            case .gold: return "Золото"
-            case .night: return "Ночь"
+            case .none: return String(localized: "Без фона")
+            case .garnet: return String(localized: "Гранат")
+            case .gold: return String(localized: "Золото")
+            case .night: return String(localized: "Ночь")
             }
         }
         /// Полупрозрачные градиенты поверх фирменного фона — читаются и в светлой, и в тёмной теме.
@@ -193,6 +193,71 @@ struct AppearanceView: View {
     }
 }
 
+// MARK: - Язык
+
+/// Язык интерфейса. Таджикского нет среди языков iOS, поэтому выбрать его можно только здесь: выбор
+/// записывается в AppleLanguages этого приложения (не всего телефона) и применяется при следующем запуске.
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case system, ru, tg, en
+
+    private static let chosenKey = "appLanguage"
+    private static let appleLanguagesKey = "AppleLanguages"
+
+    var id: String { rawValue }
+
+    /// Название — на самом языке: его узнают, даже если интерфейс сейчас на непонятном языке.
+    var title: String {
+        switch self {
+        case .system: return String(localized: "Как в системе")
+        case .ru: return "Русский"
+        case .tg: return "Тоҷикӣ"
+        case .en: return "English"
+        }
+    }
+
+    static var chosen: AppLanguage {
+        get { UserDefaults.standard.string(forKey: chosenKey).flatMap(AppLanguage.init(rawValue:)) ?? .system }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: chosenKey)
+            if newValue == .system {
+                UserDefaults.standard.removeObject(forKey: appleLanguagesKey)
+            } else {
+                UserDefaults.standard.set([newValue.rawValue], forKey: appleLanguagesKey)
+            }
+        }
+    }
+
+    /// Язык, на котором сейчас показан интерфейс, — на нём же просим у сервера тексты ошибок и справочники.
+    static var current: String {
+        Bundle.main.preferredLocalizations.first ?? "ru"
+    }
+}
+
+/// Строка «Язык» в настройках «Приложение».
+struct AppLanguagePicker: View {
+    @State private var language = AppLanguage.chosen
+    @State private var showRestartNote = false
+
+    var body: some View {
+        Picker(selection: $language) {
+            ForEach(AppLanguage.allCases) { option in
+                Text(option.title).tag(option)
+            }
+        } label: {
+            SettingsLabel(String(localized: "Язык"), systemImage: "globe", color: .brand)
+        }
+        .onChange(of: language) { _, value in
+            AppLanguage.chosen = value
+            showRestartNote = true
+        }
+        .alert("Язык сменится после перезапуска", isPresented: $showRestartNote) {
+            Button("Ок", role: .cancel) {}
+        } message: {
+            Text("Закройте приложение в переключателе приложений и откройте снова.")
+        }
+    }
+}
+
 // MARK: - Блокировка приложения
 
 /// Блокировка по Face ID, Touch ID или коду-паролю телефона. Настройка этого устройства: переписку и анкету
@@ -227,14 +292,14 @@ final class AppLock: ObservableObject {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
         case .opticID: return "Optic ID"
-        default: return "код-пароль"
+        default: return String(localized: "код-пароль")
         }
     }
 
     /// Включение подтверждается сразу: иначе можно включить блокировку, которую потом не снять.
     func setEnabled(_ enabled: Bool) async {
         if enabled {
-            guard await authenticate(reason: "Включить блокировку приложения") else { return }
+            guard await authenticate(reason: String(localized: "Включить блокировку приложения")) else { return }
         }
         isEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
@@ -248,7 +313,7 @@ final class AppLock: ObservableObject {
 
     func unlock() async {
         guard isLocked, !isAuthenticating else { return }
-        if await authenticate(reason: "Разблокировать приложение") {
+        if await authenticate(reason: String(localized: "Разблокировать приложение")) {
             isLocked = false
         }
     }
@@ -279,7 +344,7 @@ struct AppLockToggle: View {
     var body: some View {
         if appLock.isAvailable || appLock.isEnabled {
             Toggle(isOn: Binding(get: { appLock.isEnabled }, set: { value in Task { await appLock.setEnabled(value) } })) {
-                SettingsLabel("Блокировка: \(appLock.methodName)", systemImage: "lock.fill", color: .champagne)
+                SettingsLabel(String(localized: "Блокировка: \(appLock.methodName)"), systemImage: "lock.fill", color: .champagne)
             }
             .disabled(appLock.isAuthenticating)
         }

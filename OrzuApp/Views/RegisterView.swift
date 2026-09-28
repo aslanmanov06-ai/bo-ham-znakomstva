@@ -45,13 +45,13 @@ struct RegisterView: View {
                                     username = username.lowercased()
                                 }
                         }
-                        LabeledAppField(title: "Имя") {
+                        LabeledAppField(title: String(localized: "Имя")) {
                             TextField("Как к вам обращаться", text: $displayName)
                                 .textContentType(.givenName)
                         }
                         LabeledAppField(
-                            title: "Почта",
-                            hint: "Для входа и восстановления пароля. Никому не показывается.",
+                            title: String(localized: "Почта"),
+                            hint: String(localized: "Для входа и восстановления пароля. Никому не показывается."),
                             error: emailError
                         ) {
                             TextField("name@mail.ru", text: $email)
@@ -61,12 +61,12 @@ struct RegisterView: View {
                                 .autocorrectionDisabled()
                                 .onChange(of: email) { emailError = nil }
                         }
-                        LabeledAppField(title: "Телефон", hint: "Обязательно. Никому не показывается.") {
+                        LabeledAppField(title: String(localized: "Телефон"), hint: String(localized: "Обязательно. Никому не показывается.")) {
                             TextField("+992 90 123 45 67", text: $phone)
                                 .textContentType(.telephoneNumber)
                                 .keyboardType(.phonePad)
                         }
-                        LabeledAppField(title: "Пароль") {
+                        LabeledAppField(title: String(localized: "Пароль")) {
                             SecureField("Не меньше 8 символов", text: $password)
                                 .textContentType(.newPassword)
                         }

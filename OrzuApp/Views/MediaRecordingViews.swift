@@ -98,7 +98,7 @@ struct VideoNoteRecorderView: View {
                 } else if isCancelled {
                     dismiss()
                 } else {
-                    errorMessage = "Запись слишком короткая или не удалась — попробуйте ещё раз"
+                    errorMessage = String(localized: "Запись слишком короткая или не удалась — попробуйте ещё раз")
                 }
             }
             do {
