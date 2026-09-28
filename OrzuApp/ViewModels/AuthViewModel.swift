@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Foundation
 import Combine
 import UIKit
@@ -18,7 +19,7 @@ final class AuthViewModel: ObservableObject {
     @Published private(set) var isRestoringSession = false
     @Published var isLoading = false
     @Published var errorMessage: String?
-    /// Первый вход через Google: аккаунта ещё нет, показываем анкету.
+    /// Первый вход через Google или Apple: аккаунта ещё нет, показываем анкету.
     @Published var pendingGoogleRegistration: GoogleRegistration?
 
     var isAuthenticated: Bool { currentUser != nil }
@@ -118,6 +119,8 @@ final class AuthViewModel: ObservableObject {
         APIClient.shared.clearResponseCache()
         DatingBrowseViewModel.forgetFilters()
         MessageOutbox.shared.removeAll()
+        OwnSosAlertStore.alertId = nil
+        AppLock.shared.reset()
         Task { await AttachmentLoader.shared.removeAll() }
     }
 
@@ -154,19 +157,55 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    /// `email` — только если Google почту не передал; иначе код уходит на почту из Google.
+    /// Окно Apple уже закрылось с результатом (кнопку SignInWithAppleButton рисует система); nonce — тот, чей хеш
+    /// ушёл в запрос. Отмену пользователем ошибкой не считаем.
+    func signInWithApple(_ result: Result<ASAuthorization, Error>, nonce: String) async {
+        await run {
+            let authorization: ASAuthorization
+            switch result {
+            case .success(let value):
+                authorization = value
+            case .failure(let error as ASAuthorizationError) where error.code == .canceled:
+                return
+            case .failure(let error):
+                throw error
+            }
+            guard
+                let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let tokenData = credential.identityToken,
+                let identityToken = String(data: tokenData, encoding: .utf8)
+            else { throw APIError.invalidResponse }
+            let authorizationCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+            let fullName = credential.fullName
+                .map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
+                .flatMap { $0.isEmpty ? nil : $0 }
+
+            let response = try await APIClient.shared.appleSignIn(
+                identityToken: identityToken, authorizationCode: authorizationCode, nonce: nonce, fullName: fullName
+            )
+            switch response {
+            case .authenticated(let auth):
+                self.didAuthenticate(auth.user)
+            case .registrationRequired(var registration):
+                registration.provider = .apple
+                self.pendingGoogleRegistration = registration
+            }
+        }
+    }
+
+    /// `email` — только если Google или Apple почту не передали; иначе код уходит на их почту.
     func requestGoogleRegistrationCode(_ registration: GoogleRegistration, username: String, email: String?) async throws {
-        try await APIClient.shared.requestGoogleRegistrationCode(
-            registrationToken: registration.registrationToken, username: username, email: email
+        try await APIClient.shared.requestSocialRegistrationCode(
+            provider: registration.provider, registrationToken: registration.registrationToken, username: username, email: email
         )
     }
 
     func completeGoogleRegistration(
         _ registration: GoogleRegistration, username: String, displayName: String, email: String?, phone: String, code: String
     ) async throws {
-        let response = try await APIClient.shared.completeGoogleRegistration(
-            registrationToken: registration.registrationToken, username: username, displayName: displayName,
-            email: email, phone: phone, code: code
+        let response = try await APIClient.shared.completeSocialRegistration(
+            provider: registration.provider, registrationToken: registration.registrationToken, username: username,
+            displayName: displayName, email: email, phone: phone, code: code
         )
         pendingGoogleRegistration = nil
         didAuthenticate(response.user)

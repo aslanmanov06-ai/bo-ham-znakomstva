@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Анкета после первого входа через Google: аккаунта ещё нет — выбрать username и имя, подтвердить почту кодом.
-/// Код уходит на почту из Google; свою почту человек вводит, только если Google её не передал.
+/// Анкета после первого входа через Google или Apple: аккаунта ещё нет — выбрать username и имя, подтвердить почту кодом.
+/// Код уходит на почту из Google/Apple; свою почту человек вводит, только если её не передали.
 struct GoogleRegistrationView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @ObservedObject private var appStatus = AppStatus.shared
@@ -33,7 +33,7 @@ struct GoogleRegistrationView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Почти готово")
                                 .font(.display(size: 22))
-                            Text("Подтвердите почту из Google — пришлём на неё код. Это защищает аккаунт от чужих входов.")
+                            Text("Подтвердите почту из \(registration.provider.title) — пришлём на неё код. Это защищает аккаунт от чужих входов.")
                                 .font(.app(.subheadline))
                                 .foregroundStyle(.secondary)
                         }
@@ -43,7 +43,7 @@ struct GoogleRegistrationView: View {
                         if let googleEmail = registration.profile.email {
                             googleEmailCard(googleEmail)
                         } else {
-                            LabeledAppField(title: "Почта", hint: "Google не передал почту — укажите её, на неё придёт код.", error: emailError) {
+                            LabeledAppField(title: "Почта", hint: "\(registration.provider.title) не передал почту — укажите её, на неё придёт код.", error: emailError) {
                                 TextField("name@mail.ru", text: $typedEmail)
                                     .textContentType(.emailAddress)
                                     .keyboardType(.emailAddress)
@@ -137,7 +137,7 @@ struct GoogleRegistrationView: View {
                 .frame(width: 38, height: 38)
                 .background(Color.champagneSoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text("Почта из Google")
+                Text("Почта из \(registration.provider.title)")
                     .font(.app(.caption))
                     .foregroundStyle(.secondary)
                 Text(email)

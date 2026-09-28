@@ -93,19 +93,34 @@ actor APIClient {
         return response
     }
 
-    /// Код уходит на почту из Google; `email` сервер учитывает, только если Google почту не передал.
-    func requestGoogleRegistrationCode(registrationToken: String, username: String, email: String?) async throws {
-        var body = ["registrationToken": registrationToken, "username": username]
-        body["email"] = email
-        let _: EmptyResponse = try await request(path: "/auth/google/register/code", method: "POST", body: body, authorized: false)
+    /// Сервер проверяет подпись identityToken у Apple и что его nonce — SHA-256 от нашего `nonce`.
+    /// fullName Apple отдаёт только при самом первом входе — сервер сохраняет его для анкеты.
+    func appleSignIn(identityToken: String, authorizationCode: String?, nonce: String, fullName: String?) async throws -> GoogleSignInResponse {
+        var body = ["identityToken": identityToken, "nonce": nonce]
+        body["authorizationCode"] = authorizationCode
+        body["fullName"] = fullName
+        let response: GoogleSignInResponse = try await request(path: "/auth/apple", method: "POST", body: body, authorized: false)
+        if case .authenticated(let auth) = response {
+            TokenStore.shared.save(tokens: auth.tokens)
+        }
+        return response
     }
 
-    func completeGoogleRegistration(
-        registrationToken: String, username: String, displayName: String, email: String?, phone: String, code: String
+    /// Код уходит на почту из Google или Apple; `email` сервер учитывает, только если почту не передали.
+    func requestSocialRegistrationCode(provider: SocialAuthProvider, registrationToken: String, username: String, email: String?) async throws {
+        var body = ["registrationToken": registrationToken, "username": username]
+        body["email"] = email
+        let path = "/auth/\(provider.rawValue)/register/code"
+        let _: EmptyResponse = try await request(path: path, method: "POST", body: body, authorized: false)
+    }
+
+    func completeSocialRegistration(
+        provider: SocialAuthProvider, registrationToken: String, username: String, displayName: String, email: String?, phone: String, code: String
     ) async throws -> AuthResponse {
         var body = ["registrationToken": registrationToken, "username": username, "displayName": displayName, "phone": phone, "code": code]
         body["email"] = email
-        let response: AuthResponse = try await request(path: "/auth/google/register", method: "POST", body: body, authorized: false)
+        let path = "/auth/\(provider.rawValue)/register"
+        let response: AuthResponse = try await request(path: path, method: "POST", body: body, authorized: false)
         TokenStore.shared.save(tokens: response.tokens)
         return response
     }

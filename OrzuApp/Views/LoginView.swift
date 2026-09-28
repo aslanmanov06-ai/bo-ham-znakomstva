@@ -1,3 +1,5 @@
+import AuthenticationServices
+import CryptoKit
 import SwiftUI
 
 struct LoginView: View {
@@ -10,6 +12,10 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showRegister = false
     @State private var showPasswordReset = false
+    /// Одноразовое случайное значение входа через Apple: в запрос уходит его SHA-256, на сервер — оно само.
+    /// Так перехваченный identityToken нельзя подсунуть серверу повторно.
+    @State private var appleNonce = ""
+    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var focusedField: Field?
 
     var body: some View {
@@ -102,6 +108,19 @@ struct LoginView: View {
                 .disabled(!canLogin)
                 .padding(.top, 4)
 
+                SignInWithAppleButton(.signIn) { request in
+                    appleNonce = Self.makeNonce()
+                    request.requestedScopes = [.fullName, .email]
+                    request.nonce = Self.sha256(appleNonce)
+                } onCompletion: { result in
+                    let nonce = appleNonce
+                    Task { await authViewModel.signInWithApple(result, nonce: nonce) }
+                }
+                .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                .frame(height: AppMetrics.buttonHeight)
+                .clipShape(Capsule())
+                .disabled(authViewModel.isLoading)
+
                 if GoogleAuth.isEnabled {
                     Button {
                         Task { await authViewModel.signInWithGoogle() }
@@ -124,6 +143,16 @@ struct LoginView: View {
                 .font(.app(.footnote))
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private static func makeNonce() -> String {
+        // UInt8.random берёт байты из SystemRandomNumberGenerator — криптостойкого генератора системы.
+        let bytes = (0..<32).map { _ in UInt8.random(in: .min ... .max) }
+        return Data(bytes).base64EncodedString()
+    }
+
+    private static func sha256(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 
     private var canLogin: Bool {

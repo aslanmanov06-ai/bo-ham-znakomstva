@@ -10,7 +10,20 @@ struct AuthResponse: Codable {
     let tokens: AuthTokens
 }
 
-/// Ответ POST /auth/google: либо вход выполнен, либо аккаунта ещё нет и нужно заполнить анкету.
+/// Через кого пришёл первый вход: от этого зависят адреса регистрации (/auth/google/… или /auth/apple/…)
+/// и подписи в анкете. Ответы у обоих одинаковые, поэтому типы общие.
+enum SocialAuthProvider: String {
+    case google, apple
+
+    var title: String {
+        switch self {
+        case .google: return "Google"
+        case .apple: return "Apple"
+        }
+    }
+}
+
+/// Ответ POST /auth/google и /auth/apple: либо вход выполнен, либо аккаунта ещё нет и нужно заполнить анкету.
 enum GoogleSignInResponse: Decodable {
     case authenticated(AuthResponse)
     case registrationRequired(GoogleRegistration)
@@ -28,7 +41,7 @@ enum GoogleSignInResponse: Decodable {
     }
 }
 
-/// «Пропуск» на регистрацию после первого входа через Google (живёт 30 минут) и данные для анкеты.
+/// «Пропуск» на регистрацию после первого входа через Google или Apple (живёт 30 минут) и данные для анкеты.
 struct GoogleRegistration: Decodable, Identifiable {
     struct Profile: Decodable {
         let email: String?
@@ -37,6 +50,12 @@ struct GoogleRegistration: Decodable, Identifiable {
 
     let registrationToken: String
     let profile: Profile
+    /// Сервер его не присылает — проставляет тот, кто запрашивал вход.
+    var provider: SocialAuthProvider = .google
+
+    private enum CodingKeys: String, CodingKey {
+        case registrationToken, profile
+    }
 
     var id: String { registrationToken }
 
