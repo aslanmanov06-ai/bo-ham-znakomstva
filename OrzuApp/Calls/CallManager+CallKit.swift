@@ -23,7 +23,8 @@ extension CallManager: CXProviderDelegate {
 
     nonisolated func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
         MainActor.assumeIsolated {
-            Task {
+            // Замыкание вернуло бы Task как результат assumeIsolated — он не нужен.
+            _ = Task {
                 if await performAnswer() {
                     action.fulfill()
                 } else {
