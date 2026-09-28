@@ -20,6 +20,7 @@ struct DatingProfileDetailView: View {
     @State private var blockError: String?
     @State private var confirmBlock = false
     @State private var photoIndex = 0
+    @State private var playbackError: String?
 
     private let heroHeight: CGFloat = 520
 
@@ -27,6 +28,10 @@ struct DatingProfileDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 hero
+                if let activity = profile.activityStatus {
+                    ActivityChip(activity: activity)
+                        .padding(.horizontal, 4)
+                }
                 if let compatibility {
                     compatibilityCard(compatibility)
                 }
@@ -35,6 +40,18 @@ struct DatingProfileDetailView: View {
                         Text(profile.bio)
                             .font(.app(.body))
                             .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                ForEach(answeredPrompts, id: \.self) { item in
+                    card(item.question, systemImage: "text.bubble") {
+                        Text(item.answer)
+                            .font(.app(.body))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                if let voice = profile.voiceAttachment {
+                    card(String(localized: "Голосовое приветствие"), systemImage: "waveform") {
+                        VoiceMessageView(attachment: voice, isMine: false) { playbackError = $0 }
                     }
                 }
                 if let videoId = profile.videoId {
@@ -83,6 +100,19 @@ struct DatingProfileDetailView: View {
             Button("Ок") { blockError = nil }
         } message: {
             Text(blockError ?? "")
+        }
+        .alert("Ошибка", isPresented: .constant(playbackError != nil)) {
+            Button("Ок") { playbackError = nil }
+        } message: {
+            Text(playbackError ?? "")
+        }
+    }
+
+    /// Вопрос — из каталога (на языке интерфейса), ответ — как написал человек. Без каталога вопрос не показать.
+    private var answeredPrompts: [AnsweredPrompt] {
+        (profile.prompts ?? []).compactMap { item in
+            guard item.status != .rejected, !item.answer.isEmpty, let question = catalog?.prompt(item.code)?.text else { return nil }
+            return AnsweredPrompt(question: question, answer: item.answer)
         }
     }
 
@@ -361,4 +391,9 @@ struct FlowLayout: Layout {
             rowHeight = max(rowHeight, size.height)
         }
     }
+}
+
+private struct AnsweredPrompt: Hashable {
+    let question: String
+    let answer: String
 }

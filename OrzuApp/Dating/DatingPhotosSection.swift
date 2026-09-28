@@ -12,6 +12,7 @@ struct DatingPhotosSection: View {
     @State private var videoItem: PhotosPickerItem?
     @State private var isUploading = false
     @State private var errorMessage: String?
+    @StateObject private var voiceRecorder = VoiceRecorder()
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
     private let photoAspectRatio: CGFloat = 3 / 4
@@ -32,7 +33,13 @@ struct DatingPhotosSection: View {
             }
             .animation(DatingStyle.spring, value: photos)
             videoRow
+            voiceRow
         }
+        .onChange(of: voiceRecorder.elapsed) { _, elapsed in
+            // Упёрлись в лимит — сохраняем то, что успели сказать.
+            if elapsed >= TimeInterval(DatingLimits.maxVoiceIntroSec) { finishVoice() }
+        }
+        .onDisappear { voiceRecorder.cancel() }
         .onChange(of: photoItems) { _, items in
             guard !items.isEmpty else { return }
             addPhotos(items)
@@ -173,6 +180,78 @@ struct DatingPhotosSection: View {
         }
     }
 
+    /// Строка появляется, только если сервер умеет голосовое приветствие (прислал ключ voice).
+    @ViewBuilder
+    private var voiceRow: some View {
+        if let profile = dating.profile, profile.supportsVoice {
+            if let voice = profile.voice {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        rowIcon("waveform")
+                        Text(voiceStatusText(voice))
+                            .font(.app(.subheadline))
+                        Spacer()
+                        Button("Удалить", role: .destructive) { removeVoice() }
+                            .font(.app(.subheadline))
+                            .buttonStyle(.borderless)
+                    }
+                    VoiceMessageView(
+                        attachment: Attachment(
+                            id: voice.attachmentId, kind: .voice, mimeType: "audio/mp4", fileName: "voice.m4a", size: 0,
+                            durationSec: profile.shared.voiceDurationSec
+                        ),
+                        isMine: false
+                    ) { errorMessage = $0 }
+                }
+            } else if voiceRecorder.isRecording {
+                HStack(spacing: 12) {
+                    rowIcon("mic.fill", tint: .red)
+                    Text("Запись · \(Attachment.formattedDuration(Int(voiceRecorder.elapsed))) из \(Attachment.formattedDuration(DatingLimits.maxVoiceIntroSec))")
+                        .font(.app(.subheadline).monospacedDigit())
+                    Spacer()
+                    Button("Отмена") { voiceRecorder.cancel() }
+                        .font(.app(.subheadline))
+                        .buttonStyle(.borderless)
+                    Button("Готово") { finishVoice() }
+                        .font(.app(.subheadline, weight: .semibold))
+                        .buttonStyle(.borderless)
+                }
+            } else {
+                Button(action: startVoice) {
+                    HStack(spacing: 12) {
+                        rowIcon("mic.badge.plus")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Добавить голосовое приветствие")
+                                .font(.app(.subheadline, weight: .semibold))
+                                .foregroundStyle(.primary)
+                            Text("До \(DatingLimits.maxVoiceIntroSec) секунд — скажите пару слов своим голосом")
+                                .font(.app(.caption))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(isUploading)
+            }
+        }
+    }
+
+    private func rowIcon(_ systemImage: String, tint: Color = DatingStyle.rose) -> some View {
+        Image(systemName: systemImage)
+            .foregroundStyle(tint)
+            .frame(width: 36, height: 36)
+            .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func voiceStatusText(_ voice: DatingPhoto) -> String {
+        switch voice.status {
+        case .pending: return String(localized: "Голосовое на проверке")
+        case .approved: return String(localized: "Голосовое опубликовано")
+        case .rejected: return voice.rejectReason ?? String(localized: "Голосовое отклонено")
+        }
+    }
+
     private func videoStatusText(_ video: DatingPhoto) -> String {
         switch video.status {
         case .pending: return String(localized: "Видео на проверке")
@@ -270,6 +349,52 @@ struct DatingPhotosSection: View {
                     durationSec: video.durationSec
                 )
                 dating.apply(try await APIClient.shared.setDatingVideo(attachmentId: attachment.id))
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func startVoice() {
+        Task {
+            do {
+                VoicePlayer.shared.stop()
+                try await voiceRecorder.start()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func finishVoice() {
+        guard let recording = voiceRecorder.finish() else { return }
+        isUploading = true
+        Task {
+            defer {
+                isUploading = false
+                try? FileManager.default.removeItem(at: recording.fileURL)
+            }
+            do {
+                let data = try Data(contentsOf: recording.fileURL)
+                let attachment = try await APIClient.shared.uploadAttachment(
+                    data: data,
+                    fileName: recording.fileURL.lastPathComponent,
+                    mimeType: recording.mimeType,
+                    mediaKind: .voice,
+                    durationSec: min(recording.durationSec, DatingLimits.maxVoiceIntroSec)
+                )
+                dating.apply(try await APIClient.shared.setDatingVoice(attachmentId: attachment.id))
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func removeVoice() {
+        VoicePlayer.shared.stop()
+        Task {
+            do {
+                dating.apply(try await APIClient.shared.removeDatingVoice())
             } catch {
                 errorMessage = error.localizedDescription
             }

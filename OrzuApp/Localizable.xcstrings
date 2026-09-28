@@ -1161,6 +1161,38 @@
         }
       }
     },
+    "Был(а) на этой неделе" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active this week"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар ҳамин ҳафта ворид шуда буд"
+          }
+        }
+      }
+    },
+    "Был(а) сегодня" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active today"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз ворид шуда буд"
+          }
+        }
+      }
+    },
     "В анкете должно остаться хотя бы одно фото" : {
       "localizations" : {
         "en" : {
@@ -1253,6 +1285,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Дар оила барои ман муҳим аст…"
+          }
+        }
+      }
+    },
+    "В сети" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Online"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар шабака"
           }
         }
       }
@@ -1461,6 +1509,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ақаллан %lld аломат ворид кунед"
+          }
+        }
+      }
+    },
+    "Вернуть предыдущую анкету" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring back the previous profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаи қаблиро баргардонидан"
           }
         }
       }
@@ -1877,6 +1941,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Савол ба чат фиристода шуд"
+          }
+        }
+      }
+    },
+    "Вопросы о вас" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questions about you"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саволҳо дар бораи шумо"
           }
         }
       }
@@ -2553,6 +2633,70 @@
         }
       }
     },
+    "Голосовое на проверке" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice greeting under review"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саломи овозӣ дар санҷиш"
+          }
+        }
+      }
+    },
+    "Голосовое опубликовано" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice greeting published"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саломи овозӣ нашр шуд"
+          }
+        }
+      }
+    },
+    "Голосовое отклонено" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice greeting rejected"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саломи овозӣ рад шуд"
+          }
+        }
+      }
+    },
+    "Голосовое приветствие" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice greeting"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саломи овозӣ"
+          }
+        }
+      }
+    },
     "Голосовое сообщение" : {
       "localizations" : {
         "en" : {
@@ -2777,6 +2921,38 @@
         }
       }
     },
+    "До %lld секунд — скажите пару слов своим голосом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to %lld seconds — say a few words in your own voice"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "То %lld сония — бо овози худ чанд сухан гӯед"
+          }
+        }
+      }
+    },
+    "До трёх вопросов с ответами — с них проще начать разговор." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to three questions with answers — they make it easier to start a conversation."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "То се савол бо ҷавоб — бо онҳо оғози суҳбат осонтар аст."
+          }
+        }
+      }
+    },
     "Добавить видео о себе" : {
       "localizations" : {
         "en" : {
@@ -2789,6 +2965,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Видео дар бораи худ илова кунед"
+          }
+        }
+      }
+    },
+    "Добавить вопрос" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a question"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Илова кардани савол"
+          }
+        }
+      }
+    },
+    "Добавить голосовое приветствие" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a voice greeting"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Илова кардани саломи овозӣ"
           }
         }
       }
@@ -3109,6 +3317,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Агар шуморо ранҷонданд — шикоят кунед, модератор мукотибаро мебинад."
+          }
+        }
+      }
+    },
+    "Если выключить, другие не увидят, что вы в сети или заходили сегодня." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If turned off, others won't see that you're online or were here today."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Агар хомӯш кунед, дигарон намебинанд, ки шумо дар шабака ҳастед ё имрӯз ворид шуда будед."
           }
         }
       }
@@ -3541,6 +3765,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Сабти паёми овозӣ"
+          }
+        }
+      }
+    },
+    "Запись · %@ из %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording · %@ of %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сабт · %@ аз %@"
           }
         }
       }
@@ -4005,6 +4245,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Вагарна танҳо «Бо Хам · Паёми нав»"
+          }
+        }
+      }
+    },
+    "Инкогнито" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incognito"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Инкогнито"
+          }
+        }
+      }
+    },
+    "Инкогнито: анкету видят только те, кого вы лайкнули. Новых людей, которые сами найдут вас, станет меньше." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incognito: only people you liked can see your profile. Fewer new people will find you on their own."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Инкогнито: анкетаро танҳо касоне мебинанд, ки шумо лайк кардед. Одамони наве, ки худашон шуморо меёбанд, камтар мешаванд."
           }
         }
       }
@@ -6665,6 +6937,22 @@
         }
       }
     },
+    "Ответ на проверке" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer under review"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавоб дар санҷиш"
+          }
+        }
+      }
+    },
     "Ответ на сообщение %@: %@" : {
       "localizations" : {
         "en" : {
@@ -6677,6 +6965,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ҷавоб ба паёми %@: %@"
+          }
+        }
+      }
+    },
+    "Ответ отклонён" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer rejected"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавоб рад шуд"
           }
         }
       }
@@ -8613,6 +8917,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Масофа то анкетаҳоро нишон додан"
+          }
+        }
+      }
+    },
+    "Показывать, когда я в сети" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show when I'm online"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нишон додан, ки ман дар шабакаам"
           }
         }
       }
@@ -10901,6 +11221,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Нест кардан"
+          }
+        }
+      }
+    },
+    "Убрать вопрос" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove question"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Хориҷ кардани савол"
           }
         }
       }

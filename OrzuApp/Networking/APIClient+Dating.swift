@@ -68,6 +68,15 @@ extension APIClient {
         try await request(path: "/dating/profile/me/video", method: "DELETE", body: nil as String?, authorized: true)
     }
 
+    /// Голосовое приветствие (до 30 секунд), как видео — проходит модерацию.
+    func setDatingVoice(attachmentId: String) async throws -> MyDatingProfile {
+        try await request(path: "/dating/profile/me/voice", method: "PUT", body: ["attachmentId": attachmentId], authorized: true)
+    }
+
+    func removeDatingVoice() async throws -> MyDatingProfile {
+        try await request(path: "/dating/profile/me/voice", method: "DELETE", body: nil as String?, authorized: true)
+    }
+
     /// Своя анкета глазами других — предпросмотр перед публикацией.
     func fetchMyDatingPreview() async throws -> DatingProfilePublic {
         try await request(path: "/dating/profiles/me/preview", method: "GET", body: nil as String?, authorized: true)
@@ -142,6 +151,19 @@ extension APIClient {
     func swipe(userId: String, action: SwipeAction) async throws -> SwipeResult {
         let body = SwipeBody(userId: userId, action: action)
         return try await request(path: "/dating/swipes", method: "POST", body: body, authorized: true)
+    }
+
+    /// Отменить последний свайп: сервер разрешает, пока из него не получилась пара и не вышло время и дневной лимит.
+    func undoLastSwipe() async throws -> UndoSwipeResult {
+        try await request(path: "/dating/swipes/undo", method: "POST", body: nil as String?, authorized: true)
+    }
+
+    /// Готовые первые фразы по общим интересам — подсказки для первого сообщения.
+    func fetchIcebreakers(userId: String) async throws -> [String] {
+        let response: IcebreakersResponse = try await request(
+            path: "/dating/icebreakers?userId=\(Self.encodeQueryValue(userId))", method: "GET", body: nil as String?, authorized: true
+        )
+        return response.items
     }
 
     // MARK: - Пары
@@ -362,4 +384,21 @@ private struct ReportBody: Encodable {
     let category: ReportCategory
     let comment: String?
     let messageId: String?
+}
+
+/// Сервер может отдать ледоколы и списком, и объектом { icebreakers: [...] } — разбираем оба варианта.
+private struct IcebreakersResponse: Decodable {
+    let items: [String]
+
+    private enum CodingKeys: String, CodingKey {
+        case icebreakers
+    }
+
+    init(from decoder: Decoder) throws {
+        if let list = try? decoder.singleValueContainer().decode([String].self) {
+            items = list
+        } else {
+            items = try decoder.container(keyedBy: CodingKeys.self).decode([String].self, forKey: .icebreakers)
+        }
+    }
 }

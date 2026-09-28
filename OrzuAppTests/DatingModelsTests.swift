@@ -252,4 +252,95 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertEqual(LikedMeBanner.peopleCount(12), "12 человек")
         XCTAssertEqual(LikedMeBanner.peopleCount(22), "22 человека")
     }
+
+    // MARK: - Новые поля анкеты: старый сервер их не присылает, и разбор не должен ломаться
+
+    private func publicProfile(_ extra: String = "") -> Data {
+        Data("""
+        {"userId":"u2","displayName":"Нигина","age":28,"gender":"FEMALE","countryCode":"TJ","cityCode":"khujand",
+         "heightCm":null,"bio":"","interests":[],"education":null,"profession":null,"relationshipGoal":null,
+         "maritalStatus":null,"children":null,"wantsChildren":null,"smoking":null,"alcohol":null,"sport":null,
+         "cuisines":[],"hobbies":[],"photoIds":[],"videoId":null,"verified":true,"distanceKm":null\(extra)}
+        """.utf8)
+    }
+
+    func testOldServerProfileHasNoNewFeatures() throws {
+        let profile = try decoder().decode(DatingProfilePublic.self, from: publicProfile())
+
+        XCTAssertNil(profile.prompts)
+        XCTAssertNil(profile.voiceAttachment)
+        XCTAssertNil(profile.activityStatus)
+    }
+
+    func testDecodesPromptsVoiceAndActivity() throws {
+        let extra = #","prompts":[{"code":"weekend","answer":"Горы"}],"voiceId":"v1","voiceDurationSec":12,"activity":"online""#
+        let profile = try decoder().decode(DatingProfilePublic.self, from: publicProfile(extra))
+
+        XCTAssertEqual(profile.prompts?.first?.answer, "Горы")
+        XCTAssertEqual(profile.voiceAttachment?.id, "v1")
+        XCTAssertEqual(profile.voiceAttachment?.durationSec, 12)
+        XCTAssertEqual(profile.voiceAttachment?.kind, .voice)
+        XCTAssertEqual(profile.activityStatus, .online)
+    }
+
+    /// Новое значение активности на сервере не должно ломать разбор всей анкеты.
+    func testUnknownActivityIsIgnored() throws {
+        let profile = try decoder().decode(DatingProfilePublic.self, from: publicProfile(#","activity":"month""#))
+
+        XCTAssertNil(profile.activityStatus)
+    }
+
+    /// Строку «Голосовое приветствие» показываем, только если сервер прислал ключ voice, пусть и null.
+    func testVoiceSupportFollowsServerKey() throws {
+        func mine(_ voice: String) -> Data {
+            Data("""
+            {"profile":{"userId":"u1","displayName":"Тимур","age":30,"gender":"MALE","countryCode":"TJ","cityCode":"dushanbe",
+             "heightCm":null,"bio":"","interests":[],"education":null,"profession":null,"relationshipGoal":null,
+             "maritalStatus":null,"children":null,"wantsChildren":null,"smoking":null,"alcohol":null,"sport":null,
+             "cuisines":[],"hobbies":[],"photoIds":[],"videoId":null,"verified":false,"distanceKm":null,
+             "photos":[],"video":null,"inCouple":false,"birthDate":"1996-04-12","hidden":false,"visibleToOthers":false,
+             "visibilityIssues":[],"needsReverification":false,"hasLocation":false\(voice)},"completeness":null}
+            """.utf8)
+        }
+
+        let old = try XCTUnwrap(decoder().decode(MyDatingProfile.self, from: mine("")).profile)
+        XCTAssertFalse(old.supportsVoice)
+
+        let empty = try XCTUnwrap(decoder().decode(MyDatingProfile.self, from: mine(#","voice":null"#)).profile)
+        XCTAssertTrue(empty.supportsVoice)
+        XCTAssertNil(empty.voice)
+
+        let pending = try XCTUnwrap(decoder().decode(MyDatingProfile.self, from: mine(#","voice":{"attachmentId":"v1","status":"PENDING","rejectReason":null}"#)).profile)
+        XCTAssertEqual(pending.voice?.status, .pending)
+    }
+
+    /// На сервер уходят только вопрос и ответ; без prompts в обновлении ключа нет вовсе — старый сервер его бы отклонил.
+    func testProfileUpdateSendsPromptsOnlyWhenSet() throws {
+        var update = DatingProfileUpdate()
+        update.bio = "Привет"
+        let withoutPrompts = try JSONSerialization.jsonObject(with: JSONEncoder().encode(update)) as? [String: Any]
+        XCTAssertNil(withoutPrompts?["prompts"])
+
+        var answer = ProfilePromptAnswer(code: "weekend", answer: "Горы")
+        answer.status = .approved
+        update.prompts = [answer]
+        let withPrompts = try JSONSerialization.jsonObject(with: JSONEncoder().encode(update)) as? [String: Any]
+        let sent = try XCTUnwrap(withPrompts?["prompts"] as? [[String: Any]])
+        XCTAssertEqual(sent.first?["code"] as? String, "weekend")
+        XCTAssertEqual(sent.first?["answer"] as? String, "Горы")
+        XCTAssertNil(sent.first?["status"])
+    }
+
+    /// Отмена свайпа и настройки инкогнито — только если сервер их прислал; иначе в PATCH их нет.
+    func testUndoAndIncognitoAreOptional() throws {
+        let limits = try decoder().decode(DailyLimits.self, from: Data(
+            #"{"likesPerDay":7,"likesLeft":6,"introsPerDay":5,"introsLeft":5,"resetsAt":"2026-09-20T19:00:00.000Z"}"#.utf8
+        ))
+        XCTAssertNil(limits.undoLeft)
+
+        let settings = try decoder().decode(DatingSearchSettings.self, from: Data(#"{"lookingFor":"FEMALE"}"#.utf8))
+        XCTAssertNil(settings.incognito)
+        let body = try JSONSerialization.jsonObject(with: JSONEncoder().encode(settings)) as? [String: Any]
+        XCTAssertEqual(body?.count, 1)
+    }
 }

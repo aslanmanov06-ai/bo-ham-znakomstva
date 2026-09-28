@@ -173,12 +173,32 @@ struct MyProfileView: View {
                     SettingsLabel(String(localized: "Скрыть анкету"), systemImage: "eye.slash.fill", color: .champagne)
                 }
                 .tint(DatingStyle.rose)
+                if let incognito = dating.incognito {
+                    Toggle(isOn: Binding(get: { incognito }, set: saveIncognito)) {
+                        SettingsLabel(String(localized: "Инкогнито"), systemImage: "theatermasks.fill", color: .brand)
+                    }
+                    .tint(DatingStyle.rose)
+                }
+                if let showActivity = dating.showActivity {
+                    Toggle(isOn: Binding(get: { showActivity }, set: saveShowActivity)) {
+                        SettingsLabel(String(localized: "Показывать, когда я в сети"), systemImage: "clock.fill", color: .champagne)
+                    }
+                    .tint(DatingStyle.rose)
+                }
             }
         } header: {
             Text("Знакомства")
         } footer: {
             if dating.stage == .ready {
-                Text("Расстояние видно только тем, у кого оно тоже включено. Точное место не хранится — только район около километра. Скрытую анкету не видят в ленте, а чаты и пары остаются.")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Расстояние видно только тем, у кого оно тоже включено. Точное место не хранится — только район около километра. Скрытую анкету не видят в ленте, а чаты и пары остаются.")
+                    if dating.incognito != nil {
+                        Text("Инкогнито: анкету видят только те, кого вы лайкнули. Новых людей, которые сами найдут вас, станет меньше.")
+                    }
+                    if dating.showActivity != nil {
+                        Text("Если выключить, другие не увидят, что вы в сети или заходили сегодня.")
+                    }
+                }
             }
         }
         .tint(.primary)
@@ -252,6 +272,26 @@ struct MyProfileView: View {
         Task {
             do {
                 try await dating.setShowsDistance(enabled)
+            } catch {
+                datingSettingsError = error.localizedDescription
+            }
+        }
+    }
+
+    private func saveIncognito(_ enabled: Bool) {
+        Task {
+            do {
+                try await dating.setIncognito(enabled)
+            } catch {
+                datingSettingsError = error.localizedDescription
+            }
+        }
+    }
+
+    private func saveShowActivity(_ enabled: Bool) {
+        Task {
+            do {
+                try await dating.setShowActivity(enabled)
             } catch {
                 datingSettingsError = error.localizedDescription
             }

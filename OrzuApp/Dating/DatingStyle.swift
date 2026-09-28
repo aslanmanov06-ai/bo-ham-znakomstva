@@ -55,6 +55,36 @@ struct DatingChip: View {
     }
 }
 
+/// «В сети» с зелёной точкой, «Был(а) сегодня» — без неё: так живых людей в ленте видно сразу.
+struct ActivityChip: View {
+    let activity: DatingActivity
+    var onPhoto = false
+
+    var body: some View {
+        HStack(spacing: 5) {
+            if activity == .online {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 7, height: 7)
+            }
+            Text(activity.title)
+                .lineLimit(1)
+        }
+        .font(.app(.footnote, weight: .semibold))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .foregroundStyle(onPhoto ? Color.white : Color.secondary)
+        .background {
+            if onPhoto {
+                Capsule().fill(.ultraThinMaterial)
+                Capsule().fill(.white.opacity(0.12))
+            } else {
+                Capsule().fill(Color.secondary.opacity(0.12))
+            }
+        }
+    }
+}
+
 /// Процент совместимости кольцом: дуга дорисовывается при появлении, так число «читается» быстрее цифры.
 struct CompatibilityRing: View {
     let score: Int

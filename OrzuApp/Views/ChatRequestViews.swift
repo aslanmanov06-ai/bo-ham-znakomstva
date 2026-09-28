@@ -13,6 +13,8 @@ struct PendingChatView: View {
     /// Уже отправленное и ждущее ответа — второй запрос тому же человеку сервер не примет.
     @State private var sent: (text: String, isIntro: Bool)?
     @State private var showCard = false
+    /// Готовые первые фразы по общим интересам. Пусто — сервер их не умеет или общего не нашлось.
+    @State private var icebreakers: [String] = []
 
     private let maxLength = 500
 
@@ -60,7 +62,10 @@ struct PendingChatView: View {
         .sheet(isPresented: $showCard) {
             NavigationStack { PersonCardView(user: user) }
         }
-        .task { await loadSentRequest() }
+        .task {
+            await loadSentRequest()
+            icebreakers = (try? await APIClient.shared.fetchIcebreakers(userId: user.id)) ?? []
+        }
         .alert("Не отправлено", isPresented: .constant(errorMessage != nil)) {
             Button("Ок") { errorMessage = nil }
         } message: {
@@ -69,6 +74,42 @@ struct PendingChatView: View {
     }
 
     private var composer: some View {
+        VStack(spacing: 0) {
+            if text.isEmpty && !icebreakers.isEmpty {
+                icebreakerChips
+            }
+            composerField
+        }
+    }
+
+    /// Нажатие вставляет фразу в поле — её можно поправить перед отправкой.
+    private var icebreakerChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(icebreakers, id: \.self) { phrase in
+                    Button {
+                        text = phrase
+                    } label: {
+                        Text(phrase)
+                            .font(.app(.footnote, weight: .medium))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: 240, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+        }
+        .background(.bar)
+    }
+
+    private var composerField: some View {
         HStack(alignment: .bottom, spacing: 8) {
             TextField("Сообщение", text: $text, axis: .vertical)
                 .lineLimit(1...6)

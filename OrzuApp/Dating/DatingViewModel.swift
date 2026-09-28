@@ -28,6 +28,9 @@ final class DatingViewModel: ObservableObject {
     @Published private(set) var verification: VerificationStatus?
     /// Кого ищет человек (код пола). По нему подбирается лента и заполняется сетка анкет.
     @Published private(set) var lookingFor: String?
+    /// Инкогнито и показ активности. nil — сервер не знает этих настроек, переключатели скрыты.
+    @Published private(set) var incognito: Bool?
+    @Published private(set) var showActivity: Bool?
     @Published var errorMessage: String?
     /// Растёт после смены «Кого ищу» или расстояния в «Моём профиле» — лента и сетка анкет перезагружаются.
     @Published private(set) var searchSettingsRevision = 0
@@ -115,13 +118,33 @@ final class DatingViewModel: ObservableObject {
     /// Нужно только настройкам, поэтому грузится оттуда: сбой не должен закрывать вкладки знакомств.
     /// Без анкеты сервер его не отдаёт.
     func loadLookingFor() async throws {
-        lookingFor = try await APIClient.shared.fetchSearchSettings().lookingFor
+        applySearchSettings(try await APIClient.shared.fetchSearchSettings())
+    }
+
+    /// Ошибку показывает экран с переключателем.
+    func setIncognito(_ enabled: Bool) async throws {
+        guard let lookingFor else { return }
+        var settings = DatingSearchSettings(lookingFor: lookingFor)
+        settings.incognito = enabled
+        applySearchSettings(try await APIClient.shared.updateSearchSettings(settings))
+    }
+
+    func setShowActivity(_ enabled: Bool) async throws {
+        guard let lookingFor else { return }
+        var settings = DatingSearchSettings(lookingFor: lookingFor)
+        settings.showActivity = enabled
+        applySearchSettings(try await APIClient.shared.updateSearchSettings(settings))
+    }
+
+    private func applySearchSettings(_ settings: DatingSearchSettings) {
+        lookingFor = settings.lookingFor
+        if let incognito = settings.incognito { self.incognito = incognito }
+        if let showActivity = settings.showActivity { self.showActivity = showActivity }
     }
 
     /// Ошибку показывает экран настроек, откуда меняют «Кого ищу».
     func setLookingFor(_ gender: String) async throws {
-        let saved = try await APIClient.shared.updateSearchSettings(DatingSearchSettings(lookingFor: gender))
-        lookingFor = saved.lookingFor
+        applySearchSettings(try await APIClient.shared.updateSearchSettings(DatingSearchSettings(lookingFor: gender)))
         searchSettingsRevision += 1
     }
 

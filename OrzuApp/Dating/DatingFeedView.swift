@@ -201,6 +201,9 @@ struct DatingFeedView: View {
         VStack(spacing: 10) {
             if let card = visibleCards.first {
                 HStack(spacing: 22) {
+                    if feed.canUndo {
+                        undoButton
+                    }
                     DatingActionButton(kind: .skip, size: 62) { send(card, .skip) }
                         .scaleEffect(1 + max(-swipeProgress, 0) * 0.15)
                     DatingActionButton(kind: .intro, size: 50) { PushManager.shared.openConversation(with: card.profile) }
@@ -208,6 +211,9 @@ struct DatingFeedView: View {
                         .scaleEffect(1 + max(swipeProgress, 0) * 0.15)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if feed.canUndo {
+                // Анкеты кончились, а последнюю ещё можно вернуть.
+                undoButton
             }
             if let limits = feed.limits {
                 limitsLabel(limits)
@@ -217,6 +223,25 @@ struct DatingFeedView: View {
         .padding(.bottom, 8)
         .frame(maxWidth: .infinity)
         .animation(DatingStyle.spring, value: visibleCards.isEmpty)
+        .animation(DatingStyle.spring, value: feed.canUndo)
+    }
+
+    private var undoButton: some View {
+        Button {
+            Task { await feed.undo() }
+        } label: {
+            Image(systemName: "arrow.uturn.backward")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(Color.champagne)
+                .frame(width: 44, height: 44)
+                .background(Color.appSurface, in: Circle())
+                .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
+                .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(feed.isUndoing)
+        .accessibilityLabel("Вернуть предыдущую анкету")
+        .transition(.scale.combined(with: .opacity))
     }
 
     private func limitsLabel(_ limits: DailyLimits) -> some View {
@@ -506,8 +531,11 @@ private struct DatingCardView: View {
 
     @ViewBuilder
     private var badges: some View {
-        if card.isNew || card.expanded {
+        if card.isNew || card.expanded || card.profile.activityStatus != nil {
             HStack(spacing: 6) {
+                if let activity = card.profile.activityStatus {
+                    ActivityChip(activity: activity, onPhoto: true)
+                }
                 if card.isNew {
                     DatingChip(text: String(localized: "Новенький"), systemImage: "sparkle", onPhoto: true)
                 }

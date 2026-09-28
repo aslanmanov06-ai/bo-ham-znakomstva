@@ -34,6 +34,14 @@ struct JourneyCatalog: Codable, Hashable {
     let checklist: [CatalogItem]
 }
 
+/// Вопрос-подсказка для анкеты («Идеальное воскресенье — это…»): человек выбирает до трёх и отвечает своими словами.
+struct CatalogPrompt: Codable, Identifiable, Hashable {
+    let code: String
+    let text: String
+
+    var id: String { code }
+}
+
 struct DatingCatalog: Codable, Hashable {
     let journey: JourneyCatalog
     let countries: [CatalogCountry]
@@ -47,6 +55,12 @@ struct DatingCatalog: Codable, Hashable {
     let wantsChildren: [CatalogItem]
     let education: [CatalogItem]
     let habitFrequencies: [CatalogItem]
+    /// nil — сервер ещё не умеет вопросы в анкете: раздел не показываем и поле prompts не отправляем.
+    var prompts: [CatalogPrompt]? = nil
+
+    func prompt(_ code: String) -> CatalogPrompt? {
+        prompts?.first { $0.code == code }
+    }
 
     func cities(in countryCode: String) -> [CatalogItem] {
         countries.first { $0.code == countryCode }?.cities ?? []
@@ -79,6 +93,45 @@ enum ModerationStatus: String, Codable, Hashable {
     case rejected = "REJECTED"
 }
 
+/// Ответ на вопрос анкеты. status и rejectReason приходят только в своей анкете: ответы проверяет модератор.
+struct ProfilePromptAnswer: Codable, Hashable {
+    var code: String
+    var answer: String
+    var status: ModerationStatus? = nil
+    var rejectReason: String? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case code, answer, status, rejectReason
+    }
+
+    init(code: String, answer: String) {
+        self.code = code
+        self.answer = answer
+    }
+
+    /// На сервер уходят только вопрос и ответ — статус ставит модератор.
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(code, forKey: .code)
+        try container.encode(answer, forKey: .answer)
+    }
+}
+
+/// Когда человек был в приложении — корзинами, без точного времени (его сервер не раскрывает).
+enum DatingActivity: String, Hashable {
+    case online
+    case today
+    case week
+
+    var title: String {
+        switch self {
+        case .online: return String(localized: "В сети")
+        case .today: return String(localized: "Был(а) сегодня")
+        case .week: return String(localized: "Был(а) на этой неделе")
+        }
+    }
+}
+
 /// Анкета глазами другого пользователя: только одобренные фото и видео.
 struct DatingProfilePublic: Codable, Identifiable, Hashable {
     let userId: String
@@ -109,12 +162,29 @@ struct DatingProfilePublic: Codable, Identifiable, Hashable {
     let verified: Bool
     /// Сколько километров до этого человека. nil — у кого-то из двоих выключена геопозиция или это своя анкета.
     let distanceKm: Int?
+    /// Ответы на вопросы анкеты (до трёх). nil — старый сервер.
+    var prompts: [ProfilePromptAnswer]? = nil
+    /// Голосовое приветствие (одобренное модератором) и его длительность.
+    var voiceId: String? = nil
+    var voiceDurationSec: Int? = nil
+    /// online, today, week. Строкой, а не enum: новое значение с сервера не должно ломать разбор всей анкеты.
+    var activity: String? = nil
 
     var id: String { userId }
 
     /// Собеседник для мессенджера. Аватар подтянется из списка чатов — в анкете его пути нет.
     var messengerUser: User {
         User(id: userId, username: username ?? "", displayName: displayName, avatarUrl: nil)
+    }
+
+    /// nil — человек скрыл активность, давно не заходил, сервер её не знает или это своя анкета.
+    var activityStatus: DatingActivity? {
+        activity.flatMap(DatingActivity.init(rawValue:))
+    }
+
+    /// Голосовое приветствие как вложение — его играет тот же плеер, что и голосовые в чате.
+    var voiceAttachment: Attachment? {
+        voiceId.map { Attachment(id: $0, kind: .voice, mimeType: "audio/mp4", fileName: "voice.m4a", size: 0, durationSec: voiceDurationSec) }
     }
 
     /// «12 км» для подписи под именем; сервер уже округлил до километра.
@@ -172,9 +242,14 @@ struct DatingProfileMine: Decodable, Hashable {
     /// Фото заменили целиком: анкета видна, но значок «проверен» вернётся только после нового селфи.
     let needsReverification: Bool
     let hasLocation: Bool
+    /// Голосовое приветствие со статусом модерации.
+    let voice: DatingPhoto?
+    /// Сервер прислал ключ voice (хотя бы null) — значит, умеет голосовое приветствие и строку можно показать.
+    let supportsVoice: Bool
 
     private enum CodingKeys: String, CodingKey {
         case photos, video, inCouple, birthDate, hidden, visibleToOthers, visibilityIssues, needsReverification, hasLocation
+        case voice
     }
 
     init(from decoder: Decoder) throws {
@@ -190,6 +265,8 @@ struct DatingProfileMine: Decodable, Hashable {
         visibilityIssues = try container.decode([VisibilityIssue].self, forKey: .visibilityIssues)
         needsReverification = try container.decode(Bool.self, forKey: .needsReverification)
         hasLocation = try container.decode(Bool.self, forKey: .hasLocation)
+        voice = try container.decodeIfPresent(DatingPhoto.self, forKey: .voice)
+        supportsVoice = container.contains(.voice)
     }
 }
 
@@ -226,12 +303,15 @@ struct DatingProfileUpdate: Encodable {
     var smoking: String?
     var alcohol: String?
     var sport: String?
+    /// Отправляется, только если сервер умеет вопросы в анкете (в каталоге есть prompts): старый отклонил бы лишнее поле.
+    var prompts: [ProfilePromptAnswer]?
     /// Поля, которые нужно очистить (отправить null). Остальные необязательные поля с nil просто не отправляются.
     var clearing: Set<String> = []
 
     private enum CodingKeys: String, CodingKey {
         case gender, birthDate, countryCode, cityCode, bio, interests, cuisines, hobbies, hidden
         case heightCm, education, profession, relationshipGoal, maritalStatus, children, wantsChildren, smoking, alcohol, sport
+        case prompts
     }
 
     /// Экран анкеты правит все необязательные поля сразу, поэтому оставленное пустым нужно именно очистить.
@@ -251,6 +331,7 @@ struct DatingProfileUpdate: Encodable {
         try container.encodeIfPresent(cuisines, forKey: .cuisines)
         try container.encodeIfPresent(hobbies, forKey: .hobbies)
         try container.encodeIfPresent(hidden, forKey: .hidden)
+        try container.encodeIfPresent(prompts, forKey: .prompts)
 
         try encodeNullable(heightCm, forKey: .heightCm, in: &container)
         try encodeNullable(education, forKey: .education, in: &container)
@@ -282,6 +363,8 @@ struct DailyLimits: Decodable, Hashable {
     let introsPerDay: Int
     let introsLeft: Int
     let resetsAt: Date
+    /// Сколько свайпов ещё можно отменить сегодня. nil — сервер не умеет отмену, кнопку не показываем.
+    var undoLeft: Int? = nil
 }
 
 struct Compatibility: Decodable, Hashable {
@@ -325,6 +408,11 @@ struct DatingUsernameSearch: Decodable {
 enum SwipeAction: String, Encodable {
     case like = "LIKE"
     case skip = "SKIP"
+}
+
+/// Ответ на отмену свайпа: обновлённые лимиты (если сервер их прислал).
+struct UndoSwipeResult: Decodable {
+    let limits: DailyLimits?
 }
 
 struct SwipeResult: Decodable {
@@ -461,6 +549,10 @@ struct SelfieGesture: Decodable, Equatable {
 /// а фильтры по городу, возрасту и т. п. — у сетки анкет (DatingBrowseFilters).
 struct DatingSearchSettings: Codable, Hashable {
     var lookingFor: String
+    /// Инкогнито: анкету видят только те, кого вы лайкнули. nil — сервер не знает этой настройки.
+    var incognito: Bool? = nil
+    /// Показывать другим, когда вы были в приложении («в сети», «сегодня»). nil — сервер не знает этой настройки.
+    var showActivity: Bool? = nil
 }
 
 /// Фильтры сетки всех анкет. nil и пустой список — «любой». Хранятся на устройстве, на ленту не влияют.
@@ -650,4 +742,7 @@ enum DatingLimits {
     static let minAge = 18
     static let maxAge = 100
     static let maxDistanceKm = 500
+    static let maxPrompts = 3
+    static let maxPromptAnswerLength = 200
+    static let maxVoiceIntroSec = 30
 }

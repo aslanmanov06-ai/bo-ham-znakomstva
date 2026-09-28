@@ -91,6 +91,15 @@ struct DatingProfileEditorView: View {
                 DatingSectionCard(title: String(localized: "О себе"), systemImage: "quote.opening") {
                     AboutFields(form: $form)
                 }
+                if let prompts = dating.catalog?.prompts, !prompts.isEmpty {
+                    DatingSectionCard(
+                        title: String(localized: "Вопросы о вас"),
+                        systemImage: "text.bubble",
+                        subtitle: String(localized: "До трёх вопросов с ответами — с них проще начать разговор.")
+                    ) {
+                        PromptsFields(form: $form, prompts: prompts)
+                    }
+                }
                 DatingSectionCard(title: String(localized: "Семья и цели"), systemImage: "heart.circle") {
                     GoalsFields(form: $form, catalog: dating.catalog)
                 }
@@ -290,7 +299,7 @@ struct DatingProfileEditorView: View {
         Task {
             defer { isSaving = false }
             do {
-                dating.apply(try await APIClient.shared.updateMyDatingProfile(form.update(isCreating: creating)))
+                dating.apply(try await APIClient.shared.updateMyDatingProfile(form.update(isCreating: creating, sendsPrompts: dating.catalog?.prompts != nil)))
                 savedForm = form
                 savedTicks += 1
                 if creating {
@@ -621,6 +630,80 @@ private struct FieldGroup<Content: View>: View {
     }
 }
 
+/// Вопросы анкеты: выбранные — с полем ответа, остальные — в меню «Добавить вопрос».
+private struct PromptsFields: View {
+    @Binding var form: ProfileForm
+    let prompts: [CatalogPrompt]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ForEach($form.prompts, id: \.code) { $item in
+                answerEditor($item)
+            }
+            if form.prompts.count < DatingLimits.maxPrompts, !available.isEmpty {
+                Menu {
+                    ForEach(available) { prompt in
+                        Button(prompt.text) {
+                            form.prompts.append(ProfilePromptAnswer(code: prompt.code, answer: ""))
+                        }
+                    }
+                } label: {
+                    Label("Добавить вопрос", systemImage: "plus.circle.fill")
+                        .font(.app(.subheadline, weight: .semibold))
+                        .foregroundStyle(DatingStyle.rose)
+                }
+            }
+        }
+    }
+
+    private var available: [CatalogPrompt] {
+        prompts.filter { prompt in !form.prompts.contains { $0.code == prompt.code } }
+    }
+
+    private func answerEditor(_ item: Binding<ProfilePromptAnswer>) -> some View {
+        let code = item.wrappedValue.code
+        let answer = item.wrappedValue.answer
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(prompts.first { $0.code == code }?.text ?? code)
+                    .font(.app(.subheadline, weight: .semibold))
+                Spacer()
+                Button {
+                    form.prompts.removeAll { $0.code == code }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Убрать вопрос")
+            }
+            TextField("Ваш ответ", text: item.answer, axis: .vertical)
+                .lineLimit(2...5)
+                .padding(12)
+                .background(Color.appElevated, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            HStack {
+                if let status = statusText(item.wrappedValue) {
+                    Text(status)
+                        .font(.app(.caption))
+                        .foregroundStyle(item.wrappedValue.status == .rejected ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                }
+                Spacer()
+                Text("\(answer.count) / \(DatingLimits.maxPromptAnswerLength)")
+                    .font(.app(.caption).monospacedDigit())
+                    .foregroundStyle(answer.count > DatingLimits.maxPromptAnswerLength ? AnyShapeStyle(.red) : AnyShapeStyle(.tertiary))
+            }
+        }
+    }
+
+    private func statusText(_ item: ProfilePromptAnswer) -> String? {
+        switch item.status {
+        case .pending: return String(localized: "Ответ на проверке")
+        case .rejected: return item.rejectReason ?? String(localized: "Ответ отклонён")
+        case .approved, nil: return nil
+        }
+    }
+}
+
 private struct GoalsFields: View {
     @Binding var form: ProfileForm
     let catalog: DatingCatalog?
@@ -820,6 +903,7 @@ private struct ProfileForm: Equatable {
     var alcohol: String?
     var sport: String?
     var hidden = false
+    var prompts: [ProfilePromptAnswer] = []
 
     init() {}
 
@@ -843,9 +927,11 @@ private struct ProfileForm: Equatable {
         alcohol = profile.shared.alcohol
         sport = profile.shared.sport
         hidden = profile.hidden
+        prompts = profile.shared.prompts ?? []
     }
 
-    func update(isCreating: Bool) -> DatingProfileUpdate {
+    /// sendsPrompts — сервер умеет вопросы в анкете: старый отклонил бы незнакомое поле вместе со всей анкетой.
+    func update(isCreating: Bool, sendsPrompts: Bool) -> DatingProfileUpdate {
         var update = DatingProfileUpdate()
         // Пол и дата рождения задаются только при создании: у существующей анкеты сервер отклонит их изменение.
         if isCreating {
@@ -871,6 +957,12 @@ private struct ProfileForm: Equatable {
         let trimmedProfession = profession.trimmingCharacters(in: .whitespacesAndNewlines)
         update.profession = trimmedProfession.isEmpty ? nil : trimmedProfession
         update.clearing = DatingProfileUpdate.allNullableKeys
+        if sendsPrompts {
+            update.prompts = prompts.compactMap { item in
+                let answer = String(item.answer.trimmingCharacters(in: .whitespacesAndNewlines).prefix(DatingLimits.maxPromptAnswerLength))
+                return answer.isEmpty ? nil : ProfilePromptAnswer(code: item.code, answer: answer)
+            }
+        }
         return update
     }
 }
