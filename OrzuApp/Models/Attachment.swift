@@ -18,6 +18,11 @@ struct Attachment: Codable, Identifiable, Hashable {
     let size: Int
     /// Только у голосовых и видеосообщений.
     var durationSec: Int? = nil
+    /// PROCESSING — сервер ещё перекодирует видео или голосовое: файл отдаётся только тому, кто его загрузил.
+    /// Готово — придёт message.updated (в чате) или attachment.processed. Строкой: новый статус не должен ломать разбор.
+    var status: String? = nil
+
+    var isProcessing: Bool { status == "PROCESSING" }
 
     var formattedSize: String {
         ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)

@@ -48,8 +48,18 @@ final class DatingViewModel: ObservableObject {
         WebSocketClient.shared.events
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in
-                guard case .datingModerated = event else { return }
-                Task { await self?.reloadProfile() }
+                guard let self else { return }
+                switch event {
+                case .datingModerated:
+                    Task { await self.reloadProfile() }
+                case .attachmentProcessed(let attachmentId):
+                    // Готовое вложение из чата анкету не меняет — перечитываем, только если это её видео или голосовое.
+                    let ownMedia = [self.profile?.video?.attachmentId, self.profile?.voice?.attachmentId].compactMap { $0 }
+                    guard attachmentId == nil || ownMedia.contains(attachmentId ?? "") else { return }
+                    Task { await self.reloadProfile() }
+                default:
+                    break
+                }
             }
             .store(in: &cancellables)
     }

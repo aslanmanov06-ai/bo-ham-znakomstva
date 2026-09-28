@@ -48,6 +48,8 @@ enum ServerEvent {
     case datingJourney(matchId: String)
     /// Приглашение на встречу создано или на него ответили.
     case datingMeeting(DatingMeeting)
+    /// Сервер закончил перекодировать видео или голосовое. nil — событие без id (перечитать всё, что может зависеть).
+    case attachmentProcessed(attachmentId: String?)
     /// Модератор проверил селфи, фото или видео анкеты, попросил новое селфи или снял значок — статусы в анкете изменились.
     case datingModerated
     /// Новый запрос на переписку или на мой запрос ответили: ящик «Запросы» и список чатов перечитываются.
@@ -164,11 +166,9 @@ final class WebSocketClient: NSObject, ObservableObject {
         reconnectTask?.cancel()
         reconnectTask = nil
 
-        // Токен — в заголовке Authorization, а не в адресе: адреса с query попадают в логи прокси.
-        // ?token= остаётся для сервера, который ещё не читает заголовок; убрать, когда backend перейдёт.
-        var components = URLComponents(url: AppConfig.wsBaseURL, resolvingAgainstBaseURL: false)!
-        components.queryItems = [URLQueryItem(name: "token", value: accessToken)]
-        var request = URLRequest(url: components.url!)
+        // Токен — только в заголовке Authorization: адреса с query попадают в логи прокси.
+        // ?token= сервер пока принимает ради старых версий приложения, эта его больше не шлёт.
+        var request = URLRequest(url: AppConfig.wsBaseURL)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         let webSocketTask = session.webSocketTask(with: request)
@@ -423,6 +423,12 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "dating.verification", "dating.photoModerated", "dating.videoModerated", "dating.selfieRequested", "dating.verificationRevoked":
             // Что именно проверили, клиенту не важно: он перечитывает анкету целиком.
             events.send(.datingModerated)
+
+        case "attachment.processed":
+            // В чате сообщение обновит message.updated, а анкета узнаёт о готовом видео или голосовом отсюда.
+            let nested = json["attachment"] as? [String: Any]
+            let attachmentId = json["attachmentId"] as? String ?? nested?["id"] as? String ?? json["id"] as? String
+            events.send(.attachmentProcessed(attachmentId: attachmentId))
 
         case "safety.sos", "safety.sos.location":
             guard let alert: SosAlert = decode(json["alert"]) else { return }

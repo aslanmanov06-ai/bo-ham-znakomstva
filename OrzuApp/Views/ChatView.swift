@@ -935,6 +935,9 @@ private struct MessageBubble<MenuItems: View>: View {
     private func attachmentContent(_ attachment: Attachment) -> some View {
         if let timedPhotoState, let viewTimerSec = message.viewTimerSec {
             TimedPhotoView(attachment: attachment, state: timedPhotoState, viewTimerSec: viewTimerSec, onOpen: onOpenTimedPhoto)
+        } else if attachment.isProcessing && !isMine {
+            // Сервер отдаст файл собеседнику только после перекодирования — до этого качать нечего.
+            ProcessingAttachmentView(kind: attachment.kind)
         } else {
             switch attachment.kind {
             // .video — ролик анкеты знакомств; в чат он не попадает, но если пришёл, показываем как файл.

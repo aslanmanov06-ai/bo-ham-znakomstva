@@ -24,6 +24,19 @@ enum ServerErrorCode {
     static let accountBanned = "ACCOUNT_BANNED"
     /// Режим обслуживания: сервер отвечает 503 на всё, кроме входа, документов и конфига приложения.
     static let maintenance = "MAINTENANCE"
+    /// Медиа (в camelCase, как в ТЗ): видео длиннее лимита — длительность меряет сервер.
+    static let videoTooLong = "videoTooLong"
+    /// Файл больше лимита своего вида (видео — до 90 МБ).
+    static let fileTooLarge = "fileTooLarge"
+
+    /// Свой текст на языке интерфейса для кодов, где сервер может ответить только по-русски или слишком технично.
+    static func localizedMessage(for code: String) -> String? {
+        switch code {
+        case videoTooLong: return String(localized: "Видео слишком длинное — выберите покороче")
+        case fileTooLarge: return String(localized: "Файл слишком большой")
+        default: return nil
+        }
+    }
 }
 
 /// Запросы знакомств, безопасности, жалоб и правил сообщества. Вынесены из APIClient.swift, чтобы

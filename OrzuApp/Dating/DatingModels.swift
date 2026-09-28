@@ -203,6 +203,11 @@ struct DatingPhoto: Codable, Identifiable, Hashable {
     let attachmentId: String
     let status: ModerationStatus
     let rejectReason: String?
+    /// Только у видео и голосового: PROCESSING — сервер ещё перекодирует файл, FAILED — не смог.
+    var mediaStatus: String? = nil
+
+    var isProcessing: Bool { mediaStatus == "PROCESSING" }
+    var processingFailed: Bool { mediaStatus == "FAILED" }
 
     var id: String { attachmentId }
 }

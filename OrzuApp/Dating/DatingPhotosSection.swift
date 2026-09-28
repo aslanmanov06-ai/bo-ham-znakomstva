@@ -245,6 +245,8 @@ struct DatingPhotosSection: View {
     }
 
     private func voiceStatusText(_ voice: DatingPhoto) -> String {
+        if voice.isProcessing { return String(localized: "Голосовое обрабатывается…") }
+        if voice.processingFailed { return String(localized: "Не удалось обработать голосовое — запишите заново") }
         switch voice.status {
         case .pending: return String(localized: "Голосовое на проверке")
         case .approved: return String(localized: "Голосовое опубликовано")
@@ -253,6 +255,8 @@ struct DatingPhotosSection: View {
     }
 
     private func videoStatusText(_ video: DatingPhoto) -> String {
+        if video.isProcessing { return String(localized: "Видео обрабатывается…") }
+        if video.processingFailed { return String(localized: "Не удалось обработать видео — загрузите другое") }
         switch video.status {
         case .pending: return String(localized: "Видео на проверке")
         case .approved: return String(localized: "Видео опубликовано")

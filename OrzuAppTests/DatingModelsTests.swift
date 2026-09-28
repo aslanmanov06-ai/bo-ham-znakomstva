@@ -343,4 +343,25 @@ final class DatingModelsTests: XCTestCase {
         let body = try JSONSerialization.jsonObject(with: JSONEncoder().encode(settings)) as? [String: Any]
         XCTAssertEqual(body?.count, 1)
     }
+
+    // MARK: - Обработка медиа на сервере
+
+    func testAttachmentProcessingStatus() throws {
+        let processing = try decoder().decode(Attachment.self, from: Data(
+            #"{"id":"a1","kind":"VOICE","mimeType":"audio/mp4","fileName":"v.m4a","size":10,"durationSec":7,"status":"PROCESSING"}"#.utf8
+        ))
+        XCTAssertTrue(processing.isProcessing)
+
+        let old = try decoder().decode(Attachment.self, from: Data(
+            #"{"id":"a1","kind":"VOICE","mimeType":"audio/mp4","fileName":"v.m4a","size":10}"#.utf8
+        ))
+        XCTAssertFalse(old.isProcessing)
+    }
+
+    /// На коды медиа — свой текст на языке интерфейса, на остальные — текст сервера.
+    func testMediaErrorCodesHaveOwnText() {
+        XCTAssertEqual(APIError.rejected(code: "videoTooLong", message: "x").localizedDescription, "Видео слишком длинное — выберите покороче")
+        XCTAssertEqual(APIError.rejected(code: "fileTooLarge", message: "x").localizedDescription, "Файл слишком большой")
+        XCTAssertEqual(APIError.rejected(code: "USERNAME_TAKEN", message: "Занято").localizedDescription, "Занято")
+    }
 }

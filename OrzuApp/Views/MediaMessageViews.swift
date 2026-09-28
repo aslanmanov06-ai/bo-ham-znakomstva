@@ -328,3 +328,33 @@ extension View {
         modifier(ScreenCaptureShield(isEnabled: isEnabled))
     }
 }
+
+// MARK: - Обработка на сервере
+
+/// Видео или голосовое ещё перекодируется на сервере: пузырь заменится сам, когда придёт message.updated.
+struct ProcessingAttachmentView: View {
+    let kind: AttachmentKind
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.app(.subheadline, weight: .semibold))
+                Text("Обрабатывается — появится через минуту")
+                    .font(.app(.caption))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var title: String {
+        switch kind {
+        case .voice: return String(localized: "Голосовое сообщение")
+        case .videoNote: return String(localized: "Видеосообщение")
+        default: return String(localized: "Видео")
+        }
+    }
+}

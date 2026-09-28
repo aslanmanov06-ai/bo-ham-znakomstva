@@ -1625,6 +1625,22 @@
         }
       }
     },
+    "Видео обрабатывается…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing video…"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видео коркард мешавад…"
+          }
+        }
+      }
+    },
     "Видео опубликовано" : {
       "localizations" : {
         "en" : {
@@ -1653,6 +1669,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Видео рад шуд"
+          }
+        }
+      }
+    },
+    "Видео слишком длинное — выберите покороче" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video is too long — choose a shorter one"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видео хеле дароз аст — кӯтоҳтарашро интихоб кунед"
           }
         }
       }
@@ -2645,6 +2677,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Саломи овозӣ дар санҷиш"
+          }
+        }
+      }
+    },
+    "Голосовое обрабатывается…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing voice greeting…"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саломи овозӣ коркард мешавад…"
           }
         }
       }
@@ -5737,6 +5785,38 @@
         }
       }
     },
+    "Не удалось обработать видео — загрузите другое" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't process the video — upload another one"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видеоро коркард кардан нашуд — дигарашро бор кунед"
+          }
+        }
+      }
+    },
+    "Не удалось обработать голосовое — запишите заново" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't process the voice greeting — record it again"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саломи овозиро коркард кардан нашуд — аз нав сабт кунед"
+          }
+        }
+      }
+    },
     "Не удалось определить геопозицию" : {
       "localizations" : {
         "en" : {
@@ -6693,6 +6773,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Бо Хамро нав мекунем. Ба зудӣ бармегардем — ташаккур барои интизорӣ."
+          }
+        }
+      }
+    },
+    "Обрабатывается — появится через минуту" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing — it will appear in a minute"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Коркард мешавад — баъди як дақиқа пайдо мешавад"
           }
         }
       }
@@ -11669,6 +11765,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Файли фиристоданӣ дигар дастрас нест"
+          }
+        }
+      }
+    },
+    "Файл слишком большой" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The file is too large"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Файл хеле калон аст"
           }
         }
       }

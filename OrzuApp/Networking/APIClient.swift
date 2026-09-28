@@ -15,7 +15,7 @@ enum APIError: LocalizedError {
         switch self {
         case .unauthorized: return String(localized: "Сессия истекла, войдите заново")
         case .server(let message): return message
-        case .rejected(_, let message): return message
+        case .rejected(let code, let message): return ServerErrorCode.localizedMessage(for: code) ?? message
         case .invalidResponse: return String(localized: "Некорректный ответ сервера")
         case .offline: return String(localized: "Нет подключения к интернету")
         case .unavailable(let status): return String(localized: "Сервер временно недоступен (\(status)), попробуйте позже")
