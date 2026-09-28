@@ -1,7 +1,9 @@
 import AVFoundation
 
 /// Камера для «кружков»: фронтальная, 480p (минута — несколько МБ), со звуком, не дольше минуты.
-final class VideoNoteCamera: NSObject, ObservableObject {
+/// @unchecked Sendable: сессия настраивается и запускается только на sessionQueue, а опубликованное состояние
+/// (isRecording, elapsed) меняется только на главном потоке — общих изменяемых данных между ними нет.
+final class VideoNoteCamera: NSObject, ObservableObject, @unchecked Sendable {
     let session = AVCaptureSession()
     @Published private(set) var isRecording = false
     @Published private(set) var elapsed: TimeInterval = 0

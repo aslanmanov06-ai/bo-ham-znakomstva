@@ -50,8 +50,9 @@ final class CallManager: NSObject, ObservableObject {
         var isAnswered: Bool
     }
 
-    /// Соединение с одним собеседником.
-    private final class PeerLink {
+    /// Соединение с одним собеседником. Колбэки WebRTC приходят с его потока, но поля меняются только
+    /// внутри Task { @MainActor }, как и весь CallManager, — поэтому передавать ссылку в эти колбэки безопасно.
+    private final class PeerLink: @unchecked Sendable {
         let connection: RTCPeerConnection
         var pendingCandidates: [RTCIceCandidate] = []
         var hasRemoteDescription = false
@@ -366,7 +367,7 @@ final class CallManager: NSObject, ObservableObject {
         link: PeerLink,
         to peerId: String,
         signalType: String,
-        create: @escaping (RTCMediaConstraints, @escaping (RTCSessionDescription?, Error?) -> Void) -> Void
+        create: @escaping (RTCMediaConstraints, @escaping @Sendable (RTCSessionDescription?, Error?) -> Void) -> Void
     ) {
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
         create(constraints) { [weak self] sdp, error in
@@ -414,7 +415,7 @@ final class CallManager: NSObject, ObservableObject {
         session.lockForConfiguration()
         defer { session.unlockForConfiguration() }
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: video ? .videoChat : .voiceChat, options: [.allowBluetooth, .defaultToSpeaker])
+            try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: video ? .videoChat : .voiceChat, options: [.bluetoothHandsFree, .defaultToSpeaker])
         } catch {
             logger.error("Аудиосессия: \(error.localizedDescription, privacy: .public)")
         }
@@ -594,7 +595,7 @@ extension CallManager: RTCPeerConnectionDelegate {
                     "candidate": candidate.sdp,
                     "sdpMLineIndex": candidate.sdpMLineIndex,
                     // JSONSerialization понимает NSNull, а не "Any, обёрнутый вокруг nil" — иначе сериализация тихо падает.
-                    "sdpMid": candidate.sdpMid ?? NSNull(),
+                    "sdpMid": candidate.sdpMid.map { $0 as Any } ?? NSNull(),
                 ],
             ])
         }

@@ -24,7 +24,7 @@ final class VoiceRecorder: ObservableObject {
         guard await AVAudioApplication.requestRecordPermission() else { throw MediaPermissionError.microphone }
 
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .bluetoothHandsFree])
         try session.setActive(true)
 
         let url = MediaRecording.temporaryURL(prefix: "voice", fileExtension: "m4a")

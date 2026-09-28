@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 
 /// Готовая запись голосового или «кружка» во временном файле — её отправляет ChatViewModel.sendRecording.
@@ -38,5 +39,17 @@ enum MediaPermissionError: LocalizedError {
         case .microphone: return String(localized: "Нет доступа к микрофону — разрешите его в Настройках iPhone")
         case .camera: return String(localized: "Нет доступа к камере — разрешите его в Настройках iPhone")
         }
+    }
+}
+
+extension AVAudioSession.CategoryOptions {
+    /// Гарнитура Bluetooth для звонков и записи. В SDK iOS 26 .allowBluetooth переименован в .allowBluetoothHFP
+    /// (то же значение, работает и на старых iOS), а в SDK Xcode 16 нового имени ещё нет.
+    static var bluetoothHandsFree: AVAudioSession.CategoryOptions {
+        #if compiler(>=6.2)
+        return .allowBluetoothHFP
+        #else
+        return .allowBluetooth
+        #endif
     }
 }

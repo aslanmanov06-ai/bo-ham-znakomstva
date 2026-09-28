@@ -49,6 +49,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: "Бо Хам"
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        # На iPad система требует все ориентации (многозадачность), иначе — предупреждение сборки.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         # Микрофон/камера — для звонков, голосовых и видеосообщений.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Нужен доступ к микрофону для звонков, голосовых и видеосообщений"
         INFOPLIST_KEY_NSCameraUsageDescription: "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты"
