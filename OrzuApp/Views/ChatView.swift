@@ -203,25 +203,11 @@ struct ChatView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(viewModel.messages) { message in
-                        selectableRow(for: message) {
-                            MessageBubble(
-                                message: message,
-                                isMine: viewModel.isMine(message),
-                                senderName: viewModel.senderName(for: message),
-                                replyAuthor: message.replyTo.map { viewModel.displayName(of: $0.senderId) },
-                                status: viewModel.status(of: message),
-                                reactions: message.reactionSummary(currentUserId: viewModel.currentUserId),
-                                timedPhotoState: viewModel.timedPhotoState(of: message),
-                                bubbleColor: appearance.bubbleColor.color,
-                                onOpenAttachment: openAttachment,
-                                onOpenTimedPhoto: { openTimedPhoto(message) },
-                                onOpenReply: { if let reply = message.replyTo { show(messageId: reply.id) } },
-                                onError: { viewModel.errorMessage = $0 }
-                            ) {
-                                messageMenu(for: message)
-                            }
+                        if let systemText = viewModel.systemText(for: message) {
+                            SystemEventRow(text: systemText).id(message.id)
+                        } else {
+                            messageRow(for: message)
                         }
-                        .id(message.id)
                     }
                 }
                 .padding(.horizontal)
@@ -239,7 +225,33 @@ struct ChatView: View {
                 withAnimation(.snappy) { proxy.scrollTo(target, anchor: .center) }
                 scrollTarget = nil
             }
+            // Секретный чат и фото с таймером: собеседник узнает о снимке экрана.
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.userDidTakeScreenshotNotification)) { _ in
+                viewModel.screenshotTaken(timedPhotoId: timedPhoto?.id)
+            }
         }
+    }
+
+    private func messageRow(for message: Message) -> some View {
+        selectableRow(for: message) {
+            MessageBubble(
+                message: message,
+                isMine: viewModel.isMine(message),
+                senderName: viewModel.senderName(for: message),
+                replyAuthor: message.replyTo.map { viewModel.displayName(of: $0.senderId) },
+                status: viewModel.status(of: message),
+                reactions: message.reactionSummary(currentUserId: viewModel.currentUserId),
+                timedPhotoState: viewModel.timedPhotoState(of: message),
+                bubbleColor: appearance.bubbleColor.color,
+                onOpenAttachment: openAttachment,
+                onOpenTimedPhoto: { openTimedPhoto(message) },
+                onOpenReply: { if let reply = message.replyTo { show(messageId: reply.id) } },
+                onError: { viewModel.errorMessage = $0 }
+            ) {
+                messageMenu(for: message)
+            }
+        }
+        .id(message.id)
     }
 
     private var topBanners: some View {
@@ -868,6 +880,22 @@ struct ChatView: View {
 }
 
 /// Что пересылаем: одно сообщение из меню или несколько выбранных.
+/// Служебная строка по центру ленты: без меню, реакций и выделения — это не чьё-то сообщение.
+private struct SystemEventRow: View {
+    let text: String
+
+    var body: some View {
+        Label(text, systemImage: "camera.viewfinder")
+            .font(.app(.caption, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.thinMaterial, in: Capsule())
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4)
+    }
+}
+
 private struct ForwardSelection: Identifiable {
     let id = UUID()
     let messages: [Message]

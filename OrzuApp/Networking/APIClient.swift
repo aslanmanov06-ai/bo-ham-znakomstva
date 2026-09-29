@@ -249,6 +249,13 @@ actor APIClient {
         try await request(path: "/chats/\(chatId)/messages/\(messageId)/open", method: "POST", body: nil as String?, authorized: true)
     }
 
+    /// Снимок экрана в секретном чате или фото с таймером (messageId): собеседник увидит служебное сообщение.
+    func reportScreenshot(chatId: String, messageId: String?) async throws -> Message {
+        var body: [String: String] = [:]
+        body["messageId"] = messageId
+        return try await request(path: "/chats/\(chatId)/screenshot", method: "POST", body: body, authorized: true)
+    }
+
     /// Закрепить чат вверху своего списка. Закреплённых не больше пяти — сверх этого сервер отвечает ошибкой.
     func pinChat(chatId: String) async throws {
         let _: EmptyResponse = try await request(path: "/chats/\(chatId)/pin", method: "PUT", body: nil as String?, authorized: true)

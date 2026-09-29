@@ -23,11 +23,17 @@ struct Message: Codable, Identifiable, Hashable {
     var forwardedFromName: String? = nil
     /// Id, который клиент дал сообщению при отправке: по нему своё сообщение из очереди узнаётся в ответе сервера.
     var clientMessageId: String? = nil
+    /// Служебное сообщение от сервера (например, «сделал снимок экрана») — показывается строкой по центру, а не пузырём.
+    var systemEvent: String? = nil
+
+    /// Совпадает с SCREENSHOT_EVENT на backend. replyTo такого сообщения — снятое фото с таймером, если оно было.
+    static let screenshotEvent = "screenshot"
 
     /// Совпадает с VIEW_TIMER_OPTIONS на backend.
     static let viewTimerOptions = [10, 15, 30, 60]
 
     var previewText: String {
+        if systemEvent == Self.screenshotEvent { return String(localized: "📸 Снимок экрана") }
         if !text.isEmpty { return text }
         if ciphertext != nil { return String(localized: "🔒 Зашифрованное сообщение") }
         switch attachment?.kind {

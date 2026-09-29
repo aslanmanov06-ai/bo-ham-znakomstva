@@ -463,6 +463,34 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    /// Сервер принимает снимок только в секретном чате или при открытом фото с таймером — обычный чат не тревожим.
+    func screenshotTaken(timedPhotoId: String?) {
+        guard isSecret || timedPhotoId != nil, !chat.isClosed else { return }
+        Task {
+            do {
+                let message = try await APIClient.shared.reportScreenshot(chatId: chat.id, messageId: timedPhotoId)
+                // Обычно раньше придёт message.new — без сокета показываем ответ сервера.
+                if !isShowingHistorySlice, !messages.contains(where: { $0.id == message.id }) {
+                    messages.append(decrypted(message))
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    /// Текст служебной строки; nil — обычное сообщение.
+    func systemText(for message: Message) -> String? {
+        guard let event = message.systemEvent else { return nil }
+        guard event == Message.screenshotEvent else { return String(localized: "Служебное сообщение") }
+        let aboutTimedPhoto = message.replyTo != nil
+        if isMine(message) {
+            return aboutTimedPhoto ? String(localized: "Вы сделали снимок экрана с фото с таймером") : String(localized: "Вы сделали снимок экрана")
+        }
+        let name = displayName(of: message.senderId)
+        return aboutTimedPhoto ? String(localized: "\(name) сделал(а) снимок экрана с фото с таймером") : String(localized: "\(name) сделал(а) снимок экрана")
+    }
+
     func timedPhotoState(of message: Message) -> TimedPhotoState? {
         message.timedPhotoState(currentUserId: currentUserId, now: Date())
     }

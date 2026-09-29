@@ -185,3 +185,21 @@ final class SyncCursorTests: XCTestCase {
         XCTAssertFalse(cursor.isCatchingUp)
     }
 }
+
+final class ScreenshotMessageTests: XCTestCase {
+    /// Служебное сообщение сервера о снимке: пустой текст, systemEvent и ответ на снятое фото с таймером.
+    func testDecodesScreenshotSystemMessage() throws {
+        let json = #"{"id":"m9","chatId":"c1","senderId":"u2","text":"","createdAt":"2026-09-28T12:00:00.000Z","systemEvent":"screenshot","replyTo":{"id":"m1","senderId":"u1","text":""}}"#
+        let message = try ISO8601Coding.makeDecoder().decode(Message.self, from: Data(json.utf8))
+        XCTAssertEqual(message.systemEvent, Message.screenshotEvent)
+        XCTAssertEqual(message.replyTo?.id, "m1")
+        XCTAssertEqual(message.previewText, "📸 Снимок экрана")
+    }
+
+    func testRegularMessageHasNoSystemEvent() throws {
+        let json = #"{"id":"m2","chatId":"c1","senderId":"u2","text":"Салом","createdAt":"2026-09-28T12:00:00.000Z"}"#
+        let message = try ISO8601Coding.makeDecoder().decode(Message.self, from: Data(json.utf8))
+        XCTAssertNil(message.systemEvent)
+        XCTAssertEqual(message.previewText, "Салом")
+    }
+}

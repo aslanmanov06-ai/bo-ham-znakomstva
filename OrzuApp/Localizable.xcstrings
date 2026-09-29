@@ -129,6 +129,38 @@
         }
       }
     },
+    "%@ сделал(а) снимок экрана" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ took a screenshot"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ скриншот гирифт"
+          }
+        }
+      }
+    },
+    "%@ сделал(а) снимок экрана с фото с таймером" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ took a screenshot of a timed photo"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ аз акс бо таймер скриншот гирифт"
+          }
+        }
+      }
+    },
     "%@, %lld, совместимость %lld%%" : {
       "localizations" : {
         "en" : {
@@ -2357,6 +2389,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Шумо даъват кардед, ҷавобро интизорем"
+          }
+        }
+      }
+    },
+    "Вы сделали снимок экрана" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You took a screenshot"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо скриншот гирифтед"
+          }
+        }
+      }
+    },
+    "Вы сделали снимок экрана с фото с таймером" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You took a screenshot of a timed photo"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо аз акс бо таймер скриншот гирифтед"
           }
         }
       }
@@ -10553,6 +10617,22 @@
         }
       }
     },
+    "Служебное сообщение" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Service message"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паёми хидматӣ"
+          }
+        }
+      }
+    },
     "Сменить пароль" : {
       "localizations" : {
         "en" : {
@@ -13413,6 +13493,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "📷 Акс"
+          }
+        }
+      }
+    },
+    "📸 Снимок экрана" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "📸 Screenshot"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "📸 Скриншот"
           }
         }
       }
