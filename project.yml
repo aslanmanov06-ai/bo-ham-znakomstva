@@ -61,11 +61,13 @@ targets:
         # Фото и видео для анкеты выбираются системным пикером (PhotosPicker) — доступ ко всей библиотеке не нужен.
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Доступ к фото нужен, чтобы добавить фото и видео в анкету и отправить их в чат"
     # voip — PushKit будит приложение ради входящего звонка (CallKit), audio — звук звонка при заблокированном экране,
-    # remote-notification — доставка обычных push. Остальные ключи Info.plist генерирует Xcode (GENERATE_INFOPLIST_FILE).
+    # remote-notification — доставка обычных push, fetch — фоновое обновление (BackgroundRefresh в OrzuAppApp.swift,
+    # id его задачи — в BGTaskSchedulerPermittedIdentifiers). Остальные ключи Info.plist генерирует Xcode (GENERATE_INFOPLIST_FILE).
     info:
       path: OrzuApp/Info.plist
       properties:
-        UIBackgroundModes: [voip, audio, remote-notification]
+        UIBackgroundModes: [voip, audio, remote-notification, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.orzuapp.messenger.refresh]
         # Фирменные шрифты (SIL OFL, лицензии рядом): Unbounded — заголовки, Onest — текст.
         UIAppFonts:
           - Unbounded-Medium.ttf
