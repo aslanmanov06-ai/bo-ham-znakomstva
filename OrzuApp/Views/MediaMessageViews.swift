@@ -53,7 +53,9 @@ struct VoiceMessageView: View {
 
 struct VideoNoteView: View {
     let attachment: Attachment
+    @State private var poster: UIImage?
     @State private var player: AVPlayer?
+    @State private var isLoadingVideo = false
     @State private var isPlaying = false
     @State private var failed = false
 
@@ -63,12 +65,14 @@ struct VideoNoteView: View {
         ZStack {
             if let player {
                 PlayerLayerView(player: player)
-            } else if failed {
-                Image(systemName: "exclamationmark.triangle").font(.app(.title))
-            } else {
-                ProgressView()
+            } else if let poster {
+                Image(uiImage: poster).resizable().scaledToFill()
             }
-            if player != nil, !isPlaying {
+            if failed {
+                Image(systemName: "exclamationmark.triangle").font(.app(.title))
+            } else if isLoadingVideo {
+                ProgressView()
+            } else if !isPlaying {
                 Image(systemName: "play.fill")
                     .font(.app(.title2))
                     .foregroundStyle(.white)
@@ -94,13 +98,8 @@ struct VideoNoteView: View {
         .accessibilityLabel("Видеосообщение")
         .accessibilityAddTraits(.isButton)
         .task(id: attachment.id) {
-            do {
-                // AVPlayer играет только с диска или по URL, а скачивание требует токена — кладём во временный файл.
-                let url = try await AttachmentLoader.shared.temporaryFileURL(for: attachment)
-                player = AVPlayer(url: url)
-            } catch {
-                failed = true
-            }
+            // Без обложки (старый ролик) остаётся тёмный круг с кнопкой — ролик всё равно включится по нажатию.
+            poster = (try? await AttachmentLoader.shared.poster(for: attachment.id)).flatMap(UIImage.init(data:))
         }
         .onReceive(NotificationCenter.default.publisher(for: AVPlayerItem.didPlayToEndTimeNotification)) { notification in
             guard let player, notification.object as? AVPlayerItem === player.currentItem else { return }
@@ -114,7 +113,10 @@ struct VideoNoteView: View {
     }
 
     private func togglePlayback() {
-        guard let player else { return }
+        guard let player else {
+            loadAndPlay()
+            return
+        }
         if isPlaying {
             player.pause()
         } else {
@@ -124,6 +126,24 @@ struct VideoNoteView: View {
             player.play()
         }
         isPlaying.toggle()
+    }
+
+    /// Ролик качается только по нажатию: в ленте чата видна обложка, и трафик не уходит на то, что не посмотрят.
+    private func loadAndPlay() {
+        guard !isLoadingVideo else { return }
+        isLoadingVideo = true
+        failed = false
+        Task {
+            defer { isLoadingVideo = false }
+            do {
+                // AVPlayer играет только с диска или по URL, а скачивание требует токена — кладём во временный файл.
+                let url = try await AttachmentLoader.shared.temporaryFileURL(for: attachment)
+                player = AVPlayer(url: url)
+                togglePlayback()
+            } catch {
+                failed = true
+            }
+        }
     }
 }
 

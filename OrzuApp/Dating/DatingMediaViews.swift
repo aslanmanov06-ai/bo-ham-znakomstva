@@ -61,11 +61,14 @@ struct DatingPhotoView: View {
     }
 }
 
-/// Видео анкеты: сервер отдаёт файл только с токеном, поэтому сначала кладём его во временную папку.
+/// Видео анкеты: сначала обложка, ролик качается по нажатию — сервер отдаёт файл только с токеном,
+/// поэтому он ложится во временную папку, а уже оттуда играет AVPlayer.
 struct DatingVideoView: View {
     let attachmentId: String
 
+    @State private var poster: UIImage?
     @State private var player: AVPlayer?
+    @State private var isLoading = false
     @State private var errorMessage: String?
 
     var body: some View {
@@ -78,21 +81,56 @@ struct DatingVideoView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                posterWithPlayButton
             }
         }
         .background(Color.black.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .task(id: attachmentId) {
+            // Нет обложки (старый ролик) — остаётся фон с кнопкой, видео всё равно включится.
+            poster = (try? await AttachmentLoader.shared.poster(for: attachmentId)).flatMap(UIImage.init(data:))
+        }
+        .onDisappear { player?.pause() }
+    }
+
+    private var posterWithPlayButton: some View {
+        ZStack {
+            if let poster {
+                Image(uiImage: poster).resizable().scaledToFill()
+            }
+            if isLoading {
+                ProgressView()
+            } else {
+                Image(systemName: "play.fill")
+                    .font(.app(.title2))
+                    .foregroundStyle(.white)
+                    .padding(18)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .contentShape(Rectangle())
+        .onTapGesture(perform: loadAndPlay)
+        .accessibilityElement()
+        .accessibilityLabel("Видео анкеты")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private func loadAndPlay() {
+        guard !isLoading else { return }
+        isLoading = true
+        Task {
+            defer { isLoading = false }
             do {
                 let url = try await AttachmentLoader.shared.temporaryFileURL(attachmentId: attachmentId, fileName: "video.mp4")
-                player = AVPlayer(url: url)
+                let player = AVPlayer(url: url)
+                self.player = player
+                player.play()
             } catch {
                 errorMessage = String(localized: "Не удалось загрузить видео")
             }
         }
-        .onDisappear { player?.pause() }
     }
 }
 

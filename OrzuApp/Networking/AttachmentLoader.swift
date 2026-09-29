@@ -27,6 +27,11 @@ actor AttachmentLoader {
         try await cached(key: attachmentId) { try await APIClient.shared.downloadAttachment(id: attachmentId) }
     }
 
+    /// Обложка ролика: превью видно сразу, а сам ролик качается, только когда его включат.
+    func poster(for attachmentId: String) async throws -> Data {
+        try await cached(key: "poster:\(attachmentId)") { try await APIClient.shared.downloadPoster(id: attachmentId) }
+    }
+
     /// Путь аватара содержит ?v=<версия>, поэтому новый аватар — новый ключ кеша, старый не показывается.
     func avatar(path: String) async throws -> Data {
         try await cached(key: path) { try await APIClient.shared.downloadAvatar(path: path) }

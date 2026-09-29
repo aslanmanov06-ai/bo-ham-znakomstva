@@ -512,6 +512,13 @@ actor APIClient {
 
     private static let serverMediaKinds: Set<AttachmentKind> = [.voice, .videoNote, .video]
 
+    /// Обложка (JPEG) обработанного видео или «кружка»; у необработанного и у старых роликов её нет — 404.
+    func downloadPoster(id: String) async throws -> Data {
+        var request = URLRequest(url: makeURL(path: "/attachments/\(id)/poster"))
+        request.httpMethod = "GET"
+        return try await send(request, authorized: true)
+    }
+
     func downloadAttachment(id: String) async throws -> Data {
         var request = URLRequest(url: makeURL(path: "/attachments/\(id)"))
         request.httpMethod = "GET"

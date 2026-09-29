@@ -1625,6 +1625,22 @@
         }
       }
     },
+    "Видео анкеты" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile video"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видеои анкета"
+          }
+        }
+      }
+    },
     "Видео должно быть не длиннее %lld секунд" : {
       "localizations" : {
         "en" : {
