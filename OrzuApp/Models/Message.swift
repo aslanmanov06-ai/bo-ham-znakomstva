@@ -34,6 +34,10 @@ struct Message: Codable, Identifiable, Hashable {
     /// Совпадает с VIEW_TIMER_OPTIONS на backend.
     static let viewTimerOptions = [10, 15, 30, 60]
 
+    /// Постоянный id строки в ленте. Своё сообщение сохраняет его и после того, как сервер выдал настоящий id:
+    /// строка не пересоздаётся, и анимация появления не повторяется.
+    var rowId: String { clientMessageId ?? id }
+
     var previewText: String {
         if systemEvent == Self.screenshotEvent { return String(localized: "📸 Снимок экрана") }
         if !text.isEmpty { return text }
@@ -141,7 +145,7 @@ struct ReactionSummary: Hashable {
     let isMine: Bool
 }
 
-enum DeliveryStatus: Equatable {
+enum DeliveryStatus: Hashable {
     /// Ещё не подтверждено сервером.
     case sending
     /// Сервер сохранил, но до устройства собеседника пока не дошло.

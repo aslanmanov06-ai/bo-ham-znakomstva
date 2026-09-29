@@ -33,6 +33,7 @@ struct ChatView: View {
     @State private var scrollTarget: String?
     @StateObject private var voiceRecorder = VoiceRecorder()
     @ObservedObject private var appearance = AppearanceSettings.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // body разбит на части: одним выражением компилятор не успевал вывести типы
     // («unable to type-check this expression in reasonable time»).
@@ -202,9 +203,11 @@ struct ChatView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
-                    ForEach(viewModel.messages) { message in
+                    ForEach(viewModel.messages, id: \.rowId) { message in
                         if let systemText = viewModel.systemText(for: message) {
-                            SystemEventRow(text: systemText).id(message.id)
+                            SystemEventRow(text: systemText)
+                                .id(message.rowId)
+                                .transition(.opacity)
                         } else {
                             messageRow(for: message)
                         }
@@ -212,17 +215,21 @@ struct ChatView: View {
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 12)
+                // Анимируется только добавление в конец ленты: вставка пузыря и сдвиг остальных вверх.
+                .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.72), value: viewModel.arrivalCount)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
             // Только когда появилось новое последнее сообщение: реакция или правка в середине ленты не должны её прокручивать.
-            .onChange(of: viewModel.messages.last?.id) { _, lastId in
-                guard let lastId, !viewModel.isShowingHistorySlice else { return }
-                withAnimation(.snappy) { proxy.scrollTo(lastId, anchor: .bottom) }
+            // rowId, а не id: подтверждение своего сообщения сервером не считается новым сообщением.
+            .onChange(of: viewModel.messages.last?.rowId) { _, lastRowId in
+                guard let lastRowId, !viewModel.isShowingHistorySlice else { return }
+                withAnimation(.snappy) { proxy.scrollTo(lastRowId, anchor: .bottom) }
             }
             .onChange(of: scrollTarget) { _, target in
                 guard let target else { return }
-                withAnimation(.snappy) { proxy.scrollTo(target, anchor: .center) }
+                let rowId = viewModel.messages.first { $0.id == target }?.rowId ?? target
+                withAnimation(.snappy) { proxy.scrollTo(rowId, anchor: .center) }
                 scrollTarget = nil
             }
             // Секретный чат и фото с таймером: собеседник узнает о снимке экрана.
@@ -240,6 +247,7 @@ struct ChatView: View {
                 senderName: viewModel.senderName(for: message),
                 replyAuthor: message.replyTo.map { viewModel.displayName(of: $0.senderId) },
                 status: viewModel.status(of: message),
+                isQuoted: message.id == viewModel.replyTo?.id || message.id == editingMessage?.id,
                 reactions: message.reactionSummary(currentUserId: viewModel.currentUserId),
                 timedPhotoState: viewModel.timedPhotoState(of: message),
                 bubbleColor: appearance.bubbleColor.color,
@@ -251,7 +259,8 @@ struct ChatView: View {
                 messageMenu(for: message)
             }
         }
-        .id(message.id)
+        .id(message.rowId)
+        .transition(.bubbleArrival(isMine: viewModel.isMine(message), reduceMotion: reduceMotion))
     }
 
     private var topBanners: some View {
@@ -300,21 +309,29 @@ struct ChatView: View {
                     .padding(.vertical, 6)
                     .glassSurface()
             }
-            if let editingMessage {
-                editingBanner(for: editingMessage)
-            } else if let replyTo = viewModel.replyTo {
-                replyBanner(for: replyTo)
-            }
             if let selectedIds {
                 selectionBar(selectedCount: selectedMessages(selectedIds).count)
             } else if viewModel.chat.isClosed {
                 closedChatCard
             } else if viewModel.chat.canPost {
-                if voiceRecorder.isRecording {
-                    VoiceRecordingBar(recorder: voiceRecorder, onCancel: voiceRecorder.cancel, onSend: finishVoiceRecording)
-                } else {
-                    composer
+                Group {
+                    if voiceRecorder.isRecording {
+                        VStack(spacing: 0) {
+                            // Голосовое тоже уходит ответом — цитата остаётся видна над записью.
+                            if let quote = composerQuote {
+                                quote
+                                    .padding(.bottom, 3)
+                                    .glassSurface(in: RoundedRectangle(cornerRadius: 19, style: .continuous))
+                                    .padding(.horizontal)
+                            }
+                            VoiceRecordingBar(recorder: voiceRecorder, onCancel: voiceRecorder.cancel, onSend: finishVoiceRecording)
+                        }
+                    } else {
+                        composer
+                    }
                 }
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)))
+                .animation(.snappy, value: voiceRecorder.isRecording)
             } else {
                 Text("Публиковать может только владелец канала")
                     .font(.app(.footnote))
@@ -619,27 +636,6 @@ struct ChatView: View {
         .padding(.horizontal)
     }
 
-    private func replyBanner(for message: Message) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "arrowshape.turn.up.left").foregroundStyle(Color.accentColor)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Ответ: \(viewModel.displayName(of: message.senderId))").font(.app(.caption, weight: .bold)).foregroundStyle(Color.accentColor)
-                Text(message.previewText).font(.app(.caption)).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            Button {
-                viewModel.replyTo = nil
-            } label: {
-                Image(systemName: "xmark").font(.app(.footnote, weight: .semibold))
-            }
-            .accessibilityLabel("Отменить ответ")
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .glassSurface(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .padding(.horizontal)
-    }
-
     private var secretBanner: some View {
         VStack(spacing: 8) {
             if viewModel.peerKeyChanged {
@@ -674,28 +670,57 @@ struct ChatView: View {
             placeholder: String(localized: "Сообщение"),
             canSend: canSend,
             sendSystemImage: editingMessage == nil ? "arrow.up" : "checkmark",
-            showsSendButton: !showsMediaButtons,
+            // В секретном чате вложений нет — там кнопка всегда «Отправить».
+            idleAction: viewModel.isSecret ? nil : ComposerIdleAction(
+                systemImage: "mic",
+                accessibilityLabel: "Записать голосовое",
+                action: startVoiceRecording
+            ),
+            isIdle: showsMediaButtons,
             onSend: submit
         ) {
+            composerQuote
+        } accessory: {
             // Вложения хранятся на сервере незашифрованными — в секретном чате их нет.
             if !viewModel.isSecret, editingMessage == nil {
                 attachmentMenu
             }
-        } trailing: {
+        } inlineTrailing: {
             if showsMediaButtons {
-                Button(action: startVoiceRecording) { GlassIcon(systemImage: "mic") }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Записать голосовое")
-                Button(action: startVideoNote) { GlassIcon(systemImage: "video.circle") }
+                Button(action: startVideoNote) { ComposerInlineIcon(systemImage: "video.circle") }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Записать видеосообщение")
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
             }
         }
+        // Цитата выезжает из поля, когда ответ или правку выбирают в меню сообщения.
+        .animation(.snappy, value: viewModel.replyTo?.id)
+        .animation(.snappy, value: editingMessage?.id)
     }
 
     /// Пока поле пустое, вместо «отправить» — запись голосового и «кружка». В секретном чате вложений нет.
     private var showsMediaButtons: Bool {
         draft.isEmpty && editingMessage == nil && !viewModel.isSecret && !viewModel.isUploading
+    }
+
+    /// Цитата над полем. Правка и ответ не бывают одновременно: начало одного сбрасывает другое.
+    private var composerQuote: ComposerQuote? {
+        if let editingMessage {
+            return ComposerQuote(title: String(localized: "Редактирование"), text: editingMessage.previewText, cancelLabel: "Отменить редактирование") {
+                self.editingMessage = nil
+                draft = ""
+            }
+        }
+        if let replyTo = viewModel.replyTo {
+            return ComposerQuote(
+                title: String(localized: "Ответ: \(viewModel.displayName(of: replyTo.senderId))"),
+                text: replyTo.previewText,
+                cancelLabel: "Отменить ответ"
+            ) {
+                viewModel.replyTo = nil
+            }
+        }
+        return nil
     }
 
     /// Запись во время звонка перехватила бы у него микрофон и аудиосессию.
@@ -817,28 +842,6 @@ struct ChatView: View {
         }
     }
 
-    private func editingBanner(for message: Message) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "pencil").foregroundStyle(Color.accentColor)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("Редактирование").font(.app(.caption, weight: .bold)).foregroundStyle(Color.accentColor)
-                Text(message.previewText).font(.app(.caption)).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            Button {
-                editingMessage = nil
-                draft = ""
-            } label: {
-                Image(systemName: "xmark").font(.app(.footnote, weight: .semibold))
-            }
-            .accessibilityLabel("Отменить редактирование")
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .glassSurface(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .padding(.horizontal)
-    }
-
     private var attachmentMenu: some View {
         Menu {
             // Каждый путь к галерее задаёт таймер явно: отменённый выбор «с таймером» не должен повлиять на обычное фото.
@@ -865,9 +868,8 @@ struct ChatView: View {
             if viewModel.isUploading {
                 ProgressView()
                     .frame(width: GlassMetrics.controlSize, height: GlassMetrics.controlSize)
-                    .glassSurface(in: Circle())
             } else {
-                GlassIcon(systemImage: "plus")
+                ComposerInlineIcon(systemImage: "plus", filled: true)
             }
         }
         .disabled(viewModel.isUploading)
@@ -909,6 +911,8 @@ private struct MessageBubble<MenuItems: View>: View {
     let replyAuthor: String?
     /// nil — не своё сообщение или канал: галочки не показываем.
     let status: DeliveryStatus?
+    /// На это сообщение сейчас отвечают или его правят — пузырь подсвечен гранатовой рамкой.
+    let isQuoted: Bool
     let reactions: [ReactionSummary]
     /// nil — не фото с таймером.
     let timedPhotoState: TimedPhotoState?
@@ -957,6 +961,13 @@ private struct MessageBubble<MenuItems: View>: View {
             .background(isMine ? bubbleColor : Color.appSurface, in: bubbleShape)
             // Пузырь собеседника на светлом фоне без границы сливается с ним.
             .overlay { if !isMine { bubbleShape.stroke(Color.appLine, lineWidth: 1) } }
+            .overlay {
+                if isQuoted {
+                    bubbleShape.stroke(Color.brand, lineWidth: 1.5)
+                    bubbleShape.stroke(Color.brand.opacity(0.14), lineWidth: 8).padding(-4)
+                }
+            }
+            .animation(.snappy, value: isQuoted)
             .contentShape(.contextMenuPreview, bubbleShape)
             .contextMenu { menuItems }
 
@@ -1038,11 +1049,52 @@ private struct MessageBubble<MenuItems: View>: View {
     }
 }
 
+/// Появление нового пузыря: свой поднимается от поля ввода и садится с лёгкой отдачей, чужой выплывает слева снизу.
+/// С «Уменьшением движения» — только прозрачность.
+private struct BubbleArrivalModifier: ViewModifier {
+    let isHidden: Bool
+    let isMine: Bool
+    let reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        let moves = isHidden && !reduceMotion
+        content
+            .opacity(isHidden ? 0 : 1)
+            .scaleEffect(moves ? (isMine ? 0.92 : 0.96) : 1, anchor: isMine ? .bottomTrailing : .bottomLeading)
+            .offset(y: moves ? (isMine ? 40 : 16) : 0)
+    }
+}
+
+extension AnyTransition {
+    fileprivate static func bubbleArrival(isMine: Bool, reduceMotion: Bool) -> AnyTransition {
+        .asymmetric(
+            insertion: .modifier(
+                active: BubbleArrivalModifier(isHidden: true, isMine: isMine, reduceMotion: reduceMotion),
+                identity: BubbleArrivalModifier(isHidden: false, isMine: isMine, reduceMotion: reduceMotion)
+            ),
+            removal: .opacity
+        )
+    }
+}
+
 /// Часы — ещё отправляется, одна галочка — на сервере, две — доставлено, две яркие — прочитано.
+/// Смена статуса — с отскоком: новая иконка вырастает на месте старой.
 private struct DeliveryStatusIcon: View {
     let status: DeliveryStatus
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        ZStack {
+            icon
+                .id(status)
+                .transition(reduceMotion ? .opacity : .scale(scale: 0.4).combined(with: .opacity))
+        }
+        .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.3, dampingFraction: 0.55), value: status)
+        .accessibilityElement()
+        .accessibilityLabel(accessibilityText)
+    }
+
+    private var icon: some View {
         Group {
             switch status {
             case .sending:
@@ -1058,8 +1110,6 @@ private struct DeliveryStatusIcon: View {
         }
         .fontWeight(status == .read ? .bold : .regular)
         .foregroundStyle(status == .read ? Color.white : Color.white.opacity(0.7))
-        .accessibilityElement()
-        .accessibilityLabel(accessibilityText)
     }
 
     private var accessibilityText: String {

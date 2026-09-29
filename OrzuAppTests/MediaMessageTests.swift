@@ -57,6 +57,19 @@ final class MediaMessageTests: XCTestCase {
         XCTAssertEqual(message.views?.first?.userId, "bob")
     }
 
+    func testVoiceLevelScalesDecibelsIntoUnitRange() {
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: 0), 1)
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: -25), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: -50), 0)
+    }
+
+    func testVoiceLevelClampsOutOfRangeAndInvalidMeter() {
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: -160), 0)
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: 3), 1)
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: -.infinity), 0)
+        XCTAssertEqual(VoiceRecorder.level(fromDecibels: .nan), 0)
+    }
+
     func testFormattedDuration() {
         XCTAssertEqual(Attachment.formattedDuration(7), "0:07")
         XCTAssertEqual(Attachment.formattedDuration(754), "12:34")

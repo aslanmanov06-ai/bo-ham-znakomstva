@@ -27,6 +27,9 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var readAt: Date?
     /// Ждут в очереди отправки (MessageOutbox): id временный, действия с ними недоступны.
     @Published private(set) var pendingIds: Set<String> = []
+    /// Растёт, когда в конец ленты добавилось новое сообщение (отправили или пришло). По нему экран анимирует появление пузыря;
+    /// загрузка истории и подмена страницы его не трогают, чтобы лента не «въезжала» целиком.
+    @Published private(set) var arrivalCount = 0
     /// Сообщение, на которое отвечают из поля ввода; nil — обычная отправка.
     @Published var replyTo: Message?
     /// Закреплённое сообщение чата — видно всем участникам.
@@ -292,7 +295,7 @@ final class ChatViewModel: ObservableObject {
             // Переслали в этот же чат — сообщение придёт не событием (сервер не шлёт message.new отправителю), а ответом.
             if toChatId == chat.id {
                 for message in forwarded where !messages.contains(where: { $0.id == message.id }) {
-                    messages.append(decrypted(message))
+                    appendArrived(decrypted(message))
                 }
             }
             return true
@@ -484,7 +487,7 @@ final class ChatViewModel: ObservableObject {
                 let message = try await APIClient.shared.reportScreenshot(chatId: chat.id, messageId: timedPhotoId)
                 // Обычно раньше придёт message.new — без сокета показываем ответ сервера.
                 if !isShowingHistorySlice, !messages.contains(where: { $0.id == message.id }) {
-                    messages.append(decrypted(message))
+                    appendArrived(decrypted(message))
                 }
             } catch {
                 errorMessage = error.localizedDescription
@@ -581,7 +584,7 @@ final class ChatViewModel: ObservableObject {
         var bubble = item.message(senderId: currentUserId)
         if upload == nil { bubble.text = text }
         pendingIds.insert(item.id)
-        messages.append(bubble)
+        appendArrived(bubble)
         replyTo = nil
         // Своё сообщение отправлено — дальше показываем свежие, а не найденный фрагмент.
         if isShowingHistorySlice { Task { await loadHistory() } }
@@ -618,7 +621,7 @@ final class ChatViewModel: ObservableObject {
             stopTyping(userId: message.senderId)
             // Во фрагменте старой переписки новое сообщение встало бы не на своё место.
             guard !isShowingHistorySlice else { return }
-            messages.append(decrypted(message))
+            appendArrived(decrypted(message))
             markReadIfNeeded()
             // Ответ на моё старое сообщение: цитата зашифрована прежним ключом собеседника — догружаем его и расшифровываем заново.
             if isSecret, !Self.ownPeerKeyIds(in: [message], currentUserId: currentUserId).isSubset(of: peerKeysById.keys) {
@@ -707,6 +710,11 @@ final class ChatViewModel: ObservableObject {
         default:
             break // события звонков этот экран не касаются — их слушает CallManager
         }
+    }
+
+    private func appendArrived(_ message: Message) {
+        messages.append(message)
+        arrivalCount += 1
     }
 
     private func replace(tempId: String, with message: Message) {

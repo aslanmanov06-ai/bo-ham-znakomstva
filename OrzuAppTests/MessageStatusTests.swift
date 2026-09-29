@@ -30,6 +30,19 @@ final class MessageStatusTests: XCTestCase {
         XCTAssertEqual(message().deliveryStatus(isPending: false, deliveredAt: later, readAt: later), .read)
     }
 
+    func testRowIdSurvivesServerConfirmation() {
+        var pending = message()
+        pending.clientMessageId = "m1"
+        var confirmed = Message(id: "server-7", chatId: "c1", senderId: "me", text: "hi", createdAt: sentAt)
+        confirmed.clientMessageId = "m1"
+        XCTAssertEqual(pending.rowId, "m1")
+        XCTAssertEqual(confirmed.rowId, pending.rowId)
+    }
+
+    func testRowIdFallsBackToIdForIncoming() {
+        XCTAssertEqual(message().rowId, "m1")
+    }
+
     func testReactionSummaryGroupsInFixedOrderAndMarksMine() {
         let reactions = [
             MessageReaction(userId: "a", emoji: "🔥"),

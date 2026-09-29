@@ -3929,6 +3929,22 @@
         }
       }
     },
+    "Запись голосового, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording a voice message, %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сабти паёми овозӣ, %@"
+          }
+        }
+      }
+    },
     "Запись слишком короткая или не удалась — попробуйте ещё раз" : {
       "localizations" : {
         "en" : {

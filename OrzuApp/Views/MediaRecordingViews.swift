@@ -6,6 +6,7 @@ struct VoiceRecordingBar: View {
     @ObservedObject var recorder: VoiceRecorder
     let onCancel: () -> Void
     let onSend: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GlassGroup(spacing: 8) {
@@ -15,31 +16,52 @@ struct VoiceRecordingBar: View {
                     .foregroundStyle(.red)
                     .accessibilityLabel("Удалить запись")
 
-                HStack(spacing: 8) {
-                    Circle().fill(.red).frame(width: 10, height: 10)
+                HStack(spacing: 10) {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.red)
+                        .symbolEffect(.pulse, isActive: !reduceMotion)
                     Text(Attachment.formattedDuration(Int(recorder.elapsed)))
-                        .font(.app(.body).monospacedDigit())
-                    Spacer(minLength: 0)
-                    Text("Запись голосового").font(.app(.footnote)).foregroundStyle(.secondary)
+                        .font(.app(.body, weight: .semibold).monospacedDigit())
+                    LevelWaveform(levels: recorder.levels)
+                        .accessibilityHidden(true)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
                 .frame(height: GlassMetrics.controlSize)
                 .glassSurface(in: Capsule())
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Запись голосового, \(Attachment.formattedDuration(Int(recorder.elapsed)))")
 
                 Button(action: onSend) {
-                    Image(systemName: "arrow.up")
-                        .font(.app(.body, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: GlassMetrics.controlSize, height: GlassMetrics.controlSize)
-                        .glassSurface(in: Circle(), tint: .accentColor, interactive: true)
+                    BrandCircleIcon(systemImage: "arrow.up")
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressScaleButtonStyle())
                 .accessibilityLabel("Отправить голосовое")
             }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+    }
+}
+
+/// Живая волна громкости: свежие уровни справа, пока запись короче VoiceRecorder.levelCount тиков — слева пусто.
+private struct LevelWaveform: View {
+    let levels: [CGFloat]
+    /// Тишина всё равно видна точкой — иначе кажется, что запись не идёт.
+    private static let minBarHeight: CGFloat = 3
+    private static let maxBarHeight: CGFloat = 26
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Spacer(minLength: 0)
+            ForEach(Array(levels.enumerated()), id: \.offset) { _, level in
+                Capsule()
+                    .fill(Color.brand)
+                    .frame(width: 3, height: Self.minBarHeight + level * (Self.maxBarHeight - Self.minBarHeight))
+            }
+        }
+        .frame(height: Self.maxBarHeight)
+        .animation(.easeOut(duration: 0.1), value: levels)
     }
 }
 
