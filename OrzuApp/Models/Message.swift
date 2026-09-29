@@ -10,6 +10,8 @@ struct Message: Codable, Identifiable, Hashable {
     /// Только в секретных чатах: ChaChaPoly-конверт и публичный ключ отправителя (см. SecretChatCrypto).
     var ciphertext: String? = nil
     var senderKey: String? = nil
+    /// Каким ключом собеседника зашифровано (keyId): своё старое сообщение расшифровывается его прежним ключом.
+    var recipientKeyId: String? = nil
     var editedAt: Date? = nil
     var reactions: [MessageReaction]? = nil
     /// Фото с таймером: получатель видит его столько секунд после открытия.

@@ -67,6 +67,9 @@ final class ChatViewModel: ObservableObject {
     private let participantsById: [String: User]
     private var peerPublicKey: Curve25519.KeyAgreement.PublicKey?
     private var peerKeyBase64: String?
+    private var peerKeyId: String?
+    /// Ключи собеседника по keyId — текущий и прежние, которыми зашифрованы мои старые сообщения.
+    private var peerKeysById: [String: Curve25519.KeyAgreement.PublicKey] = [:]
     /// Последнее входящее, о прочтении которого уже сообщили серверу, — чтобы не слать одно и то же повторно.
     private var lastMarkedReadId: String?
     private var lastTypingSentAt: Date?
@@ -127,9 +130,12 @@ final class ChatViewModel: ObservableObject {
             if isSecret { try await preparePeerKey() }
             // Переписка с прошлого раза видна сразу; без сети fetchMessages вернёт её же.
             if messages.isEmpty, let cached = await APIClient.shared.cachedMessages(chatId: chat.id) {
+                await loadPeerKeys(for: cached)
                 showLatest(cached)
             }
-            showLatest(try await APIClient.shared.fetchMessages(chatId: chat.id))
+            let page = try await APIClient.shared.fetchMessages(chatId: chat.id)
+            await loadPeerKeys(for: page)
+            showLatest(page)
             markReadIfNeeded()
         } catch {
             errorMessage = error.localizedDescription
@@ -150,6 +156,7 @@ final class ChatViewModel: ObservableObject {
     private func loadPinnedMessage() async {
         do {
             let detail = try await APIClient.shared.fetchChatDetail(chatId: chat.id)
+            if let pinned = detail.pinnedMessage { await loadPeerKeys(for: [pinned]) }
             pinnedMessage = detail.pinnedMessage.map(decrypted)
             chat.closedAt = detail.closedAt
             chat.deletesAt = detail.deletesAt
@@ -366,6 +373,7 @@ final class ChatViewModel: ObservableObject {
         if messages.contains(where: { $0.id == message.id }) { return true }
         do {
             let page = try await APIClient.shared.fetchMessages(chatId: chat.id, before: message.createdAt.addingTimeInterval(0.001))
+            await loadPeerKeys(for: page)
             messages = page.map(decrypted)
             isShowingHistorySlice = true
             return messages.contains { $0.id == message.id }
@@ -553,7 +561,7 @@ final class ChatViewModel: ObservableObject {
 
         let item = OutgoingMessage(
             id: UUID().uuidString, chatId: chat.id, createdAt: Date(), text: wireText,
-            ciphertext: encrypted?.ciphertext, senderKey: encrypted?.senderKey, viewTimerSec: viewTimerSec,
+            ciphertext: encrypted?.ciphertext, senderKey: encrypted?.senderKey, recipientKeyId: encrypted?.recipientKeyId, viewTimerSec: viewTimerSec,
             replyToId: replyTo?.id, replyPreview: replyTo.map(replyPreview), attachment: attachment, upload: upload?.0
         )
         var bubble = item.message(senderId: currentUserId)
@@ -662,6 +670,17 @@ final class ChatViewModel: ObservableObject {
                 deliveredAt = max(deliveredAt ?? at, at)
             }
 
+        case .e2eKeyChanged(let userId):
+            // Новый ключ не принимаем молча: preparePeerKey покажет предупреждение, отправка встанет до подтверждения.
+            guard isSecret, userId == chat.peer?.id else { return }
+            Task {
+                do {
+                    try await preparePeerKey()
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+            }
+
         case .error(let text):
             errorMessage = text
 
@@ -727,10 +746,13 @@ final class ChatViewModel: ObservableObject {
 
     private func preparePeerKey() async throws {
         guard let peer = chat.participants.first else { throw SecretChatCrypto.CryptoError.invalidKey }
-        let keyBase64 = try await APIClient.shared.fetchE2EKey(userId: peer.id)
+        let key = try await APIClient.shared.fetchE2EKey(userId: peer.id)
+        let keyBase64 = key.publicKey
         let publicKey = try SecretChatCrypto.publicKey(base64: keyBase64)
         peerPublicKey = publicKey
         peerKeyBase64 = keyBase64
+        peerKeyId = key.keyId
+        peerKeysById[key.keyId] = publicKey
 
         switch E2EKeyStore.shared.status(ofPeerKey: keyBase64, userId: peer.id) {
         case .firstSeen: E2EKeyStore.shared.pin(peerKey: keyBase64, userId: peer.id)
@@ -748,34 +770,57 @@ final class ChatViewModel: ObservableObject {
         }
         let myKey = try E2EKeyStore.shared.privateKey(for: currentUserId)
         let ciphertext = try SecretChatCrypto.seal(text, privateKey: myKey, peerPublicKey: peerPublicKey, chatId: chat.id, senderId: currentUserId)
-        return EncryptedPayload(ciphertext: ciphertext, senderKey: myKey.publicKey.rawRepresentation.base64EncodedString())
+        return EncryptedPayload(ciphertext: ciphertext, senderKey: myKey.publicKey.rawRepresentation.base64EncodedString(), recipientKeyId: peerKeyId)
+    }
+
+    /// Свои сообщения, зашифрованные прежним ключом собеседника, расшифровываются только им — подгружаем его по keyId.
+    /// Не загрузился — такое сообщение покажется с пометкой «не удалось расшифровать», остальные это не задерживает.
+    private func loadPeerKeys(for page: [Message]) async {
+        guard isSecret, let peer = chat.participants.first else { return }
+        let missing = Set(page.filter(isMine).compactMap(\.recipientKeyId)).subtracting(peerKeysById.keys)
+        for keyId in missing {
+            guard
+                let key = try? await APIClient.shared.fetchE2EKey(userId: peer.id, keyId: keyId),
+                let publicKey = try? SecretChatCrypto.publicKey(base64: key.publicKey)
+            else { continue }
+            peerKeysById[keyId] = publicKey
+        }
     }
 
     /// Возвращает копию сообщения с расшифрованным текстом (или пометкой, если расшифровать нельзя).
     private func decrypted(_ message: Message) -> Message {
         var copy = message
         if let ciphertext = message.ciphertext {
-            copy.text = decryptedText(ciphertext, senderId: message.senderId, senderKey: message.senderKey)
+            copy.text = decryptedText(ciphertext, senderId: message.senderId, senderKey: message.senderKey, recipientKeyId: message.recipientKeyId)
         }
         // Цитата в секретном чате зашифрована так же, как само сообщение, — ключом её автора.
         if let reply = message.replyTo, let ciphertext = reply.ciphertext {
-            copy.replyTo?.text = decryptedText(ciphertext, senderId: reply.senderId, senderKey: reply.senderKey)
+            copy.replyTo?.text = decryptedText(ciphertext, senderId: reply.senderId, senderKey: reply.senderKey, recipientKeyId: nil)
         }
         return copy
     }
 
-    private func decryptedText(_ ciphertext: String, senderId: String, senderKey: String?) -> String {
-        (try? decryptText(ciphertext, senderId: senderId, senderKey: senderKey)) ?? String(localized: "⚠️ Не удалось расшифровать сообщение")
+    private func decryptedText(_ ciphertext: String, senderId: String, senderKey: String?, recipientKeyId: String?) -> String {
+        (try? decryptText(ciphertext, senderId: senderId, senderKey: senderKey, recipientKeyId: recipientKeyId))
+            ?? String(localized: "⚠️ Не удалось расшифровать сообщение")
     }
 
-    private func decryptText(_ ciphertext: String, senderId: String, senderKey: String?) throws -> String {
-        guard let peerPublicKey, let peerKeyBase64 else { throw SecretChatCrypto.CryptoError.invalidKey }
-        // Входящее, зашифрованное не подтверждённым нами ключом, не показываем как настоящее: его мог подделать сервер.
-        if senderId != currentUserId, senderKey != peerKeyBase64 || peerKeyChanged {
-            throw SecretChatCrypto.CryptoError.invalidKey
+    private func decryptText(_ ciphertext: String, senderId: String, senderKey: String?, recipientKeyId: String?) throws -> String {
+        let peerKey: Curve25519.KeyAgreement.PublicKey
+        if senderId == currentUserId {
+            // Своё зашифровано ключом собеседника на момент отправки; у старых сообщений keyId нет — пробуем текущий.
+            guard let key = recipientKeyId.flatMap({ peerKeysById[$0] }) ?? peerPublicKey else { throw SecretChatCrypto.CryptoError.invalidKey }
+            peerKey = key
+        } else {
+            // Входящее, зашифрованное не подтверждённым нами ключом, не показываем как настоящее: его мог подделать сервер.
+            // Прежние подтверждённые ключи годятся — ими зашифрована переписка до смены ключа.
+            guard let senderKey, E2EKeyStore.shared.isTrusted(peerKey: senderKey, userId: senderId) else {
+                throw SecretChatCrypto.CryptoError.invalidKey
+            }
+            peerKey = try SecretChatCrypto.publicKey(base64: senderKey)
         }
         let myKey = try E2EKeyStore.shared.privateKey(for: currentUserId)
-        return try SecretChatCrypto.open(ciphertext, privateKey: myKey, peerPublicKey: peerPublicKey, chatId: chat.id, senderId: senderId)
+        return try SecretChatCrypto.open(ciphertext, privateKey: myKey, peerPublicKey: peerKey, chatId: chat.id, senderId: senderId)
     }
 
     /// Имя отправителя показывается только в группах — в личном чате и так понятно, кто пишет.

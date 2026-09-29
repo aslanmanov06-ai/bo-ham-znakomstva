@@ -203,6 +203,7 @@ actor APIClient {
             attachmentId: attachmentId,
             ciphertext: encrypted?.ciphertext,
             senderKey: encrypted?.senderKey,
+            recipientKeyId: encrypted?.recipientKeyId,
             viewTimerSec: viewTimerSec,
             replyToId: replyToId,
             clientMessageId: clientMessageId
@@ -226,6 +227,7 @@ actor APIClient {
         var body = ["text": text]
         body["ciphertext"] = encrypted?.ciphertext
         body["senderKey"] = encrypted?.senderKey
+        body["recipientKeyId"] = encrypted?.recipientKeyId
         return try await request(path: "/chats/\(chatId)/messages/\(messageId)", method: "PATCH", body: body, authorized: true)
     }
 
@@ -378,9 +380,13 @@ actor APIClient {
         let _: EmptyResponse = try await request(path: "/users/me/e2e-key", method: "PUT", body: ["publicKey": publicKey], authorized: true)
     }
 
-    func fetchE2EKey(userId: String) async throws -> String {
-        let response: E2EKeyResponse = try await request(path: "/users/\(userId)/e2e-key", method: "GET", body: nil as String?, authorized: true)
-        return response.publicKey
+    func fetchE2EKey(userId: String) async throws -> E2EKey {
+        try await request(path: "/users/\(userId)/e2e-key", method: "GET", body: nil as String?, authorized: true)
+    }
+
+    /// Прежний ключ собеседника по keyId — им зашифрованы мои старые сообщения ему.
+    func fetchE2EKey(userId: String, keyId: String) async throws -> E2EKey {
+        try await request(path: "/users/\(userId)/e2e-keys/\(keyId)", method: "GET", body: nil as String?, authorized: true)
     }
 
     // MARK: - Боты
@@ -759,6 +765,7 @@ private struct SendMessageBody: Encodable {
     let attachmentId: String?
     let ciphertext: String?
     let senderKey: String?
+    let recipientKeyId: String?
     let viewTimerSec: Int?
     let replyToId: String?
     let clientMessageId: String
@@ -780,9 +787,12 @@ struct TimedPhotoOpening: Decodable {
 struct EncryptedPayload {
     let ciphertext: String
     let senderKey: String
+    /// keyId ключа собеседника, которым зашифровано: сервер запомнит его, и автор расшифрует сообщение и после смены ключа.
+    var recipientKeyId: String? = nil
 }
 
-private struct E2EKeyResponse: Decodable {
+struct E2EKey: Decodable {
+    let keyId: String
     let publicKey: String
 }
 

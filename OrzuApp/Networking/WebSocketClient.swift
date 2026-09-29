@@ -62,6 +62,8 @@ enum ServerEvent {
     case accountSanction(type: String, reason: String)
     /// Тот, кто добавил вас в доверенные контакты, идёт на встречу и поделился, с кем, где и когда.
     case meetingShared(SharedMeeting)
+    /// Собеседник по секретному чату сменил ключ шифрования (переустановил приложение или вошёл с другого телефона).
+    case e2eKeyChanged(userId: String)
 }
 
 enum ReceiptKind {
@@ -501,6 +503,10 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "dating.meeting":
             guard let meeting: DatingMeeting = decode(json["meeting"]) else { return }
             events.send(.datingMeeting(meeting))
+
+        case "e2e.keyChanged":
+            guard let userId = json["userId"] as? String else { return }
+            events.send(.e2eKeyChanged(userId: userId))
 
         case "chat.request", "chat.requestAccepted":
             events.send(.chatRequestsChanged)

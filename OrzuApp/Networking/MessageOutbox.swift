@@ -40,6 +40,7 @@ struct OutgoingMessage: Codable, Identifiable, Hashable {
     let text: String
     var ciphertext: String?
     var senderKey: String?
+    var recipientKeyId: String?
     var viewTimerSec: Int?
     var replyToId: String?
     var replyPreview: ReplyPreview?
@@ -50,7 +51,7 @@ struct OutgoingMessage: Codable, Identifiable, Hashable {
     func message(senderId: String) -> Message {
         Message(
             id: id, chatId: chatId, senderId: senderId, text: upload?.placeholder ?? text, createdAt: createdAt,
-            attachment: attachment, ciphertext: ciphertext, senderKey: senderKey, viewTimerSec: viewTimerSec,
+            attachment: attachment, ciphertext: ciphertext, senderKey: senderKey, recipientKeyId: recipientKeyId, viewTimerSec: viewTimerSec,
             replyTo: replyPreview, clientMessageId: id
         )
     }
@@ -184,7 +185,7 @@ final class MessageOutbox {
             store.remove(Self.fileKey(item.id))
         }
         let encrypted = item.ciphertext.flatMap { ciphertext in
-            item.senderKey.map { EncryptedPayload(ciphertext: ciphertext, senderKey: $0) }
+            item.senderKey.map { EncryptedPayload(ciphertext: ciphertext, senderKey: $0, recipientKeyId: item.recipientKeyId) }
         }
         return try await APIClient.shared.sendMessage(
             chatId: item.chatId, text: item.text, attachmentId: item.attachment?.id, encrypted: encrypted,

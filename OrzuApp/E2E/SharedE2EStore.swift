@@ -11,6 +11,7 @@ enum SharedE2EStore {
 
     private static let currentUserKey = "e2e.currentUserId"
     private static let pinnedKeysKey = "e2e.pinnedPeerKeys"
+    private static let previousPinnedKeysKey = "e2e.previousPinnedPeerKeys"
 
     /// «ABCDE12345.com.orzuapp.messenger.shared». Префикс команды подставляет сборка (Info.plist → AppIdentifierPrefix);
     /// без подписи (Симулятор, CI) его нет — тогда ключ хранится как раньше, только для приложения.
@@ -44,6 +45,12 @@ enum SharedE2EStore {
             return legacy
         }
         set { defaults.set(newValue, forKey: pinnedKeysKey) }
+    }
+
+    /// Ключи собеседников, которым доверяли раньше: старые сообщения, зашифрованные ими, остаются читаемыми после смены ключа.
+    static var previousPinnedKeys: [String: [String]] {
+        get { defaults.dictionary(forKey: previousPinnedKeysKey) as? [String: [String]] ?? [:] }
+        set { defaults.set(newValue, forKey: previousPinnedKeysKey) }
     }
 
     // MARK: - Приватный ключ в Keychain

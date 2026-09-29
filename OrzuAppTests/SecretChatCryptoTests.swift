@@ -59,3 +59,45 @@ final class SecretChatCryptoTests: XCTestCase {
         XCTAssertTrue(number.split(separator: " ").allSatisfy { $0.count == 5 && $0.allSatisfy(\.isNumber) })
     }
 }
+
+@MainActor
+final class E2EKeyHistoryTests: XCTestCase {
+    private let peerId = "test-peer-\(UUID().uuidString)"
+
+    override func tearDown() {
+        SharedE2EStore.pinnedKeys.removeValue(forKey: peerId)
+        SharedE2EStore.previousPinnedKeys.removeValue(forKey: peerId)
+        super.tearDown()
+    }
+
+    /// После смены ключа старые сообщения собеседника остаются читаемыми, а чужой ключ — нет.
+    func testReplacedKeyStaysTrusted() {
+        let store = E2EKeyStore.shared
+        store.pin(peerKey: "old", userId: peerId)
+        store.pin(peerKey: "new", userId: peerId)
+
+        XCTAssertTrue(store.isTrusted(peerKey: "new", userId: peerId))
+        XCTAssertTrue(store.isTrusted(peerKey: "old", userId: peerId))
+        XCTAssertFalse(store.isTrusted(peerKey: "forged", userId: peerId))
+        XCTAssertEqual(store.status(ofPeerKey: "new", userId: peerId), .unchanged)
+    }
+
+    /// Неподтверждённый новый ключ доверенным не считается, пока его не приняли.
+    func testUnacceptedKeyIsNotTrusted() {
+        let store = E2EKeyStore.shared
+        store.pin(peerKey: "old", userId: peerId)
+        XCTAssertEqual(store.status(ofPeerKey: "new", userId: peerId), .changed)
+        XCTAssertFalse(store.isTrusted(peerKey: "new", userId: peerId))
+    }
+
+    /// История ограничена, повторное подтверждение того же ключа её не раздувает.
+    func testHistoryIsBoundedAndDeduplicated() {
+        let store = E2EKeyStore.shared
+        for index in 0..<15 { store.pin(peerKey: "key-\(index)", userId: peerId) }
+        store.pin(peerKey: "key-14", userId: peerId)
+
+        XCTAssertEqual(SharedE2EStore.previousPinnedKeys[peerId]?.count, 10)
+        XCTAssertFalse(store.isTrusted(peerKey: "key-0", userId: peerId))
+        XCTAssertTrue(store.isTrusted(peerKey: "key-13", userId: peerId))
+    }
+}

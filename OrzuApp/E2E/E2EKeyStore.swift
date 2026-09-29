@@ -57,11 +57,25 @@ final class E2EKeyStore {
     }
 
     /// Запомненные ключи видит и расширение уведомлений: превью расшифровывается, только если ключ совпал.
+    /// Заменённый ключ уходит в историю — им зашифрованы прежние сообщения собеседника.
     func pin(peerKey key: String, userId: String) {
         var keys = pinnedKeys
+        if let previous = keys[userId], previous != key {
+            var history = SharedE2EStore.previousPinnedKeys
+            history[userId] = Array(((history[userId] ?? []).filter { $0 != previous } + [previous]).suffix(Self.maxPreviousKeys))
+            SharedE2EStore.previousPinnedKeys = history
+        }
         keys[userId] = key
         SharedE2EStore.pinnedKeys = keys
     }
+
+    /// Ключ, который пользователь подтвердил сейчас или раньше. Неподтверждённый новый ключ сюда не входит.
+    func isTrusted(peerKey key: String, userId: String) -> Bool {
+        pinnedKeys[userId] == key || SharedE2EStore.previousPinnedKeys[userId]?.contains(key) == true
+    }
+
+    /// Собеседник переустанавливает приложение редко — десятка прежних ключей хватает с запасом.
+    private static let maxPreviousKeys = 10
 
     private var pinnedKeys: [String: String] {
         SharedE2EStore.pinnedKeys
