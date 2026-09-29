@@ -17,3 +17,27 @@ final class ResponseCachePolicyTests: XCTestCase {
         XCTAssertFalse(APIClient.isCacheable(path: "/dating/browse?cityCode=khujand&cursor=2026-06-01T00:00:00.000Z_u1"))
     }
 }
+
+final class RateLimitTests: XCTestCase {
+    /// Заголовок Retry-After главнее тела; без обоих — пауза по умолчанию, но никогда не ноль.
+    func testRetryAfterPrefersHeaderThenBody() {
+        XCTAssertEqual(APIClient.retryAfter(header: "12", bodySeconds: 40), 12)
+        XCTAssertEqual(APIClient.retryAfter(header: nil, bodySeconds: 40), 40)
+        XCTAssertEqual(APIClient.retryAfter(header: "Wed, 21 Oct 2026 07:28:00 GMT", bodySeconds: 7), 7)
+        XCTAssertEqual(APIClient.retryAfter(header: nil, bodySeconds: nil), 30)
+        XCTAssertEqual(APIClient.retryAfter(header: "0", bodySeconds: nil), 1)
+    }
+
+    /// «Код уже отправлен» сервер отдаёт как 429 с reason — экран регистрации узнаёт его по code.
+    func testRateLimitedCodeIsReasonOrGeneric() {
+        let codeSent = APIError.rateLimited(retryAfter: 45, reason: ServerErrorCode.codeAlreadySent, message: "Код уже отправлен")
+        XCTAssertEqual(codeSent.code, ServerErrorCode.codeAlreadySent)
+        XCTAssertEqual(codeSent.retryAfter, 45)
+        XCTAssertFalse(codeSent.isTransient)
+
+        let generic = APIError.rateLimited(retryAfter: 5, reason: nil, message: "Слишком часто")
+        XCTAssertEqual(generic.code, ServerErrorCode.rateLimited)
+        XCTAssertEqual(generic.errorDescription, "Слишком часто")
+        XCTAssertNil(APIError.offline.retryAfter)
+    }
+}

@@ -10,6 +10,8 @@ enum APIError: LocalizedError {
     case offline
     /// Сервер ответил 5xx (перезапуск, перегрузка) — запрос стоит повторить позже.
     case unavailable(status: Int)
+    /// 429: повторить не раньше чем через retryAfter секунд. reason — подробность от сервера (например, CODE_ALREADY_SENT).
+    case rateLimited(retryAfter: TimeInterval, reason: String?, message: String)
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +21,7 @@ enum APIError: LocalizedError {
         case .invalidResponse: return String(localized: "Некорректный ответ сервера")
         case .offline: return String(localized: "Нет подключения к интернету")
         case .unavailable(let status): return String(localized: "Сервер временно недоступен (\(status)), попробуйте позже")
+        case .rateLimited(_, _, let message): return message
         }
     }
 
@@ -30,8 +33,17 @@ enum APIError: LocalizedError {
         }
     }
 
+    /// У 429 кодом считается reason: экраны различают «код уже отправлен» и прочие лимиты по нему.
     var code: String? {
-        if case .rejected(let code, _) = self { return code }
+        switch self {
+        case .rejected(let code, _): return code
+        case .rateLimited(_, let reason, _): return reason ?? ServerErrorCode.rateLimited
+        default: return nil
+        }
+    }
+
+    var retryAfter: TimeInterval? {
+        if case .rateLimited(let retryAfter, _, _) = self { return retryAfter }
         return nil
     }
 }
@@ -565,9 +577,21 @@ actor APIClient {
         announceAppWideRejection(code: body?.code, message: body?.readableMessage, data: data)
         if httpResponse.statusCode >= 500 { throw APIError.unavailable(status: httpResponse.statusCode) }
         let message = body?.readableMessage ?? String(localized: "Ошибка сервера (\(httpResponse.statusCode))")
+        if httpResponse.statusCode == 429 {
+            let retryAfter = Self.retryAfter(header: httpResponse.value(forHTTPHeaderField: "Retry-After"), bodySeconds: body?.retryAfterSec)
+            throw APIError.rateLimited(retryAfter: retryAfter, reason: body?.reason, message: message)
+        }
         guard let code = body?.code else { throw APIError.server(message) }
         throw APIError.rejected(code: code, message: message)
     }
+
+    /// Срок из заголовка Retry-After (секунды), иначе из тела ответа; без обоих — умеренная пауза, а не немедленный повтор.
+    static func retryAfter(header: String?, bodySeconds: TimeInterval?) -> TimeInterval {
+        let headerSeconds = header.flatMap { TimeInterval($0.trimmingCharacters(in: .whitespaces)) }
+        return max(1, headerSeconds ?? bodySeconds ?? defaultRetryAfter)
+    }
+
+    private static let defaultRetryAfter: TimeInterval = 30
 
     /// Обслуживание и блокировка касаются всего приложения, а не экрана, который сделал запрос: о них узнаёт AppStatus.
     /// Сам запрос при этом завершается ошибкой как обычно (при обслуживании — временной: экран покажет сохранённое).
@@ -664,6 +688,9 @@ private struct ServerErrorBody: Decodable {
     let error: String?
     /// Есть только у отказов, на которые клиент реагирует по-разному (см. ServerErrorCode).
     let code: String?
+    /// Только у 429: через сколько секунд повторить и почему отказано.
+    let retryAfterSec: TimeInterval?
+    let reason: String?
 
     var readableMessage: String? {
         message?.value ?? error

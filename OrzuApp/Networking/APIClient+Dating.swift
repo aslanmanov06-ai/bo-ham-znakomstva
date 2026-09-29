@@ -28,6 +28,8 @@ enum ServerErrorCode {
     static let videoTooLong = "videoTooLong"
     /// Файл больше лимита своего вида (видео — до 90 МБ).
     static let fileTooLarge = "fileTooLarge"
+    /// Любой 429 без уточнения reason: слишком часто, повторить через APIError.retryAfter.
+    static let rateLimited = "rateLimited"
 
     /// Свой текст на языке интерфейса для кодов, где сервер может ответить только по-русски или слишком технично.
     static func localizedMessage(for code: String) -> String? {

@@ -152,6 +152,10 @@ final class MessageOutbox {
             } catch let error as APIError where error.isTransient {
                 scheduleRetry()
                 return
+            } catch APIError.rateLimited(let retryAfter, _, _) {
+                // Лимит отправки — не отказ по существу: сообщение ждёт столько, сколько попросил сервер.
+                scheduleRetry(notBefore: retryAfter)
+                return
             } catch APIError.unauthorized {
                 // Сессия закончилась: AuthViewModel выведет на экран входа и очистит очередь.
                 return
@@ -188,8 +192,8 @@ final class MessageOutbox {
         )
     }
 
-    private func scheduleRetry() {
-        let delay = retryBackoff.next()
+    private func scheduleRetry(notBefore minimumDelay: TimeInterval = 0) {
+        let delay = max(retryBackoff.next(), .milliseconds(Int(minimumDelay * 1000)))
         retryTask = Task { [weak self] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
