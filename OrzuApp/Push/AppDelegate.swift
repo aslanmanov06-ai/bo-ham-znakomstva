@@ -12,6 +12,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
+    /// Фоновая загрузка файла закончилась, пока приложение было выгружено: iOS запустила его, чтобы доставить результат.
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        guard identifier == BackgroundUploads.sessionIdentifier else {
+            completionHandler()
+            return
+        }
+        BackgroundUploads.shared.handleEvents(completionHandler: completionHandler)
+    }
+
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         PushManager.shared.didRegister(deviceToken: deviceToken)
     }

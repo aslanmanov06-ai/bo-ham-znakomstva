@@ -36,6 +36,20 @@ final class DiskStore: @unchecked Sendable {
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
+    /// Копия файла без чтения в память (видео — до сотни мегабайт). Прежний файл с этим ключом заменяется.
+    func copyFile(at source: URL, for key: String) throws {
+        try prepareDirectory()
+        let destination = fileURL(for: key)
+        if FileManager.default.fileExists(atPath: destination.path) {
+            try FileManager.default.removeItem(at: destination)
+        }
+        try FileManager.default.copyItem(at: source, to: destination)
+        // Как у save: фоновая загрузка читает файл и на заблокированном телефоне, но только после первой разблокировки.
+        try FileManager.default.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: destination.path
+        )
+    }
+
     func remove(_ key: String) {
         try? FileManager.default.removeItem(at: fileURL(for: key))
     }

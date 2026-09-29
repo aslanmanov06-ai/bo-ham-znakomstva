@@ -41,3 +41,27 @@ final class RateLimitTests: XCTestCase {
         XCTAssertNil(APIError.offline.retryAfter)
     }
 }
+
+final class UploadStatusTests: XCTestCase {
+    /// 409 — файл уже принят прошлой попыткой: это успех, complete вернёт вложение.
+    func testSuccessAndAlreadyReceived() {
+        XCTAssertNoThrow(try APIClient.checkUploadStatus(200))
+        XCTAssertNoThrow(try APIClient.checkUploadStatus(409))
+    }
+
+    /// Истёкшая ссылка и сбой сервера — повторяемые: очередь возьмёт новую ссылку, а не выбросит сообщение.
+    func testExpiredLinkAndServerFailureAreTransient() {
+        for status in [403, 404, 500, 503] {
+            XCTAssertThrowsError(try APIClient.checkUploadStatus(status)) { error in
+                XCTAssertEqual((error as? APIError)?.isTransient, true, "статус \(status)")
+            }
+        }
+    }
+
+    /// Отказ по существу (например, файл больше заявленного) повтором не лечится.
+    func testRejectionIsFinal() {
+        XCTAssertThrowsError(try APIClient.checkUploadStatus(400)) { error in
+            XCTAssertEqual((error as? APIError)?.isTransient, false)
+        }
+    }
+}

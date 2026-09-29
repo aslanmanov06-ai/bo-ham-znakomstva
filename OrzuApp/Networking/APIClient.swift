@@ -491,23 +491,63 @@ actor APIClient {
     }
 
     /// Файл с диска по ссылке: заявка → PUT тела по подписанной ссылке → complete. Без multipart и без копии файла в памяти —
-    /// так уходят видео анкеты, «кружки» и голосовые. Повтор PUT перезаписывает файл, поэтому обрыв лечится повтором загрузки.
+    /// так уходят видео анкеты, «кружки» и голосовые. PUT идёт в фоновой сессии и не прерывается, если приложение свернули.
     func uploadFile(at fileURL: URL, fileName: String, mimeType: String, mediaKind: AttachmentKind? = nil) async throws -> Attachment {
+        let ticket = try await createUpload(for: fileURL, fileName: fileName, mimeType: mimeType, mediaKind: mediaKind)
+        try await putUpload(ticket, fileURL: fileURL, mimeType: mimeType)
+        return try await completeUpload(id: ticket.uploadId)
+    }
+
+    func createUpload(for fileURL: URL, fileName: String, mimeType: String, mediaKind: AttachmentKind?) async throws -> UploadTicket {
         let size = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
         // Вид сервер принимает только у голосового и видео — фото и файл он определит по содержимому.
         let kind = mediaKind.flatMap { Self.serverMediaKinds.contains($0) ? $0.rawValue : nil }
         let body = CreateUploadBody(mimeType: mimeType, size: size, kind: kind, fileName: fileName)
-        let ticket: UploadTicket = try await request(path: "/attachments/uploads", method: "POST", body: body, authorized: true)
-        guard let uploadURL = URL(string: ticket.uploadUrl) else { throw APIError.invalidResponse }
+        return try await request(path: "/attachments/uploads", method: "POST", body: body, authorized: true)
+    }
 
-        // Доступ даёт подпись в ссылке — токен не нужен и не должен уходить на адрес из ответа сервера.
+    /// Доступ даёт подпись в ссылке — токен не нужен и не должен уходить на адрес из ответа сервера.
+    func putUpload(_ ticket: UploadTicket, fileURL: URL, mimeType: String) async throws {
+        guard let uploadURL = URL(string: ticket.uploadUrl) else { throw APIError.invalidResponse }
         var upload = URLRequest(url: uploadURL)
         upload.httpMethod = ticket.method
         upload.setValue(mimeType, forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await perform { try await self.session.upload(for: upload, fromFile: fileURL) }
-        try throwIfFailed(response, data: data)
+        let status = try await backgroundUpload { try await BackgroundUploads.shared.upload(upload, fromFile: fileURL, uploadId: ticket.uploadId) }
+        try Self.checkUploadStatus(status)
+    }
 
-        return try await request(path: "/attachments/uploads/\(ticket.uploadId)/complete", method: "POST", body: nil as String?, authorized: true)
+    /// PUT этой загрузки уже идёт в фоновой сессии или закончился, пока приложение было выгружено: дожидаемся его.
+    /// false — такого нет (приложение закрыли свайпом, телефон перезагрузили), файл нужно отправить заново.
+    func resumeUpload(id uploadId: String) async throws -> Bool {
+        guard let status = try await backgroundUpload({ try await BackgroundUploads.shared.awaitExisting(uploadId: uploadId) }) else {
+            return false
+        }
+        try Self.checkUploadStatus(status)
+        return true
+    }
+
+    /// Повторный complete безопасен: сервер вернёт то же вложение.
+    func completeUpload(id uploadId: String) async throws -> Attachment {
+        try await request(path: "/attachments/uploads/\(uploadId)/complete", method: "POST", body: nil as String?, authorized: true)
+    }
+
+    /// Ответ на PUT. 409 — файл уже принят (повтор после перезапуска), complete вернёт вложение.
+    /// 403 и 404 — ссылка истекла (сутки без сети): считаем сбоем, повтор возьмёт новую ссылку.
+    static func checkUploadStatus(_ status: Int) throws {
+        switch status {
+        case 200...299, 409: return
+        case 403, 404, 500...: throw APIError.unavailable(status: status)
+        default: throw APIError.server(String(localized: "Сервер не принял файл (\(status))"))
+        }
+    }
+
+    /// Обрыв фоновой загрузки — такой же сбой связи. Отмена — приложение закрыли свайпом: файл отправится заново.
+    private func backgroundUpload<T>(_ operation: () async throws -> T) async throws -> T {
+        do {
+            return try await operation()
+        } catch let error as URLError where Self.connectivityErrors.contains(error.code) || error.code == .cancelled {
+            throw APIError.offline
+        }
     }
 
     private static let serverMediaKinds: Set<AttachmentKind> = [.voice, .videoNote, .video]
@@ -837,7 +877,7 @@ private struct CreateUploadBody: Encodable {
     let fileName: String
 }
 
-private struct UploadTicket: Decodable {
+struct UploadTicket: Decodable {
     let uploadId: String
     let uploadUrl: String
     let method: String
@@ -859,4 +899,95 @@ private struct IceServersResponse: Decodable {
 private struct CreateChannelRequest: Encodable {
     let title: String
     let username: String
+}
+
+/// Фоновая сессия iOS для PUT файлов: загрузка идёт, даже когда приложение свёрнуто или выгружено системой
+/// (закрытому свайпом приложению iOS загружать не даёт). Задача помечена id загрузки — по нему очередь находит её после перезапуска.
+final class BackgroundUploads: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    static let shared = BackgroundUploads()
+    static let sessionIdentifier = "com.orzuapp.messenger.uploads"
+
+    /// Поля ниже меняют и делегат сессии (его очередь), и вызывающие — только под замком.
+    private let lock = NSLock()
+    private var waiters: [String: CheckedContinuation<Int, Error>] = [:]
+    /// Загрузки, закончившиеся, пока их никто не ждал (приложение перезапустилось): код ответа или ошибка.
+    private var finished: [String: Result<Int, Error>] = [:]
+    /// iOS разбудила приложение ради событий сессии — вызвать, когда все они доставлены.
+    private var systemCompletionHandler: (() -> Void)?
+    /// Делегат — сам объект, поэтому сессия создаётся после super.init.
+    private var session: URLSession!
+
+    private override init() {
+        super.init()
+        let configuration = URLSessionConfiguration.background(withIdentifier: Self.sessionIdentifier)
+        // Сообщение ждёт в чате — не откладываем загрузку до зарядки и Wi-Fi.
+        configuration.isDiscretionary = false
+        configuration.sessionSendsLaunchEvents = true
+        session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+    }
+
+    /// Код ответа сервера на PUT.
+    func upload(_ request: URLRequest, fromFile fileURL: URL, uploadId: String) async throws -> Int {
+        try await withCheckedThrowingContinuation { continuation in
+            let task = session.uploadTask(with: request, fromFile: fileURL)
+            task.taskDescription = uploadId
+            lock.withLock { waiters[uploadId] = continuation }
+            task.resume()
+        }
+    }
+
+    /// Код ответа уже идущей или закончившейся без нас загрузки; nil — такой загрузки нет.
+    func awaitExisting(uploadId: String) async throws -> Int? {
+        let isRunning = await session.allTasks.contains {
+            $0.taskDescription == uploadId && ($0.state == .running || $0.state == .suspended)
+        }
+        if let done = lock.withLock({ finished.removeValue(forKey: uploadId) }) { return try done.get() }
+        guard isRunning else { return nil }
+        return try await withCheckedThrowingContinuation { continuation in
+            // Могла закончиться, пока мы смотрели список задач.
+            let done: Result<Int, Error>? = lock.withLock {
+                if let done = finished.removeValue(forKey: uploadId) { return done }
+                waiters[uploadId] = continuation
+                return nil
+            }
+            if let done { continuation.resume(with: done) }
+        }
+    }
+
+    /// Из AppDelegate: iOS запустила приложение, чтобы доставить события сессии.
+    func handleEvents(completionHandler: @escaping () -> Void) {
+        lock.withLock { systemCompletionHandler = completionHandler }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let uploadId = task.taskDescription else { return }
+        let result: Result<Int, Error>
+        if let error {
+            result = .failure(error)
+        } else if let response = task.response as? HTTPURLResponse {
+            result = .success(response.statusCode)
+        } else {
+            result = .failure(APIError.invalidResponse)
+        }
+        let waiter: CheckedContinuation<Int, Error>? = lock.withLock {
+            if let waiter = waiters.removeValue(forKey: uploadId) { return waiter }
+            finished[uploadId] = result
+            return nil
+        }
+        if let waiter {
+            waiter.resume(with: result)
+        } else {
+            // Никто не ждёт — загрузка закончилась, пока приложение было выгружено: очередь заберёт результат и дошлёт сообщение.
+            Task { @MainActor in MessageOutbox.shared.flush() }
+        }
+    }
+
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        let handler = lock.withLock {
+            defer { systemCompletionHandler = nil }
+            return systemCompletionHandler
+        }
+        // Обработчик системы вызывается на главном потоке.
+        DispatchQueue.main.async { handler?() }
+    }
 }

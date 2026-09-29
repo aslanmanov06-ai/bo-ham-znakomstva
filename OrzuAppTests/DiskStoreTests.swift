@@ -27,6 +27,27 @@ final class DiskStoreTests: XCTestCase {
         XCTAssertNil(store.existingFileURL(for: "file-1"))
     }
 
+    /// Запись из временного файла попадает в очередь копией: исходник можно удалить, повторная копия заменяет прежнюю.
+    func testCopyFileSurvivesSourceRemovalAndReplaces() throws {
+        let source = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Data("first".utf8).write(to: source)
+        try store.copyFile(at: source, for: "file-1")
+        try FileManager.default.removeItem(at: source)
+        XCTAssertEqual(store.load("file-1"), Data("first".utf8))
+
+        try Data("second".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: source) }
+        try store.copyFile(at: source, for: "file-1")
+        XCTAssertEqual(store.load("file-1"), Data("second".utf8))
+    }
+
+    /// Исходника нет — ошибка, а не пустой файл в очереди.
+    func testCopyMissingFileThrows() {
+        let missing = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        XCTAssertThrowsError(try store.copyFile(at: missing, for: "file-1"))
+        XCTAssertNil(store.existingFileURL(for: "file-1"))
+    }
+
     /// Ключ — путь запроса с query: символы «/», «?», «=» не должны ломать имя файла.
     func testSavesAndLoadsByRequestPath() {
         let data = Data("[{\"id\":\"c1\"}]".utf8)

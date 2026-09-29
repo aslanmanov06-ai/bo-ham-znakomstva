@@ -432,7 +432,7 @@ final class ChatViewModel: ObservableObject {
         } catch let error as APIError where error.isTransient {
             // Нет связи — файл ждёт в очереди и загрузится вместе с отправкой, когда сеть появится.
             let upload = PendingUpload(fileName: fileName, mimeType: mimeType, mediaKind: mediaKind, durationSec: durationSec)
-            deliver(text: "", attachment: nil, viewTimerSec: viewTimerSec, upload: (upload, data))
+            deliver(text: "", attachment: nil, viewTimerSec: viewTimerSec, upload: (upload, .data(data)))
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -454,11 +454,11 @@ final class ChatViewModel: ObservableObject {
         await sendAttachment(data: jpeg, fileName: "photo.jpg", mimeType: "image/jpeg", viewTimerSec: viewTimerSec)
     }
 
-    /// Запись голосового или «кружка» во временном файле: после загрузки (или ошибки) файл больше не нужен.
+    /// Запись голосового или «кружка» во временном файле: очередь отправки держит свою копию, этот файл больше не нужен.
     /// Размер проверяет сервер: у «кружка» и голосового лимит больше, чем у обычного файла.
     func sendRecording(_ recording: MediaRecording) async {
         defer { try? FileManager.default.removeItem(at: recording.fileURL) }
-        await sendAttachmentFile(
+        sendAttachmentFile(
             at: recording.fileURL,
             fileName: recording.fileURL.lastPathComponent,
             mimeType: recording.mimeType,
@@ -467,26 +467,13 @@ final class ChatViewModel: ObservableObject {
         )
     }
 
-    /// Файл с диска загружается по ссылке, не читаясь в память. Без сети — байты уходят в очередь отправки, как у фото.
-    private func sendAttachmentFile(at url: URL, fileName: String, mimeType: String, mediaKind: AttachmentKind? = nil, durationSec: Int? = nil) async {
+    /// Файл с диска сразу уходит в очередь, не читаясь в память: она загрузит его в фоновой сессии — загрузка
+    /// не прервётся, если приложение свернули, а без сети дождётся её.
+    private func sendAttachmentFile(at url: URL, fileName: String, mimeType: String, mediaKind: AttachmentKind? = nil, durationSec: Int? = nil) {
         // Файлы лежат на сервере в открытом виде — в секретный чат их не пускаем.
         guard chat.canPost, !isSecret else { return }
-        isUploading = true
-        defer { isUploading = false }
-
-        do {
-            let attachment = try await APIClient.shared.uploadFile(at: url, fileName: fileName, mimeType: mimeType, mediaKind: mediaKind)
-            deliver(text: "", attachment: attachment)
-        } catch let error as APIError where error.isTransient {
-            do {
-                let upload = PendingUpload(fileName: fileName, mimeType: mimeType, mediaKind: mediaKind, durationSec: durationSec)
-                deliver(text: "", attachment: nil, upload: (upload, try Data(contentsOf: url)))
-            } catch {
-                errorMessage = String(localized: "Не удалось прочитать файл: \(error.localizedDescription)")
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        let upload = PendingUpload(fileName: fileName, mimeType: mimeType, mediaKind: mediaKind, durationSec: durationSec)
+        deliver(text: "", attachment: nil, upload: (upload, .file(url)))
     }
 
     /// Сервер принимает снимок только в секретном чате или при открытом фото с таймером — обычный чат не тревожим.
@@ -547,7 +534,7 @@ final class ChatViewModel: ObservableObject {
                 return
             }
             let mimeType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            await sendAttachmentFile(at: url, fileName: url.lastPathComponent, mimeType: mimeType)
+            sendAttachmentFile(at: url, fileName: url.lastPathComponent, mimeType: mimeType)
         } catch {
             errorMessage = String(localized: "Не удалось прочитать файл: \(error.localizedDescription)")
         }
@@ -563,7 +550,7 @@ final class ChatViewModel: ObservableObject {
     }
 
     /// Сообщение сразу появляется в чате и уходит в очередь: она отправит его сейчас или когда появится сеть.
-    private func deliver(text: String, attachment: Attachment?, viewTimerSec: Int? = nil, upload: (PendingUpload, Data)? = nil) {
+    private func deliver(text: String, attachment: Attachment?, viewTimerSec: Int? = nil, upload: (PendingUpload, UploadSource)? = nil) {
         var encrypted: EncryptedPayload?
         if isSecret {
             do {
@@ -581,12 +568,21 @@ final class ChatViewModel: ObservableObject {
             ciphertext: encrypted?.ciphertext, senderKey: encrypted?.senderKey, recipientKeyId: encrypted?.recipientKeyId, viewTimerSec: viewTimerSec,
             replyToId: replyTo?.id, replyPreview: replyTo.map(replyPreview), attachment: attachment, upload: upload?.0
         )
+        if let upload {
+            do {
+                try MessageOutbox.shared.enqueue(item, upload: upload.1)
+            } catch {
+                errorMessage = String(localized: "Не удалось прочитать файл: \(error.localizedDescription)")
+                return
+            }
+        } else {
+            MessageOutbox.shared.enqueue(item)
+        }
         var bubble = item.message(senderId: currentUserId)
         if upload == nil { bubble.text = text }
         pendingIds.insert(item.id)
         messages.append(bubble)
         replyTo = nil
-        MessageOutbox.shared.enqueue(item, uploadData: upload?.1)
         // Своё сообщение отправлено — дальше показываем свежие, а не найденный фрагмент.
         if isShowingHistorySlice { Task { await loadHistory() } }
     }

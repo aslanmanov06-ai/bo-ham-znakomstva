@@ -10505,6 +10505,22 @@
         }
       }
     },
+    "Сервер не принял файл (%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server did not accept the file (%lld)"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер файлро қабул накард (%lld)"
+          }
+        }
+      }
+    },
     "Сессия истекла, войдите заново" : {
       "localizations" : {
         "en" : {

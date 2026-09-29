@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import os
 
 extension Notification.Name {
@@ -18,6 +19,8 @@ struct PendingUpload: Codable, Hashable {
     let mimeType: String
     var mediaKind: AttachmentKind?
     var durationSec: Int?
+    /// Заявка на загрузку уже получена, файл уходит в фоновой сессии: после перезапуска дожидаемся её, а не шлём заново.
+    var uploadId: String?
 
     /// Пока файла нет на сервере, пузырь показывает подпись вместо превью.
     var placeholder: String {
@@ -29,6 +32,12 @@ struct PendingUpload: Codable, Hashable {
         case .file, nil: return mimeType.hasPrefix("image/") ? String(localized: "📷 Фото") : "📎 \(fileName)"
         }
     }
+}
+
+/// Откуда очередь берёт файл: фото уже в памяти, запись и документ лежат на диске и в память не читаются.
+enum UploadSource {
+    case data(Data)
+    case file(URL)
 }
 
 /// Сообщение, которое ещё не принял сервер. id — он же clientMessageId и временный id пузыря в чате.
@@ -116,19 +125,32 @@ final class MessageOutbox {
         items.filter { $0.chatId == chatId }
     }
 
-    /// uploadData — байты файла, если его ещё не загрузили на сервер (item.upload != nil).
-    func enqueue(_ item: OutgoingMessage, uploadData: Data? = nil) {
-        if let uploadData { store.save(uploadData, for: Self.fileKey(item.id)) }
+    func enqueue(_ item: OutgoingMessage) {
         items.append(item)
         saveQueue()
         flush()
     }
 
+    /// Сообщение с файлом, которого ещё нет на сервере (item.upload != nil): файл хранится в очереди до отправки.
+    func enqueue(_ item: OutgoingMessage, upload source: UploadSource) throws {
+        switch source {
+        case .data(let data): store.save(data, for: Self.fileKey(item.id))
+        case .file(let url): try store.copyFile(at: url, for: Self.fileKey(item.id))
+        }
+        enqueue(item)
+    }
+
     func flush() {
+        Task { await sendPending() }
+    }
+
+    /// Досылает очередь и ждёт окончания — фоновому обновлению iOS даёт на это ограниченное время.
+    func sendPending() async {
         guard !isSending, !items.isEmpty, TokenStore.shared.accessToken != nil else { return }
         retryTask?.cancel()
         retryTask = nil
-        Task { await sendAll() }
+        // Отдельная задача: отмена фонового обновления по таймауту оборвала бы запросы, и сообщения ушли бы в отказ.
+        await Task { await sendAll() }.value
     }
 
     /// Выход из аккаунта: неотправленное не должно уйти от имени следующего пользователя.
@@ -142,7 +164,12 @@ final class MessageOutbox {
 
     private func sendAll() async {
         isSending = true
-        defer { isSending = false }
+        // Приложение свернули посреди отправки или его разбудила фоновая загрузка — просим у iOS время дослать.
+        let backgroundTime = BackgroundTime(name: "Outbox")
+        defer {
+            isSending = false
+            backgroundTime.end()
+        }
 
         while let item = items.first {
             do {
@@ -172,13 +199,26 @@ final class MessageOutbox {
 
     private func send(_ item: OutgoingMessage) async throws -> Message {
         var item = item
-        if let upload = item.upload {
+        if var upload = item.upload {
             guard let fileURL = store.existingFileURL(for: Self.fileKey(item.id)) else {
                 throw APIError.server(String(localized: "Файл для отправки больше недоступен"))
             }
-            item.attachment = try await APIClient.shared.uploadFile(
-                at: fileURL, fileName: upload.fileName, mimeType: upload.mimeType, mediaKind: upload.mediaKind
-            )
+            var isUploaded = false
+            if let uploadId = upload.uploadId {
+                isUploaded = try await APIClient.shared.resumeUpload(id: uploadId)
+            }
+            if !isUploaded {
+                let ticket = try await APIClient.shared.createUpload(
+                    for: fileURL, fileName: upload.fileName, mimeType: upload.mimeType, mediaKind: upload.mediaKind
+                )
+                // Запоминаем до PUT: если приложение выгрузят посреди загрузки, после перезапуска найдём её по этому id.
+                upload.uploadId = ticket.uploadId
+                item.upload = upload
+                replace(item)
+                try await APIClient.shared.putUpload(ticket, fileURL: fileURL, mimeType: upload.mimeType)
+            }
+            guard let uploadId = upload.uploadId else { throw APIError.invalidResponse }
+            item.attachment = try await APIClient.shared.completeUpload(id: uploadId)
             item.upload = nil
             // Файл уже на сервере: при повторе после сбоя загружать его второй раз не нужно.
             replace(item)
@@ -235,5 +275,24 @@ final class MessageOutbox {
 
     private static func fileKey(_ id: String) -> String {
         "file-\(id)"
+    }
+}
+
+/// Фоновое время iOS на дела, начатые до сворачивания. Когда оно кончается, отпускаем его сами — иначе система
+/// завершит приложение; фоновая загрузка при этом продолжится без нас.
+@MainActor
+private final class BackgroundTime {
+    private var identifier = UIBackgroundTaskIdentifier.invalid
+
+    init(name: String) {
+        identifier = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
+            MainActor.assumeIsolated { self?.end() }
+        }
+    }
+
+    func end() {
+        guard identifier != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(identifier)
+        identifier = .invalid
     }
 }
