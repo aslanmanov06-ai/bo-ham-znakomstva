@@ -343,14 +343,12 @@ struct DatingPhotosSection: View {
                 return
             }
             do {
-                // Длительность сервер сам не измеряет — считаем её здесь и отправляем вместе с файлом.
-                let video = try await ProfileVideoExporter.export(data, maxDurationSec: maxVideoDurationSec)
-                let attachment = try await APIClient.shared.uploadAttachment(
-                    data: video.data,
-                    fileName: "profile-video.mp4",
-                    mimeType: "video/mp4",
-                    mediaKind: .video,
-                    durationSec: video.durationSec
+                // Слишком длинный ролик отклоняется ещё до загрузки; точную длительность сервер измерит сам.
+                let videoURL = try await ProfileVideoExporter.export(data, maxDurationSec: maxVideoDurationSec)
+                defer { try? FileManager.default.removeItem(at: videoURL) }
+                // Ролик до 90 МБ — по ссылке с диска, без второй копии в памяти.
+                let attachment = try await APIClient.shared.uploadFile(
+                    at: videoURL, fileName: "profile-video.mp4", mimeType: "video/mp4", mediaKind: .video
                 )
                 dating.apply(try await APIClient.shared.setDatingVideo(attachmentId: attachment.id))
             } catch {
@@ -420,11 +418,6 @@ struct DatingPhotosSection: View {
 /// координаты места съёмки, модель телефона и дата — чужим людям из знакомств их видеть незачем.
 /// Заодно файл становится в разы меньше, а HEVC (.mov с iPhone) — mp4, который проигрывается везде.
 enum ProfileVideoExporter {
-    struct Exported {
-        let data: Data
-        let durationSec: Int
-    }
-
     enum ExportError: LocalizedError {
         case failed
         case tooLong(maxSec: Int)
@@ -438,16 +431,16 @@ enum ProfileVideoExporter {
     }
 
     /// Длинный ролик отклоняем до перекодирования — незачем минуту жать видео, которое всё равно не подойдёт.
-    static func export(_ original: Data, maxDurationSec: Int) async throws -> Exported {
+    /// Возвращает временный mp4: удаляет его тот, кто загрузил.
+    static func export(_ original: Data, maxDurationSec: Int) async throws -> URL {
         let directory = FileManager.default.temporaryDirectory
         let sourceURL = directory.appendingPathComponent("dating-video-\(UUID().uuidString).mov")
         let outputURL = directory.appendingPathComponent("dating-video-\(UUID().uuidString).mp4")
         // AVFoundation работает только с файлами, поэтому ролик сначала ложится во временную папку.
         try original.write(to: sourceURL, options: .atomic)
-        defer {
-            try? FileManager.default.removeItem(at: sourceURL)
-            try? FileManager.default.removeItem(at: outputURL)
-        }
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+        var isExported = false
+        defer { if !isExported { try? FileManager.default.removeItem(at: outputURL) } }
 
         let asset = AVURLAsset(url: sourceURL)
         let sourceSeconds = try await asset.load(.duration).seconds
@@ -470,6 +463,7 @@ enum ProfileVideoExporter {
 
         let seconds = try await AVURLAsset(url: outputURL).load(.duration).seconds
         guard seconds.isFinite, seconds > 0 else { throw ExportError.failed }
-        return Exported(data: try Data(contentsOf: outputURL), durationSec: min(Int(seconds.rounded(.up)), maxDurationSec))
+        isExported = true
+        return outputURL
     }
 }

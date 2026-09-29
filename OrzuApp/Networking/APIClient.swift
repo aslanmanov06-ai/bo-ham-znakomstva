@@ -490,6 +490,28 @@ actor APIClient {
         return try decoder.decode(Attachment.self, from: responseData)
     }
 
+    /// Файл с диска по ссылке: заявка → PUT тела по подписанной ссылке → complete. Без multipart и без копии файла в памяти —
+    /// так уходят видео анкеты, «кружки» и голосовые. Повтор PUT перезаписывает файл, поэтому обрыв лечится повтором загрузки.
+    func uploadFile(at fileURL: URL, fileName: String, mimeType: String, mediaKind: AttachmentKind? = nil) async throws -> Attachment {
+        let size = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        // Вид сервер принимает только у голосового и видео — фото и файл он определит по содержимому.
+        let kind = mediaKind.flatMap { Self.serverMediaKinds.contains($0) ? $0.rawValue : nil }
+        let body = CreateUploadBody(mimeType: mimeType, size: size, kind: kind, fileName: fileName)
+        let ticket: UploadTicket = try await request(path: "/attachments/uploads", method: "POST", body: body, authorized: true)
+        guard let uploadURL = URL(string: ticket.uploadUrl) else { throw APIError.invalidResponse }
+
+        // Доступ даёт подпись в ссылке — токен не нужен и не должен уходить на адрес из ответа сервера.
+        var upload = URLRequest(url: uploadURL)
+        upload.httpMethod = ticket.method
+        upload.setValue(mimeType, forHTTPHeaderField: "Content-Type")
+        let (data, response) = try await perform { try await self.session.upload(for: upload, fromFile: fileURL) }
+        try throwIfFailed(response, data: data)
+
+        return try await request(path: "/attachments/uploads/\(ticket.uploadId)/complete", method: "POST", body: nil as String?, authorized: true)
+    }
+
+    private static let serverMediaKinds: Set<AttachmentKind> = [.voice, .videoNote, .video]
+
     func downloadAttachment(id: String) async throws -> Data {
         var request = URLRequest(url: makeURL(path: "/attachments/\(id)"))
         request.httpMethod = "GET"
@@ -594,7 +616,13 @@ actor APIClient {
             return try await send(request, authorized: authorized, allowRetry: false)
         }
 
-        guard !(200...299).contains(httpResponse.statusCode) else { return data }
+        try throwIfFailed(httpResponse, data: data)
+        return data
+    }
+
+    /// Ответ не 2xx — в APIError: временный сбой, лимит или отказ с машинным кодом.
+    private func throwIfFailed(_ httpResponse: HTTPURLResponse, data: Data) throws {
+        guard !(200...299).contains(httpResponse.statusCode) else { return }
         let body = try? decoder.decode(ServerErrorBody.self, from: data)
         announceAppWideRejection(code: body?.code, message: body?.readableMessage, data: data)
         if httpResponse.statusCode >= 500 { throw APIError.unavailable(status: httpResponse.statusCode) }
@@ -682,10 +710,14 @@ actor APIClient {
     /// Сетевые ошибки URLSession приводим к APIError.offline — по нему экраны и очередь отправки отличают
     /// «нет связи» (показать сохранённое, повторить) от отказа сервера.
     private func perform(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        try await perform { try await self.session.data(for: request) }
+    }
+
+    private func perform(_ load: () async throws -> (Data, URLResponse)) async throws -> (Data, HTTPURLResponse) {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await session.data(for: request)
+            (data, response) = try await load()
         } catch let error as URLError where Self.connectivityErrors.contains(error.code) {
             throw APIError.offline
         }
@@ -789,6 +821,19 @@ struct EncryptedPayload {
     let senderKey: String
     /// keyId ключа собеседника, которым зашифровано: сервер запомнит его, и автор расшифрует сообщение и после смены ключа.
     var recipientKeyId: String? = nil
+}
+
+private struct CreateUploadBody: Encodable {
+    let mimeType: String
+    let size: Int
+    let kind: String?
+    let fileName: String
+}
+
+private struct UploadTicket: Decodable {
+    let uploadId: String
+    let uploadUrl: String
+    let method: String
 }
 
 struct E2EKey: Decodable {

@@ -455,19 +455,37 @@ final class ChatViewModel: ObservableObject {
     }
 
     /// Запись голосового или «кружка» во временном файле: после загрузки (или ошибки) файл больше не нужен.
+    /// Размер проверяет сервер: у «кружка» и голосового лимит больше, чем у обычного файла.
     func sendRecording(_ recording: MediaRecording) async {
         defer { try? FileManager.default.removeItem(at: recording.fileURL) }
+        await sendAttachmentFile(
+            at: recording.fileURL,
+            fileName: recording.fileURL.lastPathComponent,
+            mimeType: recording.mimeType,
+            mediaKind: recording.kind,
+            durationSec: recording.durationSec
+        )
+    }
+
+    /// Файл с диска загружается по ссылке, не читаясь в память. Без сети — байты уходят в очередь отправки, как у фото.
+    private func sendAttachmentFile(at url: URL, fileName: String, mimeType: String, mediaKind: AttachmentKind? = nil, durationSec: Int? = nil) async {
+        // Файлы лежат на сервере в открытом виде — в секретный чат их не пускаем.
+        guard chat.canPost, !isSecret else { return }
+        isUploading = true
+        defer { isUploading = false }
+
         do {
-            let data = try Data(contentsOf: recording.fileURL)
-            await sendAttachment(
-                data: data,
-                fileName: recording.fileURL.lastPathComponent,
-                mimeType: recording.mimeType,
-                mediaKind: recording.kind,
-                durationSec: recording.durationSec
-            )
+            let attachment = try await APIClient.shared.uploadFile(at: url, fileName: fileName, mimeType: mimeType, mediaKind: mediaKind)
+            deliver(text: "", attachment: attachment)
+        } catch let error as APIError where error.isTransient {
+            do {
+                let upload = PendingUpload(fileName: fileName, mimeType: mimeType, mediaKind: mediaKind, durationSec: durationSec)
+                deliver(text: "", attachment: nil, upload: (upload, try Data(contentsOf: url)))
+            } catch {
+                errorMessage = String(localized: "Не удалось прочитать файл: \(error.localizedDescription)")
+            }
         } catch {
-            errorMessage = String(localized: "Не удалось прочитать запись: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -528,9 +546,8 @@ final class ChatViewModel: ObservableObject {
                 errorMessage = String(localized: "Файл больше 20 МБ")
                 return
             }
-            let data = try Data(contentsOf: url)
             let mimeType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            await sendAttachment(data: data, fileName: url.lastPathComponent, mimeType: mimeType)
+            await sendAttachmentFile(at: url, fileName: url.lastPathComponent, mimeType: mimeType)
         } catch {
             errorMessage = String(localized: "Не удалось прочитать файл: \(error.localizedDescription)")
         }

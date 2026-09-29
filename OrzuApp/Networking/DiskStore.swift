@@ -30,6 +30,12 @@ final class DiskStore: @unchecked Sendable {
         }
     }
 
+    /// Путь к сохранённому файлу — чтобы отдать его URLSession целиком, не читая в память. nil — файла нет.
+    func existingFileURL(for key: String) -> URL? {
+        let url = fileURL(for: key)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
     func remove(_ key: String) {
         try? FileManager.default.removeItem(at: fileURL(for: key))
     }

@@ -173,11 +173,11 @@ final class MessageOutbox {
     private func send(_ item: OutgoingMessage) async throws -> Message {
         var item = item
         if let upload = item.upload {
-            guard let data = store.load(Self.fileKey(item.id)) else {
+            guard let fileURL = store.existingFileURL(for: Self.fileKey(item.id)) else {
                 throw APIError.server(String(localized: "Файл для отправки больше недоступен"))
             }
-            item.attachment = try await APIClient.shared.uploadAttachment(
-                data: data, fileName: upload.fileName, mimeType: upload.mimeType, mediaKind: upload.mediaKind, durationSec: upload.durationSec
+            item.attachment = try await APIClient.shared.uploadFile(
+                at: fileURL, fileName: upload.fileName, mimeType: upload.mimeType, mediaKind: upload.mediaKind
             )
             item.upload = nil
             // Файл уже на сервере: при повторе после сбоя загружать его второй раз не нужно.

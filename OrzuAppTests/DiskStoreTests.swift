@@ -14,6 +14,19 @@ final class DiskStoreTests: XCTestCase {
         super.tearDown()
     }
 
+    /// Очередь отправки отдаёт файл URLSession по пути: путь есть только у сохранённого и пропадает после удаления.
+    func testExistingFileURLPointsAtSavedBytes() throws {
+        XCTAssertNil(store.existingFileURL(for: "file-1"))
+
+        let data = Data("video bytes".utf8)
+        store.save(data, for: "file-1")
+        let url = try XCTUnwrap(store.existingFileURL(for: "file-1"))
+        XCTAssertEqual(try Data(contentsOf: url), data)
+
+        store.remove("file-1")
+        XCTAssertNil(store.existingFileURL(for: "file-1"))
+    }
+
     /// Ключ — путь запроса с query: символы «/», «?», «=» не должны ломать имя файла.
     func testSavesAndLoadsByRequestPath() {
         let data = Data("[{\"id\":\"c1\"}]".utf8)
