@@ -124,3 +124,64 @@ final class ChatFeaturesTests: XCTestCase {
         XCTAssertEqual(DeepLink.parse(link.url), link)
     }
 }
+
+final class SyncPageTests: XCTestCase {
+    func testParsesEventsAndCursor() throws {
+        let json = #"{"events":[{"type":"message.deleted","chatId":"c1","messageId":"m1","seq":41}],"lastSeq":41,"hasMore":true,"resetRequired":false}"#
+        let page = try XCTUnwrap(SyncPage(data: Data(json.utf8)))
+        XCTAssertEqual(page.events.count, 1)
+        XCTAssertEqual(page.events.first?["seq"] as? Int, 41)
+        XCTAssertEqual(page.lastSeq, 41)
+        XCTAssertTrue(page.hasMore)
+        XCTAssertFalse(page.resetRequired)
+    }
+
+    /// Журнал стёрт: событий нет, клиент перечитывает экраны и продолжает с lastSeq.
+    func testResetRequiredWithoutEvents() throws {
+        let page = try XCTUnwrap(SyncPage(data: Data(#"{"events":[],"lastSeq":900,"hasMore":false,"resetRequired":true}"#.utf8)))
+        XCTAssertTrue(page.resetRequired)
+        XCTAssertEqual(page.lastSeq, 900)
+    }
+
+    func testRejectsMalformedBody() {
+        XCTAssertNil(SyncPage(data: Data(#"{"events":"nope","lastSeq":1}"#.utf8)))
+        XCTAssertNil(SyncPage(data: Data("not json".utf8)))
+    }
+}
+
+final class SyncCursorTests: XCTestCase {
+    /// Первое подключение в запуске ничего не докачивает, а переподключение — с последнего увиденного seq.
+    func testCatchesUpFromLastSeenSeq() {
+        var cursor = SyncCursor()
+        XCTAssertNil(cursor.ready(seq: 100))
+        cursor.seen(seq: 105)
+        XCTAssertEqual(cursor.ready(seq: 120), 105)
+        XCTAssertTrue(cursor.isCatchingUp)
+
+        cursor.seen(seq: 110) // из журнала
+        cursor.seen(seq: 121) // живое, уже после ready
+        XCTAssertEqual(cursor.lastSeq, 105)
+        cursor.finishCatchUp(through: 120)
+        XCTAssertEqual(cursor.lastSeq, 121)
+        XCTAssertFalse(cursor.isCatchingUp)
+    }
+
+    /// Сорвавшаяся докачка не сдвигает курсор: промежуток запросится при следующем переподключении.
+    func testFailedCatchUpKeepsGap() {
+        var cursor = SyncCursor()
+        _ = cursor.ready(seq: 10)
+        XCTAssertEqual(cursor.ready(seq: 50), 10)
+        cursor.seen(seq: 51)
+        cursor.abandonCatchUp()
+        XCTAssertEqual(cursor.lastSeq, 10)
+        XCTAssertEqual(cursor.ready(seq: 60), 10)
+    }
+
+    /// Пока сокета не было, событий не случилось — докачивать нечего.
+    func testNothingMissed() {
+        var cursor = SyncCursor()
+        _ = cursor.ready(seq: 7)
+        XCTAssertNil(cursor.ready(seq: 7))
+        XCTAssertFalse(cursor.isCatchingUp)
+    }
+}

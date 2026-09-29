@@ -442,6 +442,15 @@ actor APIClient {
         let _: EmptyResponse = try await request(path: "/devices/\(token)", method: "DELETE", body: nil as String?, authorized: true)
     }
 
+    // MARK: - Realtime
+
+    /// Журнал WebSocket-событий после seq (GET /sync) — сырой JSON: события разбирает WebSocketClient, как живые.
+    func fetchMissedEvents(since seq: Int) async throws -> Data {
+        var request = URLRequest(url: makeURL(path: "/sync?since=\(seq)"))
+        request.httpMethod = "GET"
+        return try await send(request, authorized: true)
+    }
+
     // MARK: - Attachments
 
     /// mediaKind — только .voice или .videoNote: их сервер по mime не отличит от обычного файла.

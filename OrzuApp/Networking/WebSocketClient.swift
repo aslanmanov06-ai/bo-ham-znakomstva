@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os
 
 enum ServerEvent {
     case newMessage(Message)
@@ -110,6 +111,69 @@ struct IncomingCall: Equatable {
     }
 }
 
+/// Страница журнала событий GET /sync. События разнородные — WebSocketClient разбирает их тем же кодом, что и живые.
+struct SyncPage {
+    let events: [[String: Any]]
+    /// seq, с которого запрашивать следующую страницу.
+    let lastSeq: Int
+    let hasMore: Bool
+    /// Пропущенное уже стёрто из журнала: экраны перечитываются целиком (по realtimeReconnected).
+    let resetRequired: Bool
+
+    init?(data: Data) {
+        guard
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let events = json["events"] as? [[String: Any]],
+            let lastSeq = json["lastSeq"] as? Int
+        else { return nil }
+        self.events = events
+        self.lastSeq = lastSeq
+        self.hasMore = json["hasMore"] as? Bool ?? false
+        self.resetRequired = json["resetRequired"] as? Bool ?? false
+    }
+}
+
+/// Докуда события уже обработаны. Пока идёт докачка, живые события курсор не сдвигают: если докачка сорвётся,
+/// промежуток между прежним seq и «ready» запросится снова при следующем переподключении, а не потеряется.
+struct SyncCursor {
+    private(set) var lastSeq: Int?
+    private(set) var isCatchingUp = false
+    private var seenDuringCatchUp: Int?
+
+    /// Сокет готов; readySeq — последний номер на момент подключения. Возвращает seq, с которого докачивать, или nil.
+    mutating func ready(seq readySeq: Int) -> Int? {
+        guard let since = lastSeq else {
+            // Первое подключение в этом запуске: экраны загружаются с сервера целиком, докачивать нечего.
+            lastSeq = readySeq
+            return nil
+        }
+        guard since < readySeq else { return nil }
+        isCatchingUp = true
+        seenDuringCatchUp = nil
+        return since
+    }
+
+    mutating func seen(seq: Int) {
+        if isCatchingUp {
+            seenDuringCatchUp = max(seenDuringCatchUp ?? seq, seq)
+        } else {
+            lastSeq = max(lastSeq ?? seq, seq)
+        }
+    }
+
+    mutating func finishCatchUp(through readySeq: Int) {
+        lastSeq = max(readySeq, seenDuringCatchUp ?? readySeq, lastSeq ?? readySeq)
+        isCatchingUp = false
+        seenDuringCatchUp = nil
+    }
+
+    /// Докачка не удалась или прервана: курсор остаётся прежним.
+    mutating func abandonCatchUp() {
+        isCatchingUp = false
+        seenDuringCatchUp = nil
+    }
+}
+
 extension Notification.Name {
     /// Сокет снова авторизован после разрыва (фон, обрыв связи): пока его не было, события могли пройти мимо.
     static let realtimeReconnected = Notification.Name("com.orzuapp.messenger.realtimeReconnected")
@@ -146,8 +210,13 @@ final class WebSocketClient: NSObject, ObservableObject {
     private var heartbeatTask: Task<Void, Never>?
     private var isAwaitingPong = false
     private var networkObserver: NSObjectProtocol?
+    /// После переподключения недостающие события докачиваются через /sync. Только в памяти:
+    /// при запуске приложения экраны и так загружаются с сервера целиком.
+    private var syncCursor = SyncCursor()
+    private var catchUpTask: Task<Void, Never>?
 
     private lazy var decoder = ISO8601Coding.makeDecoder()
+    private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "Realtime")
 
     private override init() {
         super.init()
@@ -178,9 +247,15 @@ final class WebSocketClient: NSObject, ObservableObject {
         startHeartbeat(for: webSocketTask)
     }
 
-    func disconnect() {
+    /// endingSession — выход из аккаунта: докачка следующего пользователя не должна начаться с чужого seq.
+    func disconnect(endingSession: Bool = false) {
         reconnectTask?.cancel()
         reconnectTask = nil
+        stopCatchUp()
+        if endingSession {
+            syncCursor = SyncCursor()
+            hasBeenReady = false
+        }
         stopHeartbeat()
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
@@ -315,10 +390,15 @@ final class WebSocketClient: NSObject, ObservableObject {
         @unknown default: return
         }
 
-        guard
-            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let type = json["type"] as? String
-        else { return }
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        handle(json: json)
+    }
+
+    /// Живое событие из сокета или докачанное из журнала — разбираются одинаково.
+    private func handle(json: [String: Any]) {
+        guard let type = json["type"] as? String else { return }
+        // seq в ready — не номер события, а граница для докачки (см. ниже).
+        if type != "ready", let seq = json["seq"] as? Int { syncCursor.seen(seq: seq) }
 
         switch type {
         case "ready":
@@ -328,6 +408,11 @@ final class WebSocketClient: NSObject, ObservableObject {
                 NotificationCenter.default.post(name: .realtimeReconnected, object: nil)
             }
             hasBeenReady = true
+            // seq в ready — последний номер на момент подключения: всё новее придёт по сокету, пропущенное до него отдаст /sync.
+            if let readySeq = json["seq"] as? Int {
+                stopCatchUp()
+                if let since = syncCursor.ready(seq: readySeq) { catchUp(since: since, through: readySeq) }
+            }
             let signals = queuedSignals
             queuedSignals.removeAll()
             for signal in signals {
@@ -503,6 +588,43 @@ final class WebSocketClient: NSObject, ObservableObject {
         default:
             break
         }
+    }
+
+    // MARK: - Докачка пропущенного
+
+    /// События до readySeq включительно берём из журнала; более новые уже идут по сокету — их пропускаем, чтобы не повторять.
+    private func catchUp(since: Int, through readySeq: Int) {
+        catchUpTask = Task { [weak self] in
+            var cursor = since
+            do {
+                while cursor < readySeq {
+                    let data = try await APIClient.shared.fetchMissedEvents(since: cursor)
+                    guard let self, !Task.isCancelled else { return }
+                    guard let page = SyncPage(data: data) else { throw APIError.invalidResponse }
+                    // Журнал уже стёрт — экраны перечитываются по realtimeReconnected, разослать нечего.
+                    if page.resetRequired { break }
+                    for event in page.events where (event["seq"] as? Int ?? 0) <= readySeq {
+                        self.handle(json: event)
+                    }
+                    guard page.hasMore, page.lastSeq > cursor else { break }
+                    cursor = page.lastSeq
+                }
+                guard let self, !Task.isCancelled else { return }
+                self.syncCursor.finishCatchUp(through: readySeq)
+                self.catchUpTask = nil
+            } catch {
+                // lastSeq не сдвигаем: следующее переподключение попробует докачать тот же промежуток.
+                guard let self, !Task.isCancelled else { return }
+                self.logger.error("Не удалось докачать пропущенные события: \(error.localizedDescription, privacy: .public)")
+                self.stopCatchUp()
+            }
+        }
+    }
+
+    private func stopCatchUp() {
+        catchUpTask?.cancel()
+        catchUpTask = nil
+        syncCursor.abandonCatchUp()
     }
 
     /// Вложенный объект события (пара, первое сообщение, встреча) — из JSON в модель.

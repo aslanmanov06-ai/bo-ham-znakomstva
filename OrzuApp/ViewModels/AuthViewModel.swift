@@ -220,7 +220,7 @@ final class AuthViewModel: ObservableObject {
         isRestoringSession = false
         restoreRetryTask?.cancel()
         await CallManager.shared.userWillLogOut()
-        WebSocketClient.shared.disconnect()
+        WebSocketClient.shared.disconnect(endingSession: true)
         await PushManager.shared.userWillLogOut()
         await APIClient.shared.logout()
         currentUser = nil
@@ -229,7 +229,7 @@ final class AuthViewModel: ObservableObject {
     /// Сессии гасятся на сервере везде; push на это устройство тоже больше не придут (сервер удаляет его токены).
     func logoutEverywhere() async {
         await CallManager.shared.userWillLogOut()
-        WebSocketClient.shared.disconnect()
+        WebSocketClient.shared.disconnect(endingSession: true)
         do {
             try await APIClient.shared.logoutEverywhere()
         } catch {
@@ -243,7 +243,7 @@ final class AuthViewModel: ObservableObject {
     func deleteAccount(password: String?) async throws {
         try await APIClient.shared.deleteAccount(password: password)
         await CallManager.shared.userWillLogOut()
-        WebSocketClient.shared.disconnect()
+        WebSocketClient.shared.disconnect(endingSession: true)
         PushManager.shared.accountWasDeleted()
         currentUser = nil
     }
@@ -257,7 +257,7 @@ final class AuthViewModel: ObservableObject {
     private func handleSessionExpired() {
         isRestoringSession = false
         guard currentUser != nil else { return }
-        WebSocketClient.shared.disconnect()
+        WebSocketClient.shared.disconnect(endingSession: true)
         currentUser = nil
         errorMessage = APIError.unauthorized.errorDescription
     }
