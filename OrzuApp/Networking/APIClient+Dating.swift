@@ -338,6 +338,12 @@ extension APIClient {
         try await request(path: "/safety/sos/\(alertId)", method: "GET", body: nil as String?, authorized: true)
     }
 
+    /// Путь человека с начала тревоги: до 2000 последних точек, от старых к новым.
+    func fetchSosTrack(alertId: String) async throws -> [SosTrackPoint] {
+        let response: SosTrack = try await request(path: "/safety/sos/\(alertId)/track", method: "GET", body: nil as String?, authorized: true)
+        return response.points
+    }
+
     func closeSos(alertId: String) async throws -> SosAlert {
         try await request(path: "/safety/sos/\(alertId)/close", method: "POST", body: nil as String?, authorized: true)
     }

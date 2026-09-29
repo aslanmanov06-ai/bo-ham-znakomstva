@@ -710,6 +710,17 @@ struct SosAlert: Decodable, Identifiable, Hashable {
     let mapsUrl: String
 }
 
+struct SosTrackPoint: Decodable, Hashable {
+    let latitude: Double
+    let longitude: Double
+    let accuracyM: Double?
+    let recordedAt: Date
+}
+
+struct SosTrack: Decodable {
+    let points: [SosTrackPoint]
+}
+
 struct SosRaised: Decodable {
     let alert: SosAlert
     let emergencyNumbers: [EmergencyNumber]

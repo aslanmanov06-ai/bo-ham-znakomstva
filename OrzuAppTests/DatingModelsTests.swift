@@ -1,5 +1,6 @@
 import XCTest
 @testable import OrzuApp
+import MapKit
 
 /// JSON в тестах — ответы живого backend (GET /dating/…): модели должны разбирать именно их.
 final class DatingModelsTests: XCTestCase {
@@ -363,5 +364,30 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertEqual(APIError.rejected(code: "videoTooLong", message: "x").localizedDescription, "Видео слишком длинное — выберите покороче")
         XCTAssertEqual(APIError.rejected(code: "fileTooLarge", message: "x").localizedDescription, "Файл слишком большой")
         XCTAssertEqual(APIError.rejected(code: "USERNAME_TAKEN", message: "Занято").localizedDescription, "Занято")
+    }
+}
+
+final class SosTrackTests: XCTestCase {
+    /// Формат GET /safety/sos/:id/track: точки от старых к новым, точность может отсутствовать.
+    func testDecodesTrack() throws {
+        let json = #"{"alertId":"a1","points":[{"latitude":38.56,"longitude":68.78,"accuracyM":12,"recordedAt":"2026-09-28T12:00:00.000Z"},{"latitude":38.57,"longitude":68.79,"accuracyM":null,"recordedAt":"2026-09-28T12:01:00.000Z"}]}"#
+        let track = try ISO8601Coding.makeDecoder().decode(SosTrack.self, from: Data(json.utf8))
+        XCTAssertEqual(track.points.count, 2)
+        XCTAssertEqual(track.points[0].accuracyM, 12)
+        XCTAssertNil(track.points[1].accuracyM)
+        XCTAssertLessThan(track.points[0].recordedAt, track.points[1].recordedAt)
+    }
+
+    /// Карта охватывает весь путь с запасом, а одна точка не приближается «до подъезда».
+    func testRegionCoversPathWithMinimumSpan() {
+        let path = [CLLocationCoordinate2D(latitude: 38.50, longitude: 68.70), CLLocationCoordinate2D(latitude: 38.60, longitude: 68.90)]
+        let region = SosTrackMap.region(covering: path)
+        XCTAssertEqual(region.center.latitude, 38.55, accuracy: 1e-9)
+        XCTAssertEqual(region.center.longitude, 68.80, accuracy: 1e-9)
+        XCTAssertGreaterThan(region.span.latitudeDelta, 0.1)
+        XCTAssertGreaterThan(region.span.longitudeDelta, 0.2)
+
+        let single = SosTrackMap.region(covering: [CLLocationCoordinate2D(latitude: 38.5, longitude: 68.7)])
+        XCTAssertEqual(single.span.latitudeDelta, SosTrackMap.minimumSpanDegrees, accuracy: 1e-12)
     }
 }

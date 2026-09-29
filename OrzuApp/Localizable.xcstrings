@@ -4633,6 +4633,22 @@
         }
       }
     },
+    "Карта: где %@ и куда двигался(ась)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Map: where %@ is and the route taken"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Харита: %@ дар куҷост ва ба куҷо рафт"
+          }
+        }
+      }
+    },
     "Кафе, парк, адрес" : {
       "localizations" : {
         "en" : {
