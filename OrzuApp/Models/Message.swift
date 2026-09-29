@@ -90,6 +90,8 @@ struct ReplyPreview: Codable, Hashable {
     /// В секретном чате текст цитаты тоже зашифрован — расшифровывает ChatViewModel.
     var ciphertext: String? = nil
     var senderKey: String? = nil
+    /// Как у Message: цитата своего старого сообщения расшифровывается прежним ключом собеседника.
+    var recipientKeyId: String? = nil
     var attachment: ReplyAttachment? = nil
 
     /// У цитаты известен только вид вложения — ни имени файла, ни размера сервер в неё не кладёт.

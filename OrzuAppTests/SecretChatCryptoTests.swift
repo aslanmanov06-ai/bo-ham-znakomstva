@@ -101,3 +101,36 @@ final class E2EKeyHistoryTests: XCTestCase {
         XCTAssertTrue(store.isTrusted(peerKey: "key-13", userId: peerId))
     }
 }
+
+@MainActor
+final class OwnPeerKeyIdsTests: XCTestCase {
+    private func message(sender: String, keyId: String?, replyTo: ReplyPreview? = nil) -> Message {
+        Message(id: UUID().uuidString, chatId: "c", senderId: sender, text: "", createdAt: Date(), recipientKeyId: keyId, replyTo: replyTo)
+    }
+
+    /// Нужны ключи моих сообщений и цитат моих сообщений; ключи собеседника в его сообщениях и цитатах — нет.
+    func testCollectsOwnMessagesAndOwnQuotes() {
+        let quoteOfMine = ReplyPreview(id: "q1", senderId: "me", text: "", recipientKeyId: "old")
+        let quoteOfPeer = ReplyPreview(id: "q2", senderId: "peer", text: "", recipientKeyId: "peer-side")
+        let page = [
+            message(sender: "me", keyId: "current"),
+            message(sender: "peer", keyId: "ignored", replyTo: quoteOfMine),
+            message(sender: "peer", keyId: nil, replyTo: quoteOfPeer),
+            message(sender: "me", keyId: nil),
+        ]
+        XCTAssertEqual(ChatViewModel.ownPeerKeyIds(in: page, currentUserId: "me"), ["current", "old"])
+    }
+
+    /// Цитата без keyId (сообщение до появления ключей) ничего не требует.
+    func testQuoteWithoutKeyIdNeedsNothing() {
+        let page = [message(sender: "peer", keyId: nil, replyTo: ReplyPreview(id: "q", senderId: "me", text: ""))]
+        XCTAssertTrue(ChatViewModel.ownPeerKeyIds(in: page, currentUserId: "me").isEmpty)
+    }
+
+    /// Серверная цитата с keyId разбирается из JSON.
+    func testReplyPreviewDecodesKeyId() throws {
+        let json = #"{"id":"m","senderId":"me","text":"","ciphertext":"x","senderKey":"k","recipientKeyId":"old"}"#
+        let reply = try JSONDecoder().decode(ReplyPreview.self, from: Data(json.utf8))
+        XCTAssertEqual(reply.recipientKeyId, "old")
+    }
+}

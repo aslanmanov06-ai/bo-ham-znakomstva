@@ -624,6 +624,13 @@ final class ChatViewModel: ObservableObject {
             guard !isShowingHistorySlice else { return }
             messages.append(decrypted(message))
             markReadIfNeeded()
+            // Ответ на моё старое сообщение: цитата зашифрована прежним ключом собеседника — догружаем его и расшифровываем заново.
+            if isSecret, !Self.ownPeerKeyIds(in: [message], currentUserId: currentUserId).isSubset(of: peerKeysById.keys) {
+                Task {
+                    await loadPeerKeys(for: [message])
+                    upsert(message)
+                }
+            }
 
         case .typing(let chatId, let userId):
             guard chatId == chat.id, userId != currentUserId else { return }
@@ -790,11 +797,11 @@ final class ChatViewModel: ObservableObject {
         return EncryptedPayload(ciphertext: ciphertext, senderKey: myKey.publicKey.rawRepresentation.base64EncodedString(), recipientKeyId: peerKeyId)
     }
 
-    /// Свои сообщения, зашифрованные прежним ключом собеседника, расшифровываются только им — подгружаем его по keyId.
-    /// Не загрузился — такое сообщение покажется с пометкой «не удалось расшифровать», остальные это не задерживает.
+    /// Свои сообщения (и цитаты своих), зашифрованные прежним ключом собеседника, расшифровываются только им —
+    /// подгружаем его по keyId. Не загрузился — такое сообщение покажется с пометкой «не удалось расшифровать».
     private func loadPeerKeys(for page: [Message]) async {
         guard isSecret, let peer = chat.participants.first else { return }
-        let missing = Set(page.filter(isMine).compactMap(\.recipientKeyId)).subtracting(peerKeysById.keys)
+        let missing = Self.ownPeerKeyIds(in: page, currentUserId: currentUserId).subtracting(peerKeysById.keys)
         for keyId in missing {
             guard
                 let key = try? await APIClient.shared.fetchE2EKey(userId: peer.id, keyId: keyId),
@@ -802,6 +809,13 @@ final class ChatViewModel: ObservableObject {
             else { continue }
             peerKeysById[keyId] = publicKey
         }
+    }
+
+    /// keyId ключей собеседника, которыми зашифрованы мои сообщения и цитаты моих сообщений.
+    nonisolated static func ownPeerKeyIds(in page: [Message], currentUserId: String) -> Set<String> {
+        let own = page.filter { $0.senderId == currentUserId }.compactMap(\.recipientKeyId)
+        let quotedOwn = page.compactMap(\.replyTo).filter { $0.senderId == currentUserId }.compactMap(\.recipientKeyId)
+        return Set(own + quotedOwn)
     }
 
     /// Возвращает копию сообщения с расшифрованным текстом (или пометкой, если расшифровать нельзя).
@@ -812,7 +826,7 @@ final class ChatViewModel: ObservableObject {
         }
         // Цитата в секретном чате зашифрована так же, как само сообщение, — ключом её автора.
         if let reply = message.replyTo, let ciphertext = reply.ciphertext {
-            copy.replyTo?.text = decryptedText(ciphertext, senderId: reply.senderId, senderKey: reply.senderKey, recipientKeyId: nil)
+            copy.replyTo?.text = decryptedText(ciphertext, senderId: reply.senderId, senderKey: reply.senderKey, recipientKeyId: reply.recipientKeyId)
         }
         return copy
     }
