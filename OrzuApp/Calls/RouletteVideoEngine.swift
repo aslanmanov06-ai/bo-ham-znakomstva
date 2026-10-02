@@ -40,6 +40,10 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     /// Этот телефон шлёт offer — он же перезапускает ICE, когда связь прервалась.
     private var isInitiator = false
     private var isRestartingIce = false
+    private var watchdog: Task<Void, Never>?
+    /// Сколько ждём первого соединения с собеседником и восстановления после обрыва, прежде чем искать следующего.
+    private static let connectTimeout: TimeInterval = 15
+    private static let reconnectTimeout: TimeInterval = 10
     private var cancellables = Set<AnyCancellable>()
 
     override init() {
@@ -86,7 +90,10 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     /// Новый собеседник. initiator — кто шлёт offer (сервер назначает ровно одного).
     func beginSession(id: String, initiator: Bool) {
         endSession()
-        guard let audioTrack, let localTrack else { return }
+        guard let audioTrack, let localTrack else {
+            connectionFailed.send(id)
+            return
+        }
 
         let config = RTCConfiguration()
         config.iceServers = iceServers
@@ -107,6 +114,19 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
         sessionId = id
         isInitiator = initiator
         if initiator { sendOffer() }
+        startWatchdog(after: Self.connectTimeout)
+    }
+
+    /// Не соединились за отведённое время (собеседник не ответил, TURN недоступен) — ICE сам может так и не дойти
+    /// до .failed, а человек смотрел бы на «Соединяемся…» бесконечно.
+    private func startWatchdog(after delay: TimeInterval) {
+        watchdog?.cancel()
+        guard let id = sessionId else { return }
+        watchdog = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled, let self, self.sessionId == id else { return }
+            self.connectionFailed.send(id)
+        }
     }
 
     private func sendOffer() {
@@ -126,6 +146,8 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
 
     /// Разговор закончился: камера остаётся включённой — следующий собеседник найдётся через секунды.
     func endSession() {
+        watchdog?.cancel()
+        watchdog = nil
         connection?.close()
         connection = nil
         sessionId = nil
@@ -285,8 +307,11 @@ extension RouletteVideoEngine: RTCPeerConnectionDelegate {
             case .connected, .completed:
                 self.isConnected = true
                 self.isRestartingIce = false
+                self.watchdog?.cancel()
+                self.watchdog = nil
             case .disconnected:
                 self.restartIce()
+                self.startWatchdog(after: Self.reconnectTimeout)
             case .failed:
                 self.connectionFailed.send(sessionId)
             default:

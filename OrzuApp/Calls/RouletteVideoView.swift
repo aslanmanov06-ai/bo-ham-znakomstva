@@ -8,7 +8,6 @@ struct RouletteVideoView: View {
     let session: RouletteViewModel.Session
     let places: RoulettePlaces
 
-    @State private var showReport = false
     @State private var isRevealed = false
     @State private var countdown = Int(RouletteViewModel.videoRevealDelay)
 
@@ -34,9 +33,6 @@ struct RouletteVideoView: View {
         .background(Color.black)
         .environment(\.colorScheme, .dark)
         .task(id: session.id) { await reveal() }
-        .sheet(isPresented: $showReport) {
-            RouletteReportSheet(roulette: roulette, peer: session.peer)
-        }
     }
 
     // MARK: - Видео
@@ -134,7 +130,7 @@ struct RouletteVideoView: View {
             .foregroundStyle(.white)
             Spacer()
             VStack(alignment: .trailing, spacing: 14) {
-                glassCircle(systemImage: "flag", title: String(localized: "Пожаловаться"), size: 44) { showReport = true }
+                glassCircle(systemImage: "flag", title: String(localized: "Пожаловаться"), size: 44) { roulette.beginReport() }
                 RTCVideoRenderView(track: engine.isCameraOff ? nil : engine.localTrack)
                     .background(Color(rgb: 0x2E2329))
                     .frame(width: 104, height: 144)

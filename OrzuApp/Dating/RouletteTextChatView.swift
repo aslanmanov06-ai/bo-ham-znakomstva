@@ -7,7 +7,6 @@ struct RouletteTextChatView: View {
     let places: RoulettePlaces
 
     @State private var draft = ""
-    @State private var showReport = false
     @FocusState private var isInputFocused: Bool
 
     private static let bottomId = "bottom"
@@ -21,9 +20,6 @@ struct RouletteTextChatView: View {
             input
         }
         .background(AppBackground())
-        .sheet(isPresented: $showReport) {
-            RouletteReportSheet(roulette: roulette, peer: session.peer)
-        }
     }
 
     private var header: some View {
@@ -53,7 +49,7 @@ struct RouletteTextChatView: View {
             }
             Spacer()
             Button {
-                showReport = true
+                roulette.beginReport()
             } label: {
                 Image(systemName: "flag")
                     .font(.system(size: 17, weight: .semibold))

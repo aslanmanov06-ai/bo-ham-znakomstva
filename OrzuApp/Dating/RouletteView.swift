@@ -25,6 +25,10 @@ private struct RouletteScreen: View {
             // Внутри NavigationStack: снаружи него панель вкладок этот модификатор не видит.
             .toolbar(roulette.isInRoulette ? .hidden : .automatic, for: .navigationBar, .tabBar)
             .animation(.easeInOut(duration: 0.25), value: roulette.phase)
+            // Жалоба — над всем экраном: если собеседник уйдёт, пока её пишут, экран сменится, а жалоба останется.
+            .sheet(item: $roulette.reportTarget, onDismiss: { roulette.resumeAutoSearch() }) { session in
+                RouletteReportSheet(roulette: roulette, session: session)
+            }
             .alert("Рулетка", isPresented: .constant(roulette.errorMessage != nil)) {
                 Button("Ок") { roulette.errorMessage = nil }
             } message: {
@@ -419,8 +423,6 @@ private struct RouletteEndedView: View {
     let reported: Bool
     let autoSearchAt: Date
 
-    @State private var showReport = false
-
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -461,8 +463,7 @@ private struct RouletteEndedView: View {
                     .buttonStyle(.appSecondary)
                 if !reported {
                     Button {
-                        roulette.pauseAutoSearch()
-                        showReport = true
+                        roulette.beginReport()
                     } label: {
                         Label(session.peer.isFemale ? String(localized: "Пожаловаться на собеседницу") : String(localized: "Пожаловаться на собеседника"), systemImage: "flag")
                             .font(.app(.subheadline, weight: .semibold))
@@ -477,9 +478,6 @@ private struct RouletteEndedView: View {
         }
         .frame(maxWidth: .infinity)
         .background(AppBackground())
-        .sheet(isPresented: $showReport, onDismiss: { roulette.resumeAutoSearch() }) {
-            RouletteReportSheet(roulette: roulette, peer: session.peer)
-        }
     }
 
     private var title: String {
@@ -525,7 +523,7 @@ private struct RouletteEndedView: View {
 
 struct RouletteReportSheet: View {
     @ObservedObject var roulette: RouletteViewModel
-    let peer: RoulettePeer
+    let session: RouletteViewModel.Session
 
     @Environment(\.dismiss) private var dismiss
     @State private var reason = RouletteReportReason.indecent
@@ -536,7 +534,7 @@ struct RouletteReportSheet: View {
             Text("Пожаловаться")
                 .font(.display(size: 20))
                 .padding(.top, 24)
-            Text(peer.isFemale
+            Text(session.peer.isFemale
                 ? String(localized: "Разговор сразу завершится, и вы больше не встретитесь в рулетке. Собеседница не узнает, кто пожаловался.")
                 : String(localized: "Разговор сразу завершится, и вы больше не встретитесь в рулетке. Собеседник не узнает, кто пожаловался."))
                 .font(.app(.subheadline))
@@ -568,7 +566,7 @@ struct RouletteReportSheet: View {
             Button {
                 isSending = true
                 Task {
-                    let sent = await roulette.report(reason: reason, comment: nil)
+                    let sent = await roulette.report(session, reason: reason, comment: nil)
                     isSending = false
                     if sent { dismiss() }
                 }

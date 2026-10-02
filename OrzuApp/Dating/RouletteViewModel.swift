@@ -5,7 +5,7 @@ import Foundation
 /// Сервер ведёт очередь и разговор, пока открыт сокет (backend docs/roulette.md); здесь — только то, что видно на экране.
 @MainActor
 final class RouletteViewModel: ObservableObject {
-    struct Session: Equatable {
+    struct Session: Equatable, Identifiable {
         let id: String
         let mode: RouletteMode
         let peer: RoulettePeer
@@ -40,6 +40,8 @@ final class RouletteViewModel: ObservableObject {
     /// Короткое пояснение под полем ввода или кнопками (контакты нельзя, слишком часто…).
     @Published var notice: String?
     @Published var errorMessage: String?
+    /// Открыта жалоба на этого собеседника. Пока она открыта, следующий поиск сам не начинается — даже если собеседник ушёл.
+    @Published var reportTarget: Session?
 
     let video = RouletteVideoEngine()
 
@@ -158,27 +160,32 @@ final class RouletteViewModel: ObservableObject {
         WebSocketClient.shared.sendRoulette(["type": "roulette.typing", "sessionId": session.id])
     }
 
+    /// «Пожаловаться» — во время разговора или на экране «собеседник ушёл».
+    func beginReport() {
+        guard let session = reportableSession else { return }
+        cancelAutoSearch()
+        reportTarget = session
+    }
+
     /// Жалоба — на текущего или только что ушедшего собеседника. Сервер сам заканчивает разговор.
-    func report(reason: RouletteReportReason, comment: String?) async -> Bool {
-        guard let session = reportableSession else { return false }
+    func report(_ session: Session, reason: RouletteReportReason, comment: String?) async -> Bool {
         do {
             try await APIClient.shared.reportRoulette(sessionId: session.id, category: reason.category, comment: comment)
         } catch {
             errorMessage = error.localizedDescription
             return false
         }
+        // Пока жалобу отправляли, человек мог уже уйти из этого разговора (пара, «Стоп») — экран не трогаем.
+        guard reportableSession?.id == session.id else { return true }
         video.endSession()
+        reportTarget = nil
         showEnded(session, reported: true)
         return true
     }
 
-    /// Пока открыта жалоба на экране «собеседник ушёл», следующий поиск не начинается сам.
-    func pauseAutoSearch() {
-        cancelAutoSearch()
-    }
-
     /// Жалобу закрыли, не отправив, — отсчёт до следующего поиска начинается заново.
     func resumeAutoSearch() {
+        reportTarget = nil
         guard case .ended(let session, let reported, _) = phase, autoSearchTask == nil else { return }
         showEnded(session, reported: reported)
     }
@@ -202,13 +209,16 @@ final class RouletteViewModel: ObservableObject {
     private func handle(event: ServerEvent) {
         switch event {
         case .rouletteWaiting(let mode, let cityWait):
+            // Поиск на экране начинает join(); запоздалое событие (мы уже вышли или разговариваем) экран не меняет.
+            guard phase == .searching(mode: mode) else { return }
             cityWaitSeconds = cityWait
-            if phase != .searching(mode: mode) {
-                searchStartedAt = Date()
-                phase = .searching(mode: mode)
-            }
 
         case .rouletteMatched(let sessionId, let mode, let peer, let initiator):
+            // Собеседник нашёлся, когда мы уже нажали «Стоп» (сообщения разминулись) — сервер должен узнать, что нас нет.
+            guard case .searching(let searchingMode) = phase, searchingMode == mode else {
+                if activeSession?.id != sessionId { WebSocketClient.shared.sendRoulette(["type": "roulette.leave"]) }
+                return
+            }
             cancelAutoSearch()
             messages = []
             liked = false
@@ -304,6 +314,8 @@ final class RouletteViewModel: ObservableObject {
         cancelAutoSearch()
         let at = Date().addingTimeInterval(Self.autoSearchDelay)
         phase = .ended(session, reported: reported, autoSearchAt: at)
+        // Жалоба ещё открыта — отсчёт начнётся, когда её закроют (resumeAutoSearch).
+        guard reportTarget == nil else { return }
         autoSearchTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(Self.autoSearchDelay))
             guard !Task.isCancelled, let self, case .ended(let ended, _, _) = self.phase, ended.id == session.id else { return }
@@ -324,6 +336,7 @@ final class RouletteViewModel: ObservableObject {
 
     private func finish() {
         cancelAutoSearch()
+        reportTarget = nil
         video.stop()
         messages = []
         liked = false
