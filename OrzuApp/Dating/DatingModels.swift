@@ -169,6 +169,10 @@ struct DatingProfilePublic: Codable, Identifiable, Hashable {
     var voiceDurationSec: Int? = nil
     /// online, today, week. Строкой, а не enum: новое значение с сервера не должно ломать разбор всей анкеты.
     var activity: String? = nil
+    /// Анкета «Кого ищу» этого человека. nil — он её не заполнял или сервер старый.
+    var searchCriteria: SearchCriteria? = nil
+    /// Подхожу ли я под его «Кого ищу». nil — не заполнена, своя анкета или сервер старый.
+    var fitsCriteria: Bool? = nil
 
     var id: String { userId }
 
@@ -251,10 +255,12 @@ struct DatingProfileMine: Decodable, Hashable {
     let voice: DatingPhoto?
     /// Сервер прислал ключ voice (хотя бы null) — значит, умеет голосовое приветствие и строку можно показать.
     let supportsVoice: Bool
+    /// С какого момента дату рождения снова можно менять (раз в 90 дней). nil — можно уже сейчас.
+    let birthDateEditableFrom: Date?
 
     private enum CodingKeys: String, CodingKey {
         case photos, video, inCouple, birthDate, hidden, visibleToOthers, visibilityIssues, needsReverification, hasLocation
-        case voice
+        case voice, birthDateEditableFrom
     }
 
     init(from decoder: Decoder) throws {
@@ -272,6 +278,7 @@ struct DatingProfileMine: Decodable, Hashable {
         hasLocation = try container.decode(Bool.self, forKey: .hasLocation)
         voice = try container.decodeIfPresent(DatingPhoto.self, forKey: .voice)
         supportsVoice = container.contains(.voice)
+        birthDateEditableFrom = try container.decodeIfPresent(Date.self, forKey: .birthDateEditableFrom)
     }
 }
 
@@ -286,7 +293,7 @@ struct MyDatingProfile: Decodable {
     let completeness: ProfileCompleteness?
 }
 
-/// Частичное обновление анкеты. Пол и дата рождения задаются только при создании и потом не меняются.
+/// Частичное обновление анкеты. Пол задаётся только при создании; дату рождения потом меняют в «Моих данных» раз в 90 дней.
 struct DatingProfileUpdate: Encodable {
     var gender: String?
     var birthDate: String?
@@ -552,6 +559,74 @@ struct SelfieGesture: Decodable, Equatable {
 
 /// Кого ищет человек. Остальные поля настроек поиска на сервере ленте больше не нужны: она подбирает анкеты сама,
 /// а фильтры по городу, возрасту и т. п. — у сетки анкет (DatingBrowseFilters).
+/// «Кого ищу» — как она видна в чужой анкете. Пустой список и nil — «не важно».
+struct SearchCriteria: Codable, Hashable {
+    let lookingFor: String
+    let ageMin: Int
+    let ageMax: Int
+    let children: String?
+    let cityCodes: [String]
+    let maritalStatuses: [String]
+
+    /// Подходит ли под критерии человек с такой анкетой — по пунктам (✓/✗ в чужой анкете).
+    /// Те же правила, что у сервера: незаполненное поле под заданный критерий не подходит.
+    func fitsAge(_ age: Int) -> Bool { (ageMin...ageMax).contains(age) }
+    func fitsChildren(_ value: String?) -> Bool { children == nil || value == children }
+    func fitsCity(_ cityCode: String) -> Bool { cityCodes.isEmpty || cityCodes.contains(cityCode) }
+    func fitsMaritalStatus(_ value: String?) -> Bool { maritalStatuses.isEmpty || value.map(maritalStatuses.contains) == true }
+}
+
+/// Своя анкета «Кого ищу» из GET /dating/search-settings. criteriaSetAt == nil — человек её ещё не заполнял.
+struct SearchCriteriaSettings: Decodable, Hashable {
+    var lookingFor: String
+    var ageMin: Int
+    var ageMax: Int
+    var children: String?
+    var cityCodes: [String]
+    var maritalStatuses: [String]
+    var criteriaSetAt: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case lookingFor, ageMin, ageMax, children, cityCodes, maritalStatuses, criteriaSetAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        lookingFor = try container.decode(String.self, forKey: .lookingFor)
+        ageMin = try container.decode(Int.self, forKey: .ageMin)
+        ageMax = try container.decode(Int.self, forKey: .ageMax)
+        children = try container.decodeIfPresent(String.self, forKey: .children)
+        // Старый сервер этих полей не знает — тогда «не важно».
+        cityCodes = try container.decodeIfPresent([String].self, forKey: .cityCodes) ?? []
+        maritalStatuses = try container.decodeIfPresent([String].self, forKey: .maritalStatuses) ?? []
+        criteriaSetAt = try container.decodeIfPresent(Date.self, forKey: .criteriaSetAt)
+    }
+}
+
+/// Сохранение «Кого ищу» целиком: children уходит и как null («не важно»).
+struct SearchCriteriaUpdate: Encodable {
+    let lookingFor: String
+    let ageMin: Int
+    let ageMax: Int
+    let children: String?
+    let cityCodes: [String]
+    let maritalStatuses: [String]
+
+    private enum CodingKeys: String, CodingKey {
+        case lookingFor, ageMin, ageMax, children, cityCodes, maritalStatuses
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(lookingFor, forKey: .lookingFor)
+        try container.encode(ageMin, forKey: .ageMin)
+        try container.encode(ageMax, forKey: .ageMax)
+        try container.encode(children, forKey: .children)
+        try container.encode(cityCodes, forKey: .cityCodes)
+        try container.encode(maritalStatuses, forKey: .maritalStatuses)
+    }
+}
+
 struct DatingSearchSettings: Codable, Hashable {
     var lookingFor: String
     /// Инкогнито: анкету видят только те, кого вы лайкнули. nil — сервер не знает этой настройки.
@@ -562,7 +637,13 @@ struct DatingSearchSettings: Codable, Hashable {
 
 /// Фильтры сетки всех анкет. nil и пустой список — «любой». Хранятся на устройстве, на ленту не влияют.
 struct DatingBrowseFilters: Codable, Equatable {
+    /// nil — тот пол, что человек ищет («Кого ищу»).
+    var gender: String?
     var cityCode: String?
+    /// Не дальше N км — работает, только если включена геопозиция.
+    var maxDistanceKm: Int?
+    var smoking: [String] = []
+    var alcohol: [String] = []
     var ageMin: Int?
     var ageMax: Int?
     var heightMin: Int?
@@ -577,9 +658,9 @@ struct DatingBrowseFilters: Codable, Equatable {
     /// Сколько фильтров задано — число на кнопке «Фильтры». Возраст и рост считаются по одному.
     var activeCount: Int {
         let set: [Bool] = [
-            cityCode != nil, ageMin != nil || ageMax != nil, heightMin != nil || heightMax != nil,
+            gender != nil, cityCode != nil, maxDistanceKm != nil, ageMin != nil || ageMax != nil, heightMin != nil || heightMax != nil,
             !relationshipGoals.isEmpty, !maritalStatuses.isEmpty, children != nil, !wantsChildren.isEmpty,
-            !education.isEmpty, !interests.isEmpty,
+            !education.isEmpty, !interests.isEmpty, !smoking.isEmpty, !alcohol.isEmpty,
         ]
         return set.filter { $0 }.count
     }
@@ -593,7 +674,11 @@ struct DatingBrowseFilters: Codable, Equatable {
         func add(_ name: String, _ values: [String]) {
             if !values.isEmpty { items.append(URLQueryItem(name: name, value: values.joined(separator: ","))) }
         }
+        add("gender", gender)
         add("cityCode", cityCode)
+        add("maxDistanceKm", maxDistanceKm.map(String.init))
+        add("smoking", smoking)
+        add("alcohol", alcohol)
         add("ageMin", ageMin.map(String.init))
         add("ageMax", ageMax.map(String.init))
         add("heightMin", heightMin.map(String.init))
@@ -605,6 +690,34 @@ struct DatingBrowseFilters: Codable, Equatable {
         add("education", education)
         add("interests", interests)
         return items
+    }
+}
+
+/// Сохранённые на устройстве фильтры прошлой версии: новых полей в них нет — читаем их как «не важно»,
+/// чтобы после обновления фильтры не сбрасывались.
+extension DatingBrowseFilters {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        gender = try container.decodeIfPresent(String.self, forKey: .gender)
+        cityCode = try container.decodeIfPresent(String.self, forKey: .cityCode)
+        maxDistanceKm = try container.decodeIfPresent(Int.self, forKey: .maxDistanceKm)
+        smoking = try container.decodeIfPresent([String].self, forKey: .smoking) ?? []
+        alcohol = try container.decodeIfPresent([String].self, forKey: .alcohol) ?? []
+        ageMin = try container.decodeIfPresent(Int.self, forKey: .ageMin)
+        ageMax = try container.decodeIfPresent(Int.self, forKey: .ageMax)
+        heightMin = try container.decodeIfPresent(Int.self, forKey: .heightMin)
+        heightMax = try container.decodeIfPresent(Int.self, forKey: .heightMax)
+        relationshipGoals = try container.decodeIfPresent([String].self, forKey: .relationshipGoals) ?? []
+        maritalStatuses = try container.decodeIfPresent([String].self, forKey: .maritalStatuses) ?? []
+        children = try container.decodeIfPresent(String.self, forKey: .children)
+        wantsChildren = try container.decodeIfPresent([String].self, forKey: .wantsChildren) ?? []
+        education = try container.decodeIfPresent([String].self, forKey: .education) ?? []
+        interests = try container.decodeIfPresent([String].self, forKey: .interests) ?? []
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case gender, cityCode, maxDistanceKm, smoking, alcohol, ageMin, ageMax, heightMin, heightMax
+        case relationshipGoals, maritalStatuses, children, wantsChildren, education, interests
     }
 }
 

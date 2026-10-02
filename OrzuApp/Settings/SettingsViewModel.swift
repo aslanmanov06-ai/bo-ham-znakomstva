@@ -32,6 +32,12 @@ final class SettingsViewModel: ObservableObject {
         return errorMessage == nil
     }
 
+    /// true — сохранено: экран смены телефона можно закрыть.
+    func savePhone(_ phone: String) async -> Bool {
+        await apply { try await APIClient.shared.updatePhone(phone) }
+        return errorMessage == nil
+    }
+
     func updatePrivacy(_ update: PrivacyUpdate) async {
         await apply { try await APIClient.shared.updatePrivacy(update) }
     }

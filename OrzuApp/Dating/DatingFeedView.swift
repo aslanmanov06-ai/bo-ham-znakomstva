@@ -84,6 +84,7 @@ struct DatingFeedView: View {
                     profile: card.profile,
                     catalog: dating.catalog,
                     compatibility: card.compatibility,
+                    viewer: dating.profile?.shared,
                     onLike: { send(card, .like) },
                     onSkip: { send(card, .skip) },
                     onIntro: { PushManager.shared.openConversation(with: card.profile) }

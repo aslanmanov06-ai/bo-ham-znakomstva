@@ -61,4 +61,28 @@ final class DatingBrowseTests: XCTestCase {
         DatingBrowseViewModel.forgetFilters(defaults: defaults)
         XCTAssertEqual(DatingBrowseViewModel(defaults: defaults).filters, DatingBrowseFilters())
     }
+
+    func testNewFiltersBecomeQueryItems() {
+        var filters = DatingBrowseFilters()
+        filters.gender = "MALE"
+        filters.maxDistanceKm = 25
+        filters.smoking = ["NEVER"]
+        filters.alcohol = ["NEVER", "SOMETIMES"]
+
+        let query = Dictionary(uniqueKeysWithValues: filters.queryItems.map { ($0.name, $0.value) })
+
+        XCTAssertEqual(query, ["gender": "MALE", "maxDistanceKm": "25", "smoking": "NEVER", "alcohol": "NEVER,SOMETIMES"])
+        XCTAssertEqual(filters.activeCount, 4)
+    }
+
+    /// Фильтры, сохранённые прошлой версией приложения (без новых полей), после обновления не сбрасываются.
+    func testDecodesFiltersSavedByPreviousVersion() throws {
+        let saved = Data(#"{"cityCode":"khujand","ageMin":20,"relationshipGoals":["MARRIAGE"],"maritalStatuses":[],"wantsChildren":[],"education":[],"interests":[]}"#.utf8)
+        let filters = try JSONDecoder().decode(DatingBrowseFilters.self, from: saved)
+        XCTAssertEqual(filters.cityCode, "khujand")
+        XCTAssertEqual(filters.ageMin, 20)
+        XCTAssertEqual(filters.relationshipGoals, ["MARRIAGE"])
+        XCTAssertNil(filters.gender)
+        XCTAssertTrue(filters.smoking.isEmpty)
+    }
 }

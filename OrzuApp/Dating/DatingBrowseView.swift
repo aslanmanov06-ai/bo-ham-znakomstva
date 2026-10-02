@@ -42,7 +42,7 @@ struct DatingBrowseView: View {
             }
             .sheet(isPresented: $showFilters) {
                 NavigationStack {
-                    DatingBrowseFiltersView(filters: browse.filters, catalog: dating.catalog, countryCode: dating.profile?.shared.countryCode) {
+                    DatingBrowseFiltersView(filters: browse.filters, catalog: dating.catalog, countryCode: dating.profile?.shared.countryCode, lookingFor: dating.lookingFor) {
                         browse.apply($0)
                     }
                 }
@@ -64,6 +64,7 @@ struct DatingBrowseView: View {
                         profile: item.card.profile,
                         catalog: dating.catalog,
                         compatibility: item.card.compatibility,
+                        viewer: dating.profile?.shared,
                         // Уже лайкнули — второй лайк ничего не изменит, кнопку не показываем.
                         onLike: item.liked ? nil : { Task { await browse.like(item.card) } },
                         onIntro: { PushManager.shared.openConversation(with: item.card.profile) }

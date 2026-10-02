@@ -390,4 +390,60 @@ final class SosTrackTests: XCTestCase {
         let single = SosTrackMap.region(covering: [CLLocationCoordinate2D(latitude: 38.5, longitude: 68.7)])
         XCTAssertEqual(single.span.latitudeDelta, SosTrackMap.minimumSpanDegrees, accuracy: 1e-12)
     }
+
+}
+
+/// «Кого ищу»: критерии в чужой анкете, отметки ✓/✗ и сохранение.
+final class SearchCriteriaModelsTests: XCTestCase {
+    private func decoder() -> JSONDecoder {
+        ISO8601Coding.makeDecoder()
+    }
+
+    /// Карточка ленты с «Кого ищу» и отметкой, подхожу ли я (ответ GET /dating/feed после ac8f9e8).
+    func testDecodesSearchCriteriaOnCard() throws {
+        let json = Data("""
+        {"userId":"u2","displayName":"Мадина","age":26,"gender":"FEMALE","countryCode":"TJ","cityCode":"dushanbe",
+         "heightCm":null,"bio":"","interests":[],"education":null,"profession":null,"relationshipGoal":null,
+         "maritalStatus":null,"children":null,"wantsChildren":null,"smoking":null,"alcohol":null,"sport":null,
+         "cuisines":[],"hobbies":[],"photoIds":[],"videoId":null,"verified":false,"distanceKm":null,
+         "searchCriteria":{"lookingFor":"MALE","ageMin":27,"ageMax":35,"children":"NONE","cityCodes":["dushanbe","khujand"],"maritalStatuses":["NEVER_MARRIED"]},
+         "fitsCriteria":false}
+        """.utf8)
+        let profile = try decoder().decode(DatingProfilePublic.self, from: json)
+        let criteria = try XCTUnwrap(profile.searchCriteria)
+        XCTAssertEqual(profile.fitsCriteria, false)
+        XCTAssertEqual(criteria.cityCodes, ["dushanbe", "khujand"])
+        XCTAssertFalse(criteria.fitsAge(26))
+        XCTAssertTrue(criteria.fitsAge(27))
+        XCTAssertTrue(criteria.fitsCity("khujand"))
+        XCTAssertFalse(criteria.fitsCity("kulob"))
+        XCTAssertTrue(criteria.fitsChildren("NONE"))
+        XCTAssertFalse(criteria.fitsChildren(nil))
+        // Не указанное у меня семейное положение под заданный критерий не подходит — как на сервере.
+        XCTAssertFalse(criteria.fitsMaritalStatus(nil))
+        XCTAssertTrue(criteria.fitsMaritalStatus("NEVER_MARRIED"))
+    }
+
+    func testCardWithoutCriteria() throws {
+        let json = Data(#"{"userId":"u2","displayName":"А","age":26,"gender":"FEMALE","countryCode":"TJ","cityCode":"dushanbe","heightCm":null,"bio":"","interests":[],"education":null,"profession":null,"relationshipGoal":null,"maritalStatus":null,"children":null,"wantsChildren":null,"smoking":null,"alcohol":null,"sport":null,"cuisines":[],"hobbies":[],"photoIds":[],"videoId":null,"verified":false,"distanceKm":null,"searchCriteria":null,"fitsCriteria":null}"#.utf8)
+        let profile = try decoder().decode(DatingProfilePublic.self, from: json)
+        XCTAssertNil(profile.searchCriteria)
+        XCTAssertNil(profile.fitsCriteria)
+    }
+
+    /// «Не важно» по детям уходит именно как null — иначе сервер оставил бы прежний выбор.
+    func testCriteriaUpdateSendsNullChildren() throws {
+        let update = SearchCriteriaUpdate(lookingFor: "FEMALE", ageMin: 22, ageMax: 30, children: nil, cityCodes: [], maritalStatuses: ["DIVORCED"])
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(update)) as? [String: Any])
+        XCTAssertTrue(object["children"] is NSNull)
+        XCTAssertEqual(object["maritalStatuses"] as? [String], ["DIVORCED"])
+    }
+
+    func testDecodesCriteriaSettingsFromOldServer() throws {
+        let json = Data(#"{"lookingFor":"FEMALE","ageMin":23,"ageMax":33,"incognito":false,"showActivity":true}"#.utf8)
+        let settings = try decoder().decode(SearchCriteriaSettings.self, from: json)
+        XCTAssertEqual(settings.ageMin, 23)
+        XCTAssertTrue(settings.cityCodes.isEmpty)
+        XCTAssertNil(settings.criteriaSetAt)
+    }
 }

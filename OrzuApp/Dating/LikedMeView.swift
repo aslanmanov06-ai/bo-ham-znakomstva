@@ -91,6 +91,7 @@ struct LikedMeView: View {
                     profile: liked.card.profile,
                     catalog: dating.catalog,
                     compatibility: liked.card.compatibility,
+                    viewer: dating.profile?.shared,
                     onLike: { Task { await likes.respond(liked, action: .like) } },
                     onSkip: { Task { await likes.respond(liked, action: .skip) } },
                     onIntro: { PushManager.shared.openConversation(with: liked.card.profile) }

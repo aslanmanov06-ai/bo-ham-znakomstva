@@ -4,12 +4,16 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @ObservedObject var viewModel: SettingsViewModel
+    @ObservedObject var dating: DatingViewModel
     @State private var confirmLogout = false
 
     var body: some View {
         Form {
             if let settings = viewModel.settings {
                 Section("Аккаунт") {
+                    NavigationLink { MyDataView(viewModel: viewModel, dating: dating) } label: {
+                        SettingsLabel(String(localized: "Мои данные"), systemImage: "person.text.rectangle.fill", color: .brand)
+                    }
                     NavigationLink { PrivacySettingsView(viewModel: viewModel) } label: {
                         SettingsLabel(String(localized: "Приватность"), systemImage: "hand.raised.fill", color: .brand)
                     }

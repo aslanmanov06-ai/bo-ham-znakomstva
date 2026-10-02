@@ -6,6 +6,8 @@ struct DatingProfileDetailView: View {
     let profile: DatingProfilePublic
     let catalog: DatingCatalog?
     var compatibility: Compatibility?
+    /// Моя анкета — для отметок ✓/✗ по пунктам его «Кого ищу». nil — только общий итог с сервера.
+    var viewer: DatingProfilePublic?
     /// Предпросмотр своей анкеты: жаловаться на себя и блокировать себя незачем.
     var showsModeration = true
     var onLike: (() -> Void)?
@@ -61,6 +63,9 @@ struct DatingProfileDetailView: View {
                     }
                 }
                 factsCard
+                if let criteria = profile.searchCriteria {
+                    SearchCriteriaCard(criteria: criteria, fits: profile.fitsCriteria, viewer: viewer, catalog: catalog)
+                }
                 chips(String(localized: "Интересы"), systemImage: "star", codes: profile.interests, items: catalog?.interests ?? [])
                 chips(String(localized: "Занятия"), systemImage: "figure.walk", codes: profile.hobbies, items: catalog?.hobbies ?? [])
                 chips(String(localized: "Любимая кухня"), systemImage: "fork.knife", codes: profile.cuisines, items: catalog?.cuisines ?? [])

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Своя анкета: создание пошаговым мастером и правка карточками.
-/// Пол и дату рождения задают один раз — потом сервер их менять не даёт.
+/// Пол задают один раз; дату рождения потом можно поменять в «Моих данных», но не чаще раза в 90 дней.
 struct DatingProfileEditorView: View {
     @ObservedObject var dating: DatingViewModel
 
@@ -17,6 +17,8 @@ struct DatingProfileEditorView: View {
     @State private var showSelfie = false
     @State private var showSafety = false
     @State private var confirmLeaveCouple = false
+    /// Сразу после создания анкеты — шаг «Кого вы ищете».
+    @State private var showCriteriaStep = false
 
     private var isCreating: Bool { dating.profile == nil }
 
@@ -59,6 +61,11 @@ struct DatingProfileEditorView: View {
         .sheet(isPresented: $showSafety) {
             NavigationStack {
                 SafetyView()
+            }
+        }
+        .fullScreenCover(isPresented: $showCriteriaStep) {
+            NavigationStack {
+                SearchCriteriaView(dating: dating, isOnboarding: true) { showCriteriaStep = false }
             }
         }
         .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
@@ -305,6 +312,7 @@ struct DatingProfileEditorView: View {
                 if creating {
                     // Новая анкета: дальше нужны фото и селфи — экран остаётся открытым уже в режиме правки.
                     justCreated = true
+                    showCriteriaStep = true
                     await dating.refreshVerification()
                 }
             } catch {
@@ -346,7 +354,7 @@ private struct ProfileCreationFlow: View {
 
     @State private var step = Step.basics
     @State private var movingForward = true
-    /// Пол и дату рождения потом не изменить — поэтому их нужно выбрать явно, а не оставить значение по умолчанию.
+    /// Пол потом не изменить, а дату — лишь раз в 90 дней: поэтому их нужно выбрать явно, а не оставить значение по умолчанию.
     @State private var genderChosen = false
     @State private var birthDateChosen = false
 
@@ -365,7 +373,7 @@ private struct ProfileCreationFlow: View {
 
         var subtitle: String {
             switch self {
-            case .basics: String(localized: "Пол и дату рождения потом изменить нельзя — проверьте их внимательно.")
+            case .basics: String(localized: "Пол потом изменить нельзя, дату рождения — только раз в 90 дней. Проверьте их внимательно.")
             case .goals: String(localized: "Так мы покажем вас тем, кто ищет того же.")
             case .about: String(localized: "Пара искренних фраз о себе работает лучше любого фото.")
             case .lifestyle: String(localized: "Привычки — частая причина несовместимости, лучше знать заранее.")
@@ -945,7 +953,7 @@ private struct ProfileForm: Equatable {
     /// sendsPrompts — сервер умеет вопросы в анкете: старый отклонил бы незнакомое поле вместе со всей анкетой.
     func update(isCreating: Bool, sendsPrompts: Bool) -> DatingProfileUpdate {
         var update = DatingProfileUpdate()
-        // Пол и дата рождения задаются только при создании: у существующей анкеты сервер отклонит их изменение.
+        // Пол и дату рождения форма отправляет только при создании: дату потом меняют в «Моих данных», пол — поддержка.
         if isCreating {
             update.gender = gender
             update.birthDate = CalendarDate.string(from: birthDate)

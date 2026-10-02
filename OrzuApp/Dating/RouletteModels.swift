@@ -56,8 +56,9 @@ struct RouletteStatus: Decodable, Hashable {
 
     struct Search: Decodable, Hashable {
         let lookingFor: String
-        let ageMin: Int
-        let ageMax: Int
+        /// Возраст собеседников — свой у рулетки (PUT /roulette/search), лента его не видит.
+        var ageMin: Int
+        var ageMax: Int
         let cityCode: String
     }
 
@@ -90,7 +91,7 @@ struct RouletteStatus: Decodable, Hashable {
 
     let modes: Modes
     let bannedUntil: Date?
-    let search: Search?
+    var search: Search?
     let cityWaitSeconds: Int
     /// Сколько людей сейчас ищут и разговаривают. nil — сервер старее приложения.
     let online: Online?

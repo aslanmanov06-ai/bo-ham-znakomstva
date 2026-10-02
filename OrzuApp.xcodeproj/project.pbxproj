@@ -122,6 +122,7 @@
 		C53111B4CC7A9051E758D04C /* Onest-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ED8E3F3E3E4D9B7271951DAC /* Onest-Regular.ttf */; };
 		3A543E8766EDBF3557D9C08E /* RouletteVideoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 887848855890BE684E25DEA2 /* RouletteVideoEngine.swift */; };
 		70974B4F59B0A7597330127D /* RouletteVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814694C0F4EE339CF55452C5 /* RouletteVideoView.swift */; };
+		6DFF94FF32E022074561445E /* SearchCriteriaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF07EA73CDB79486868BB043 /* SearchCriteriaView.swift */; };
 		AE484920820FCDDF15A2EC4C /* RouletteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74CF5C5A0FCBB133DC56A90 /* RouletteModels.swift */; };
 		26A2EA1D2CBFA7771FFC6A38 /* RouletteTextChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BDDFE6F99B605B5D70DD80 /* RouletteTextChatView.swift */; };
 		669ED824978CB69027DCAE94 /* RouletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E86D2A128E536813EEDD286 /* RouletteView.swift */; };
@@ -152,6 +153,7 @@
 		EC12E510A36E346F8EF2284F /* AuthResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5071A70EC7485BA9B05C40DA /* AuthResponse.swift */; };
 		ECC1D444492180B32ED52A68 /* AttachmentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C5BB507C11AAFA4E30E4CEF /* AttachmentViews.swift */; };
 		EDAB0374F479FC19403B20DE /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468B685B4EF5967CC5441742 /* LoginView.swift */; };
+		173140FFF45283F065F16EE9 /* MyDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02D47726F69E208A5532207 /* MyDataView.swift */; };
 		F0088FC6DF643A0A0E029C10 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AD56B6CE74B56A6BFEDAE3 /* SettingsViewModel.swift */; };
 		F0B80AD7A373AA35C2B65C9D /* GroupInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F7FBEB9C981A570F5B6EB7 /* GroupInfoView.swift */; };
 		F28C1AACE23CFAABE1AB7105 /* Presence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744A61C49A8BDDB112999B42 /* Presence.swift */; };
@@ -202,6 +204,7 @@
 		2C897297117F143E5DE5BF19 /* MatchDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchDetailViewModel.swift; sourceTree = "<group>"; };
 		2E5190A9013E0D3D02269827 /* GoogleAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuth.swift; sourceTree = "<group>"; };
 		2FD102BBD8745D9C487B91BA /* OrzuApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OrzuApp.entitlements; sourceTree = "<group>"; };
+		D02D47726F69E208A5532207 /* MyDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyDataView.swift; sourceTree = "<group>"; };
 		30AD56B6CE74B56A6BFEDAE3 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		3B22D3F9B971816EFF53AA1F /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		3C30567B940B3DFA1AD7E99F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -257,6 +260,7 @@
 		8C5BB507C11AAFA4E30E4CEF /* AttachmentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentViews.swift; sourceTree = "<group>"; };
 		887848855890BE684E25DEA2 /* RouletteVideoEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteVideoEngine.swift; sourceTree = "<group>"; };
 		814694C0F4EE339CF55452C5 /* RouletteVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteVideoView.swift; sourceTree = "<group>"; };
+		EF07EA73CDB79486868BB043 /* SearchCriteriaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCriteriaView.swift; sourceTree = "<group>"; };
 		B74CF5C5A0FCBB133DC56A90 /* RouletteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteModels.swift; sourceTree = "<group>"; };
 		98BDDFE6F99B605B5D70DD80 /* RouletteTextChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTextChatView.swift; sourceTree = "<group>"; };
 		6E86D2A128E536813EEDD286 /* RouletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteView.swift; sourceTree = "<group>"; };
@@ -378,6 +382,7 @@
 				BDEF5619C78AA5E492664D73 /* RouletteViewModel.swift */,
 				6E86D2A128E536813EEDD286 /* RouletteView.swift */,
 				98BDDFE6F99B605B5D70DD80 /* RouletteTextChatView.swift */,
+				EF07EA73CDB79486868BB043 /* SearchCriteriaView.swift */,
 				B74CF5C5A0FCBB133DC56A90 /* RouletteModels.swift */,
 				1FB5C48BE50E1025F9490B8B /* LikedMeViewModel.swift */,
 				8C5B1C9E9E0CEC2FBC8E5432 /* LocationProvider.swift */,
@@ -604,6 +609,7 @@
 				D9580CCDC18A73F00940D201 /* NotificationSettingsView.swift */,
 				0B38AEC8926E73B50EC50474 /* SessionsView.swift */,
 				97078AA3AD66A528CA54B91B /* SettingsView.swift */,
+				D02D47726F69E208A5532207 /* MyDataView.swift */,
 				30AD56B6CE74B56A6BFEDAE3 /* SettingsViewModel.swift */,
 				96626B954D8DA1BC285F876F /* SupportView.swift */,
 			);
@@ -813,6 +819,7 @@
 				0ACD21A5C0F2957EFB64472D /* RouletteViewModel.swift in Sources */,
 				669ED824978CB69027DCAE94 /* RouletteView.swift in Sources */,
 				26A2EA1D2CBFA7771FFC6A38 /* RouletteTextChatView.swift in Sources */,
+				6DFF94FF32E022074561445E /* SearchCriteriaView.swift in Sources */,
 				AE484920820FCDDF15A2EC4C /* RouletteModels.swift in Sources */,
 				70974B4F59B0A7597330127D /* RouletteVideoView.swift in Sources */,
 				3A543E8766EDBF3557D9C08E /* RouletteVideoEngine.swift in Sources */,
@@ -853,6 +860,7 @@
 				C3DFBCDF339368D0B1D183C0 /* ServiceScreens.swift in Sources */,
 				AFB2A0287590222C44B104FB /* SessionsView.swift in Sources */,
 				8E08EAE541FB2F40374E0D09 /* SettingsView.swift in Sources */,
+				173140FFF45283F065F16EE9 /* MyDataView.swift in Sources */,
 				F0088FC6DF643A0A0E029C10 /* SettingsViewModel.swift in Sources */,
 				9E3656DD98AC72320FE16A0E /* SharedE2EStore.swift in Sources */,
 				A845526F7EECB4D71DBE67EE /* SosAlertView.swift in Sources */,

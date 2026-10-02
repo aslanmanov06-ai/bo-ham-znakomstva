@@ -40,7 +40,7 @@ struct MyProfileView: View {
         .navigationTitle("Мой профиль")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink { SettingsView(viewModel: viewModel) } label: {
+                NavigationLink { SettingsView(viewModel: viewModel, dating: dating) } label: {
                     Image(systemName: "gearshape")
                 }
                 .accessibilityLabel("Настройки")
@@ -51,9 +51,10 @@ struct MyProfileView: View {
         .task { if dating.stage == .loading { await dating.load() } }
         // «Кого ищу» появляется, когда анкета готова: сразу или после того, как её заполнили.
         .task(id: dating.stage) {
-            guard dating.stage == .ready, dating.lookingFor == nil else { return }
+            guard dating.stage == .ready, dating.lookingFor == nil || dating.criteria == nil else { return }
             do {
                 try await dating.loadLookingFor()
+                try await dating.loadCriteria()
             } catch {
                 datingSettingsError = error.localizedDescription
             }
@@ -160,11 +161,11 @@ struct MyProfileView: View {
                     SettingsLabel(String(localized: "Заполнить анкету"), systemImage: "heart.text.square.fill", color: .brand)
                 }
             case .ready:
-                if let lookingFor = dating.lookingFor {
-                    Picker(selection: Binding(get: { lookingFor }, set: saveLookingFor)) {
-                        ForEach(dating.catalog?.genders ?? []) { gender in
-                            Text(gender.name).tag(gender.code)
-                        }
+                NavigationLink {
+                    SearchCriteriaView(dating: dating) {}
+                } label: {
+                    LabeledContent {
+                        Text(criteriaSummary)
                     } label: {
                         SettingsLabel(String(localized: "Кого ищу"), systemImage: "person.2.fill", color: .champagne)
                     }
@@ -312,13 +313,11 @@ struct MyProfileView: View {
         }
     }
 
-    private func saveLookingFor(_ gender: String) {
-        Task {
-            do {
-                try await dating.setLookingFor(gender)
-            } catch {
-                datingSettingsError = error.localizedDescription
-            }
-        }
+    /// «Девушки · 22–30» — или подсказка, что «Кого ищу» ещё не заполнена.
+    private var criteriaSummary: String {
+        guard let criteria = dating.criteria else { return "" }
+        guard criteria.criteriaSetAt != nil else { return String(localized: "Не заполнено") }
+        let who = criteria.lookingFor == "FEMALE" ? String(localized: "Девушки") : String(localized: "Парни")
+        return "\(who) · \(criteria.ageMin)–\(criteria.ageMax)"
     }
 }

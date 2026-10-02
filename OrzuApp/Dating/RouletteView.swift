@@ -89,6 +89,7 @@ private struct RouletteStartView: View {
 
     @State private var showVideoLocked = false
     @State private var showSelfie = false
+    @State private var showAgeSheet = false
 
     var body: some View {
         ScrollView {
@@ -303,30 +304,72 @@ private struct RouletteStartView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// «Кого ищу» (пол и город — из настроек знакомств) и отдельно возраст собеседника — только для рулетки.
     private func searchRow(_ search: RouletteStatus.Search) -> some View {
-        Button(action: onEditSearch) {
-            HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Кого ищу")
-                        .font(.app(.caption))
+        VStack(spacing: 0) {
+            Button(action: onEditSearch) {
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
-                    Text("\(search.lookingFor == "FEMALE" ? String(localized: "Девушки") : String(localized: "Парни")) · \(search.ageMin)–\(search.ageMax) · \(String(localized: "сначала")) \(places.city(search.cityCode))")
-                        .font(.app(.subheadline, weight: .semibold))
-                        .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Кого ищу")
+                            .font(.app(.caption))
+                            .foregroundStyle(.secondary)
+                        Text("\(search.lookingFor == "FEMALE" ? String(localized: "Девушки") : String(localized: "Парни")) · \(String(localized: "сначала")) \(places.city(search.cityCode))")
+                            .font(.app(.subheadline, weight: .semibold))
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.secondary)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 58)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 58)
-            .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
+            .buttonStyle(.plain)
+            Divider()
+                .overlay(Color.appLine)
+                .padding(.leading, 48)
+            Button {
+                showAgeSheet = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "calendar")
+                        .foregroundStyle(Color.brand)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Возраст собеседника")
+                            .font(.app(.caption))
+                            .foregroundStyle(.secondary)
+                        Text("\(search.ageMin)–\(RussianPlural.years(search.ageMax))")
+                            .font(.app(.subheadline, weight: .semibold))
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer()
+                    Text("Изменить")
+                        .font(.app(.caption, weight: .semibold))
+                        .foregroundStyle(Color.brand)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Color.brandSoft, in: Capsule())
+                }
+                .padding(.horizontal, 16)
+                .frame(minHeight: 57)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
+        .sheet(isPresented: $showAgeSheet) {
+            RouletteAgeSheet(ageMin: search.ageMin, ageMax: search.ageMax) { min, max in
+                showAgeSheet = false
+                Task { await roulette.setAges(min: min, max: max) }
+            }
+            .presentationDetents([.height(520)])
+            .presentationBackground(Color.appSurface)
+        }
     }
 }
 
@@ -339,6 +382,69 @@ private struct SelectedMark: View {
             .frame(width: 26, height: 26)
             .background(Color.champagne, in: Circle())
             .accessibilityHidden(true)
+    }
+}
+
+/// Возраст собеседника — два барабана «От» и «До» (макет «Выбор возраста для рулетки»).
+private struct RouletteAgeSheet: View {
+    @State private var ageMin: Int
+    @State private var ageMax: Int
+    let onDone: (Int, Int) -> Void
+
+    init(ageMin: Int, ageMax: Int, onDone: @escaping (Int, Int) -> Void) {
+        _ageMin = State(initialValue: ageMin)
+        _ageMax = State(initialValue: ageMax)
+        self.onDone = onDone
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Возраст собеседника")
+                    .font(.display(size: 20))
+                Text("Только для рулетки — в ленте и анкетах всё останется как было.")
+                    .font(.app(.subheadline))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(alignment: .bottom, spacing: 12) {
+                wheel(String(localized: "От"), selection: $ageMin)
+                Text("—")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.tertiary)
+                    .frame(height: 160)
+                wheel(String(localized: "До"), selection: $ageMax)
+            }
+            Label("Подходящих людей может быть меньше. Если поиск затянется, предложим на время расширить диапазон.", systemImage: "info.circle")
+                .font(.app(.footnote))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Готово") { onDone(ageMin, ageMax) }
+                .buttonStyle(.appPrimary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 28)
+        // «От» не больше «До»: второй барабан подтягивается за первым.
+        .onChange(of: ageMin) { if ageMin > ageMax { ageMax = ageMin } }
+        .onChange(of: ageMax) { if ageMax < ageMin { ageMin = ageMax } }
+    }
+
+    private func wheel(_ title: String, selection: Binding<Int>) -> some View {
+        VStack(spacing: 8) {
+            Text(title)
+                .font(.app(.footnote, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Picker(title, selection: selection) {
+                ForEach(DatingLimits.minAge...DatingLimits.maxAge, id: \.self) { age in
+                    Text("\(age)").tag(age)
+                }
+            }
+            .pickerStyle(.wheel)
+            .frame(height: 160)
+            .clipped()
+            .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -866,7 +972,7 @@ private struct RouletteMatchView: View {
         .sensoryFeedback(.success, trigger: appeared) { _, shown in shown }
         .sheet(item: $profile) { profile in
             NavigationStack {
-                DatingProfileDetailView(profile: profile, catalog: dating.catalog)
+                DatingProfileDetailView(profile: profile, catalog: dating.catalog, viewer: dating.profile?.shared)
             }
         }
     }

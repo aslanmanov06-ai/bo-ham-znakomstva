@@ -34,6 +34,8 @@ final class DatingViewModel: ObservableObject {
     @Published var errorMessage: String?
     /// Растёт после смены «Кого ищу» или расстояния в «Моём профиле» — лента и сетка анкет перезагружаются.
     @Published private(set) var searchSettingsRevision = 0
+    /// Своя анкета «Кого ищу». nil — ещё не загружена.
+    @Published private(set) var criteria: SearchCriteriaSettings?
 
     /// Загрузку запускают .task нескольких экранов (корень, вкладки, «Мой профиль») — все ждут одну и ту же.
     /// Задача принадлежит модели, а не экрану: SwiftUI отменяет .task, когда пересоздаёт экран, и запрос
@@ -152,10 +154,26 @@ final class DatingViewModel: ObservableObject {
         if let showActivity = settings.showActivity { self.showActivity = showActivity }
     }
 
-    /// Ошибку показывает экран настроек, откуда меняют «Кого ищу».
-    func setLookingFor(_ gender: String) async throws {
-        applySearchSettings(try await APIClient.shared.updateSearchSettings(DatingSearchSettings(lookingFor: gender)))
+    /// Ошибку показывает экран «Кого ищу».
+    func loadCriteria() async throws {
+        let loaded = try await APIClient.shared.fetchSearchCriteria()
+        criteria = loaded
+        lookingFor = loaded.lookingFor
+    }
+
+    /// Лента сразу пересобирается: в ней только взаимно подходящие по «Кого ищу».
+    func saveCriteria(_ update: SearchCriteriaUpdate) async throws {
+        let saved = try await APIClient.shared.updateSearchCriteria(update)
+        criteria = saved
+        lookingFor = saved.lookingFor
         searchSettingsRevision += 1
+    }
+
+    /// Дату рождения меняют раз в 90 дней — ответ сервера с датой следующей смены показывает экран «Мои данные».
+    func setBirthDate(_ date: Date) async throws {
+        var update = DatingProfileUpdate()
+        update.birthDate = CalendarDate.string(from: date)
+        apply(try await APIClient.shared.updateMyDatingProfile(update))
     }
 
     /// Скрытая анкета пропадает из ленты и сетки анкет; чаты и пары остаются. Ошибку показывает экран с переключателем.

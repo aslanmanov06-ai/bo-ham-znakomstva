@@ -307,6 +307,11 @@ actor APIClient {
         try await request(path: "/users/me/username", method: "PATCH", body: ["username": username], authorized: true)
     }
 
+    /// Телефон в международном формате (+992…). Никому не показывается.
+    func updatePhone(_ phone: String) async throws -> AccountSettings {
+        try await request(path: "/users/me/phone", method: "PATCH", body: ["phone": phone], authorized: true)
+    }
+
     func updatePrivacy(_ update: PrivacyUpdate) async throws -> AccountSettings {
         try await request(path: "/users/me/privacy", method: "PATCH", body: update, authorized: true)
     }

@@ -23,6 +23,8 @@ struct AccountSettings: Decodable, Equatable {
     let displayName: String
     let avatarUrl: String?
     let email: String?
+    /// Телефон из регистрации (E.164). Никому не показывается. nil — не указан или сервер старый.
+    var phone: String? = nil
     let messagePrivacy: PrivacyLevel
     let groupInvitePrivacy: PrivacyLevel
     /// false — в мессенджере не находят вовсе, даже по точному @username.

@@ -138,6 +138,15 @@ extension APIClient {
         try await request(path: "/dating/search-settings", method: "PATCH", body: settings, authorized: true)
     }
 
+    /// Анкета «Кого ищу» — те же настройки поиска, но с критериями.
+    func fetchSearchCriteria() async throws -> SearchCriteriaSettings {
+        try await request(path: "/dating/search-settings", method: "GET", body: nil as String?, authorized: true)
+    }
+
+    func updateSearchCriteria(_ update: SearchCriteriaUpdate) async throws -> SearchCriteriaSettings {
+        try await request(path: "/dating/search-settings", method: "PATCH", body: update, authorized: true)
+    }
+
     /// Страница сетки всех анкет. cursor — nextCursor предыдущей страницы, nil — первая страница.
     func browseDatingProfiles(filters: DatingBrowseFilters, cursor: String?) async throws -> DatingBrowsePage {
         var components = URLComponents()
@@ -370,6 +379,11 @@ extension APIClient {
         let _: RouletteReminderResponse = try await request(path: "/roulette/reminder", method: "PUT", body: RouletteReminderRequest(enabled: enabled), authorized: true)
     }
 
+    /// Возраст собеседников в рулетке — со следующего поиска.
+    func setRouletteAges(min: Int, max: Int) async throws {
+        let _: RouletteAges = try await request(path: "/roulette/search", method: "PUT", body: RouletteAges(ageMin: min, ageMax: max), authorized: true)
+    }
+
     func reportRoulette(sessionId: String, category: ReportCategory, comment: String?) async throws {
         let body = RouletteReportBody(category: category, comment: comment)
         let _: EmptyResponse = try await request(path: "/roulette/sessions/\(sessionId)/report", method: "POST", body: body, authorized: true)
@@ -378,6 +392,11 @@ extension APIClient {
 
 private struct RouletteReminderRequest: Encodable {
     let enabled: Bool
+}
+
+private struct RouletteAges: Codable {
+    let ageMin: Int
+    let ageMax: Int
 }
 
 private struct RouletteReminderResponse: Decodable {

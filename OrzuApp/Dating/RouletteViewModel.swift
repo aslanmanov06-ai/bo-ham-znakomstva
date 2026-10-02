@@ -144,6 +144,19 @@ final class RouletteViewModel: ObservableObject {
     }
 
     /// «Напомнить о вечере рулетки». Переключатель меняется сразу; не сохранилось — возвращается обратно.
+    /// Возраст собеседников: сразу показываем новый, при ошибке возвращаем прежний.
+    func setAges(min: Int, max: Int) async {
+        guard let previous = status?.search else { return }
+        status?.search?.ageMin = min
+        status?.search?.ageMax = max
+        do {
+            try await APIClient.shared.setRouletteAges(min: min, max: max)
+        } catch {
+            status?.search = previous
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func setReminder(_ enabled: Bool) {
         let previous = status?.reminder
         status?.reminder = enabled
