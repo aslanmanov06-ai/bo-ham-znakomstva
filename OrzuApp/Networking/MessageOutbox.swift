@@ -140,6 +140,8 @@ final class MessageOutbox {
     /// 15 с, 30 с, 1 мин… до 5 мин между попытками. Первое же принятое сообщение сбрасывает паузу.
     private var retryBackoff = RetryBackoff(base: 15, maxDelay: 300)
     private var networkObserver: NSObjectProtocol?
+    /// Отменены в чате, пока шла попытка отправки: если сервер всё же успел принять сообщение, удаляем его у всех.
+    private var cancelledIds = Set<String>()
 
     private init() {
         items = loadQueue()
@@ -165,6 +167,24 @@ final class MessageOutbox {
         case .file(let url): try store.copyFile(at: url, for: Self.fileKey(item.id))
         }
         enqueue(item)
+    }
+
+    /// Файл ещё не отправленного сообщения и его загрузка — превью и прогресс в пузыре, пока файл уходит на сервер.
+    func pendingUpload(messageId: String) -> (upload: PendingUpload, fileURL: URL)? {
+        guard let upload = items.first(where: { $0.id == messageId })?.upload,
+              let fileURL = store.existingFileURL(for: Self.fileKey(messageId)) else { return nil }
+        return (upload, fileURL)
+    }
+
+    /// Отменить отправку из чата: сообщение уходит из очереди, загрузка файла обрывается.
+    func cancel(id: String) {
+        guard let item = items.first(where: { $0.id == id }) else { return }
+        if let uploadId = item.upload?.uploadId {
+            BackgroundUploads.shared.cancel(uploadId: uploadId)
+            UploadProgressCenter.shared.finish(uploadId: uploadId)
+        }
+        if isSending { cancelledIds.insert(id) }
+        remove(id: id)
     }
 
     func flush() {
@@ -205,6 +225,7 @@ final class MessageOutbox {
             switch OutboxSchedule.next(in: items, skippingChats: postponedChats, now: Date()) {
             case .send(let next):
                 item = next
+                cancelledIds.remove(item.id)
             case .wait(let wakeAt):
                 if let wakeAt { scheduleFlush(after: .milliseconds(Int(max(wakeAt.timeIntervalSinceNow, 0) * 1000))) }
                 return
@@ -212,6 +233,11 @@ final class MessageOutbox {
             do {
                 let message = try await send(item)
                 retryBackoff.reset()
+                if cancelledIds.remove(item.id) != nil {
+                    // Отменили, но сервер успел принять: убираем у всех, как будто его и не было.
+                    try? await APIClient.shared.deleteMessage(chatId: message.chatId, messageId: message.id, forEveryone: true)
+                    continue
+                }
                 remove(id: item.id)
                 NotificationCenter.default.post(name: .ownMessagesSentViaREST, object: [message])
             } catch let error as APIError where error.isTransient {

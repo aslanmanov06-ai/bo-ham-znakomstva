@@ -28,6 +28,12 @@ struct Chat: Codable, Identifiable, Hashable {
     /// Самые поздние отметки «доставлено» и «прочитано» среди собеседников — для галочек у своих сообщений.
     var deliveredAt: Date?
     var readAt: Date?
+    /// Когда собеседник на самом деле дочитал до readAt (readAt — время самого сообщения) — «Прочитано в 09:25».
+    var readSeenAt: Date? = nil
+    /// До какого сообщения дочитал я сам: над следующими входящими — разделитель «Новые сообщения».
+    var myReadAt: Date? = nil
+    /// Чужие сообщения после myReadAt — счётчик в списке чатов.
+    var unreadCount: Int? = nil
     /// Чат удалённой пары: закрыт только для чтения (ради жалоб) и удалится насовсем в deletesAt.
     var closedAt: Date?
     var deletesAt: Date?

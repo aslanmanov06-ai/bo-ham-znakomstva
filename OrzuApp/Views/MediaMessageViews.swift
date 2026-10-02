@@ -9,10 +9,11 @@ struct VoiceMessageView: View {
     let onError: (String) -> Void
     @ObservedObject private var player = VoicePlayer.shared
 
-    private static let width: CGFloat = 180
+    private static let barCount = 26
 
     var body: some View {
         let isActive = player.activeId == attachment.id
+        let duration = attachment.durationSec ?? 0
         HStack(spacing: 10) {
             Button {
                 Task {
@@ -25,26 +26,83 @@ struct VoiceMessageView: View {
             } label: {
                 Group {
                     if player.loadingId == attachment.id {
-                        ProgressView().tint(isMine ? .white : nil)
+                        ProgressView().tint(.white)
                     } else {
                         Image(systemName: isActive && player.isPlaying ? "pause.fill" : "play.fill")
+                            .contentTransition(.symbolEffect(.replace))
                     }
                 }
-                .font(.app(.title3))
-                .frame(width: 36, height: 36)
-                .background(isMine ? Color.white.opacity(0.25) : Color.accentColor.opacity(0.15), in: Circle())
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(isMine ? Color.brand : Color.white)
+                .frame(width: 40, height: 40)
+                .background {
+                    if isMine { Circle().fill(Color.white) } else { Circle().fill(.brandFill) }
+                }
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isActive && player.isPlaying ? "Пауза" : "Воспроизвести голосовое")
 
             VStack(alignment: .leading, spacing: 4) {
-                ProgressView(value: isActive ? player.progress : 0)
-                    .tint(isMine ? .white : .accentColor)
-                Text(Attachment.formattedDuration(attachment.durationSec ?? 0))
-                    .font(.app(.caption).monospacedDigit())
+                waveform(progress: isActive ? player.progress : 0)
+                    .frame(height: 24)
+                    .accessibilityHidden(true)
+                Text(isActive
+                     ? "\(Attachment.formattedDuration(Int(player.currentTime))) / \(Attachment.formattedDuration(duration))"
+                     : Attachment.formattedDuration(duration))
+                    .font(.app(size: 11).monospacedDigit())
                     .opacity(0.8)
+                    .contentTransition(.numericText())
             }
-            .frame(width: Self.width)
+            .frame(width: 150, alignment: .leading)
+
+            Button { player.cycleRate() } label: {
+                Text(Self.rateLabel(player.rate))
+                    .font(.app(size: 12, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(isMine ? Color.white : Color.brand)
+                    .padding(.horizontal, 8)
+                    .frame(height: 24)
+                    .background(isMine ? Color.white.opacity(0.22) : Color.brandSoft, in: Capsule())
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Скорость \(Self.rateLabel(player.rate))")
+        }
+    }
+
+    /// Столбики «волны». Настоящей громкости в сообщении нет — высоты стабильны для каждого голосового (по его id).
+    private func waveform(progress: Double) -> some View {
+        let heights = Self.barHeights(seed: attachment.id, count: Self.barCount)
+        let played = isMine ? Color.white : Color.brand
+        let rest = isMine ? Color.white.opacity(0.4) : Color.secondary.opacity(0.45)
+        return HStack(alignment: .center, spacing: 2) {
+            ForEach(heights.indices, id: \.self) { index in
+                Capsule()
+                    .fill(Double(index) / Double(heights.count) < progress ? played : rest)
+                    .frame(width: 3, height: heights[index])
+            }
+        }
+        .animation(.linear(duration: 0.1), value: progress)
+    }
+
+    static func rateLabel(_ rate: Float) -> String {
+        rate == 1 ? "1×" : rate == 2 ? "2×" : "1,5×"
+    }
+
+    /// 6…24 pt, псевдослучайно, но одинаково для одного id (FNV-1a + xorshift).
+    static func barHeights(seed: String, count: Int) -> [CGFloat] {
+        var state: UInt64 = 0xcbf29ce484222325
+        for byte in seed.utf8 { state = (state ^ UInt64(byte)) &* 0x100000001b3 }
+        return (0..<count).map { index in
+            state ^= state << 13
+            state ^= state >> 7
+            state ^= state << 17
+            // По краям пониже — волна «дышит» к середине.
+            let edge = 1 - abs(Double(index) / Double(max(count - 1, 1)) * 2 - 1) * 0.35
+            return CGFloat(6 + Double(state % 19) * edge)
         }
     }
 }

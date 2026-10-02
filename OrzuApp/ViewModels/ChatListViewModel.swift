@@ -10,6 +10,18 @@ final class ChatListViewModel: ObservableObject {
     @Published private(set) var incomingRequestsCount = 0
     /// Незнакомому напрямую не написать: для него экран списка открывает запрос на переписку.
     @Published var requestTarget: User?
+    /// Чаты, где собеседник сейчас набирает текст: строка показывает «печатает…» вместо последнего сообщения.
+    @Published private(set) var typingChatIds: Set<String> = []
+    /// Открытый сейчас чат: его новые сообщения сразу прочитаны и счётчик не растят.
+    var activeChatId: String? {
+        didSet {
+            if let activeChatId { setUnread(0, chatId: activeChatId) }
+        }
+    }
+
+    private var typingExpiry: [String: Task<Void, Never>] = [:]
+    /// Совпадает с ChatViewModel.typingVisibleFor.
+    private static let typingVisibleFor: Duration = .seconds(5)
 
     private var cancellables = Set<AnyCancellable>()
     private var isRefreshing = false
@@ -52,7 +64,7 @@ final class ChatListViewModel: ObservableObject {
             chats = cached
         }
         do {
-            chats = try await APIClient.shared.fetchChats()
+            applyServer(try await APIClient.shared.fetchChats())
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -120,13 +132,60 @@ final class ChatListViewModel: ObservableObject {
         }
     }
 
-    func clearHistory(_ chat: Chat, forEveryone: Bool) async {
+    /// «Прочитать» из свайпа: отметка до последнего сообщения чата — так же, как если бы чат открыли.
+    func markRead(_ chat: Chat) async {
+        guard let last = chat.lastMessage else { return }
+        let previous = chat.unreadCount
+        setUnread(0, chatId: chat.id)
         do {
-            try await APIClient.shared.clearHistory(chatId: chat.id, forEveryone: forEveryone)
-            applyCleared(chatId: chat.id)
+            try await APIClient.shared.markRead(chatId: chat.id, messageId: last.id)
+        } catch {
+            if let previous { setUnread(previous, chatId: chat.id) }
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// «Без звука» из свайпа — навсегда; на чате без звука тот же свайп включает звук.
+    func toggleMute(_ chat: Chat) async {
+        do {
+            let mutedUntil: Date?
+            if chat.isMuted {
+                try await APIClient.shared.unmuteChat(chatId: chat.id)
+                mutedUntil = nil
+            } else {
+                mutedUntil = try await APIClient.shared.muteChat(chatId: chat.id, duration: nil)
+            }
+            guard let index = chats.firstIndex(where: { $0.id == chat.id }) else { return }
+            chats[index].mutedUntil = mutedUntil
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Список с сервера: открытый сейчас чат уже прочитан, даже если отметка до сервера ещё не дошла.
+    private func applyServer(_ list: [Chat]) {
+        chats = list
+        if let activeChatId { setUnread(0, chatId: activeChatId) }
+    }
+
+    private func setUnread(_ count: Int, chatId: String) {
+        guard let index = chats.firstIndex(where: { $0.id == chatId }), chats[index].unreadCount != count else { return }
+        chats[index].unreadCount = count
+    }
+
+    private func startTyping(chatId: String) {
+        typingChatIds.insert(chatId)
+        typingExpiry[chatId]?.cancel()
+        typingExpiry[chatId] = Task { [weak self] in
+            try? await Task.sleep(for: Self.typingVisibleFor)
+            guard !Task.isCancelled else { return }
+            self?.stopTyping(chatId: chatId)
+        }
+    }
+
+    private func stopTyping(chatId: String) {
+        typingExpiry.removeValue(forKey: chatId)?.cancel()
+        typingChatIds.remove(chatId)
     }
 
     func delete(_ chat: Chat) async {
@@ -176,7 +235,7 @@ final class ChatListViewModel: ObservableObject {
         repeat {
             hasPendingRefresh = false
             do {
-                chats = try await APIClient.shared.fetchChats()
+                applyServer(try await APIClient.shared.fetchChats())
             } catch {
                 errorMessage = error.localizedDescription
                 return
@@ -186,8 +245,21 @@ final class ChatListViewModel: ObservableObject {
 
     private func handle(event: ServerEvent) {
         switch event {
-        case .newMessage(let message), .ownMessage(let message):
+        case .newMessage(let message):
+            stopTyping(chatId: message.chatId)
             applyIncoming(message: message)
+            if message.chatId != activeChatId, message.systemEvent == nil,
+               let index = chats.firstIndex(where: { $0.id == message.chatId }) {
+                chats[index].unreadCount = (chats[index].unreadCount ?? 0) + 1
+            }
+
+        case .ownMessage(let message):
+            applyIncoming(message: message)
+
+        case .typing(let chatId, _):
+            // Своё «печатает» сервер нам не присылает.
+            guard chats.contains(where: { $0.id == chatId }) else { return }
+            startTyping(chatId: chatId)
 
         case .messageUpdated(let message):
             guard let index = chats.firstIndex(where: { $0.lastMessage?.id == message.id }) else { return }
@@ -230,11 +302,12 @@ final class ChatListViewModel: ObservableObject {
                 chats[index].participants[0].presence = presence
             }
 
-        case .receipt(let chatId, _, let kind, let at):
+        case .receipt(let chatId, _, let kind, let at, let seenAt):
             // Свои квитанции сервер нам не шлёт — только отметки собеседников.
             guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
             chats[index].deliveredAt = max(chats[index].deliveredAt ?? at, at)
             if kind == .read {
+                if at >= (chats[index].readAt ?? .distantPast), let seenAt { chats[index].readSeenAt = seenAt }
                 chats[index].readAt = max(chats[index].readAt ?? at, at)
             }
 

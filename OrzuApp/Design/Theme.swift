@@ -27,6 +27,8 @@ extension Color {
     static let appLine = Color(light: 0xEADFD9, dark: 0x30262D)
     /// Заглушка на месте фото, пока оно грузится или его нет.
     static let appPlaceholder = Color(light: 0xE9DDD6, dark: 0x3A2A33)
+    /// Точка «в сети» и замок секретного чата.
+    static let online = Color(light: 0x2EA866, dark: 0x3DBE7A)
 
     init(rgb: UInt32) {
         self.init(uiColor: UIColor(rgb: rgb))

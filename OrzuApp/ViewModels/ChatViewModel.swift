@@ -46,6 +46,18 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var wasDeleted = false
     /// Без звука до этой даты; nil — звук включён. Прошедшая дата — тоже включён, см. isMuted.
     @Published private(set) var mutedUntil: Date?
+    /// Идёт подгрузка более ранней переписки (прокрутили к началу ленты).
+    @Published private(set) var isLoadingOlder = false
+    /// Сервер отдал полную страницу — значит, раньше могут быть ещё сообщения.
+    @Published private(set) var hasMoreOlder = false
+    /// Первое непрочитанное входящее на момент открытия: над ним разделитель «N новых сообщений».
+    /// Считается один раз — пока чат открыт, разделитель не прыгает.
+    @Published private(set) var firstUnreadId: String?
+    @Published private(set) var unreadCountAtOpen = 0
+    /// Когда собеседник на самом деле прочитал последнее прочитанное (см. Chat.readSeenAt).
+    @Published private(set) var readSeenAt: Date?
+    /// Пустой чат новой пары: «Вы пара!», общее в анкетах и подсказки первой фразы.
+    @Published private(set) var pairWelcome: PairWelcome?
 
     var isMuted: Bool {
         mutedUntil.map { $0 > Date() } ?? false
@@ -62,6 +74,8 @@ final class ChatViewModel: ObservableObject {
     static let minSearchLength = 2
     /// Совпадает с MAX_FORWARD_BATCH на backend: больше за один запрос сервер не перешлёт.
     static let maxForwardBatch = 10
+    /// Совпадает с PAGE_SIZE на backend: страница короче — раньше сообщений нет.
+    static let pageSize = 50
 
     /// Меняется, только когда пару удаляют при открытом чате: он становится закрытым, только для чтения.
     @Published private(set) var chat: Chat
@@ -77,8 +91,15 @@ final class ChatViewModel: ObservableObject {
     private var lastMarkedReadId: String?
     private var lastTypingSentAt: Date?
     private var typingExpiryTasks: [String: Task<Void, Never>] = [:]
+    private var didResolveUnread = false
+    private var didLoadPairWelcome = false
 
     var isSecret: Bool { chat.type == .secret }
+
+    /// Пузырь «печатает» в ленте — в личном и секретном чате; в группе хватает строки под заголовком.
+    var showsTypingBubble: Bool {
+        (chat.type == .direct || chat.type == .secret) && !typingUserIds.isEmpty && !isShowingHistorySlice
+    }
 
     init(chat: Chat, currentUserId: String) {
         self.chat = chat
@@ -88,6 +109,7 @@ final class ChatViewModel: ObservableObject {
         self.readAt = chat.readAt
         self.peerPresence = chat.peer?.presence
         self.mutedUntil = chat.mutedUntil
+        self.readSeenAt = chat.readSeenAt
 
         WebSocketClient.shared.events
             .receive(on: DispatchQueue.main)
@@ -139,11 +161,95 @@ final class ChatViewModel: ObservableObject {
             let page = try await APIClient.shared.fetchMessages(chatId: chat.id)
             await loadPeerKeys(for: page)
             showLatest(page)
+            resolveUnreadDivider()
             markReadIfNeeded()
         } catch {
             errorMessage = error.localizedDescription
         }
         await loadPinnedMessage()
+    }
+
+    /// Более ранняя страница переписки — над уже показанной. Возвращает rowId сообщения, которое было первым:
+    /// экран держит его на месте, чтобы лента не прыгнула.
+    func loadOlder() async -> String? {
+        guard hasMoreOlder, !isLoadingOlder,
+              let oldest = messages.first(where: { !pendingIds.contains($0.id) }) else { return nil }
+        isLoadingOlder = true
+        defer { isLoadingOlder = false }
+        do {
+            let page = try await APIClient.shared.fetchMessages(chatId: chat.id, before: oldest.createdAt)
+            await loadPeerKeys(for: page)
+            let known = Set(messages.map(\.id))
+            hasMoreOlder = page.count >= Self.pageSize
+            messages.insert(contentsOf: page.filter { !known.contains($0.id) }.map(decrypted), at: 0)
+            return oldest.rowId
+        } catch let error as APIError where error.isTransient {
+            // Без сети просто не подгрузили — попробуем, когда снова докрутят до начала.
+            return nil
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
+    /// Разделитель «Новые сообщения»: первое чужое после моей отметки прочтения. Без отметки — по счётчику из списка.
+    private func resolveUnreadDivider() {
+        guard !didResolveUnread else { return }
+        didResolveUnread = true
+        let incoming = messages.filter { !isMine($0) && $0.systemEvent == nil && !pendingIds.contains($0.id) }
+        let unread: [Message]
+        if let myReadAt = chat.myReadAt {
+            unread = incoming.filter { $0.createdAt > myReadAt }
+        } else {
+            unread = Array(incoming.suffix(chat.unreadCount ?? 0))
+        }
+        firstUnreadId = unread.first?.id
+        unreadCountAtOpen = unread.count
+    }
+
+    /// «Прочитано сегодня в 09:25» для меню своего сообщения. Сервер помнит только последнее прочтение,
+    /// поэтому точное время — у последнего прочитанного своего сообщения, у более ранних — просто «Прочитано».
+    func readReceiptText(for message: Message) -> String? {
+        guard status(of: message) == .read else { return nil }
+        guard chat.type == .direct || chat.type == .secret, let readAt, let readSeenAt,
+              let lastRead = messages.last(where: { isMine($0) && !pendingIds.contains($0.id) && $0.createdAt <= readAt }),
+              lastRead.id == message.id
+        else { return String(localized: "Прочитано") }
+        return String(localized: "Прочитано \(Self.relativeDayTime(readSeenAt))")
+    }
+
+    /// «сегодня в 09:25», «вчера в 22:10», «14 сентября в 19:02».
+    nonisolated static func relativeDayTime(_ date: Date, calendar: Calendar = .current) -> String {
+        let time = date.formatted(date: .omitted, time: .shortened)
+        if calendar.isDateInToday(date) { return String(localized: "сегодня в \(time)") }
+        if calendar.isDateInYesterday(date) { return String(localized: "вчера в \(time)") }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM"
+        return String(localized: "\(formatter.string(from: date)) в \(time)")
+    }
+
+    /// Пустой чат пары: когда случилась взаимность, общее в анкетах и фразы для начала разговора.
+    /// Всё второстепенное: не загрузилось — чат просто пустой, без ошибки.
+    private func loadPairWelcome(matchId: String) async {
+        guard !didLoadPairWelcome, let peer = chat.peer,
+              !messages.contains(where: { $0.systemEvent == nil }) else { return }
+        didLoadPairWelcome = true
+        async let matches = try? APIClient.shared.fetchMatches()
+        async let theirs = try? APIClient.shared.fetchDatingProfile(userId: peer.id)
+        async let mine = try? APIClient.shared.fetchMyDatingPreview()
+        async let catalog = try? APIClient.shared.fetchDatingCatalog()
+        async let phrases = try? APIClient.shared.fetchIcebreakers(userId: peer.id)
+        guard let match = await matches?.first(where: { $0.id == matchId }) else { return }
+        let profile = await theirs
+        let common = PairWelcome.commonNames(mine: await mine, theirs: profile, catalog: await catalog)
+        pairWelcome = PairWelcome(
+            matchedAt: match.createdAt,
+            peerName: peer.displayName,
+            peerIsFemale: profile?.gender == "FEMALE",
+            common: common,
+            icebreakers: Array((await phrases ?? []).prefix(3))
+        )
     }
 
     /// Последняя страница истории и под ней — ещё не отправленное из очереди (кроме того, что сервер уже принял).
@@ -152,6 +258,7 @@ final class ChatViewModel: ObservableObject {
         let queued = MessageOutbox.shared.items(chatId: chat.id).filter { !acceptedIds.contains($0.id) }
         messages = page.map(decrypted) + queued.map { decrypted($0.message(senderId: currentUserId)) }
         pendingIds = Set(queued.map(\.id))
+        hasMoreOlder = page.count >= Self.pageSize
         isShowingHistorySlice = false
     }
 
@@ -163,7 +270,10 @@ final class ChatViewModel: ObservableObject {
             pinnedMessage = detail.pinnedMessage.map(decrypted)
             chat.closedAt = detail.closedAt
             chat.deletesAt = detail.deletesAt
-            if let matchId = detail.matchId { await loadPairStage(matchId: matchId) }
+            if let matchId = detail.matchId {
+                await loadPairStage(matchId: matchId)
+                await loadPairWelcome(matchId: matchId)
+            }
         } catch let error as APIError where error.isTransient {
             // Без сети плашка просто не появится — ошибку про это уже видно по баннеру «Нет сети».
         } catch {
@@ -378,6 +488,7 @@ final class ChatViewModel: ObservableObject {
             let page = try await APIClient.shared.fetchMessages(chatId: chat.id, before: message.createdAt.addingTimeInterval(0.001))
             await loadPeerKeys(for: page)
             messages = page.map(decrypted)
+            hasMoreOlder = page.count >= Self.pageSize
             isShowingHistorySlice = true
             return messages.contains { $0.id == message.id }
         } catch {
@@ -600,6 +711,14 @@ final class ChatViewModel: ObservableObject {
         )
     }
 
+    /// Отменить ещё не отправленное (крестик на загружаемом фото).
+    func cancelPending(_ message: Message) {
+        guard pendingIds.contains(message.id) else { return }
+        MessageOutbox.shared.cancel(id: message.id)
+        pendingIds.remove(message.id)
+        messages.removeAll { $0.id == message.id }
+    }
+
     /// Очередь отправила сообщение — меняем временный пузырь на настоящий.
     private func confirmQueued(_ message: Message) {
         guard message.chatId == chat.id, let clientMessageId = message.clientMessageId, pendingIds.contains(clientMessageId) else { return }
@@ -693,13 +812,14 @@ final class ChatViewModel: ObservableObject {
             if pinnedMessage?.id == messageId { pinnedMessage = nil }
             if replyTo?.id == messageId { replyTo = nil }
 
-        case .receipt(let chatId, _, let kind, let at):
+        case .receipt(let chatId, _, let kind, let at, let seenAt):
             // Свои квитанции сервер нам не шлёт — только отметки собеседников.
             guard chatId == chat.id else { return }
             // Отметки только растут; в группе галочки ставит самый быстрый из участников.
             switch kind {
             case .delivered: deliveredAt = max(deliveredAt ?? at, at)
             case .read:
+                if at >= (readAt ?? .distantPast), let seenAt { readSeenAt = seenAt }
                 readAt = max(readAt ?? at, at)
                 deliveredAt = max(deliveredAt ?? at, at)
             }
@@ -909,5 +1029,35 @@ extension Date {
     /// Сервер хранит «навсегда» как 9999 год — всё дальше века считаем бессрочным.
     var isEffectivelyForever: Bool {
         timeIntervalSinceNow > 100 * 365 * 24 * 60 * 60
+    }
+}
+
+/// Что показать в пустом чате новой пары (макет «Новая пара — подсказки первой фразы»).
+struct PairWelcome: Equatable {
+    let matchedAt: Date
+    let peerName: String
+    let peerIsFemale: Bool
+    /// Общие интересы, увлечения, кухни и город — названиями из каталога, не больше шести.
+    let common: [String]
+    let icebreakers: [String]
+
+    /// «Мадина тоже нажала «Нравится» · сегодня в 08:40».
+    var subtitle: String {
+        let liked = peerIsFemale
+            ? String(localized: "\(peerName) тоже нажала «Нравится»")
+            : String(localized: "\(peerName) тоже нажал «Нравится»")
+        return "\(liked) · \(ChatViewModel.relativeDayTime(matchedAt))"
+    }
+
+    static func commonNames(mine: DatingProfilePublic?, theirs: DatingProfilePublic?, catalog: DatingCatalog?) -> [String] {
+        guard let mine, let theirs, let catalog else { return [] }
+        let shared = { (a: [String], b: [String]) in a.filter(b.contains) }
+        var names = catalog.names(of: shared(mine.interests, theirs.interests), in: catalog.interests)
+            + catalog.names(of: shared(mine.hobbies, theirs.hobbies), in: catalog.hobbies)
+            + catalog.names(of: shared(mine.cuisines, theirs.cuisines), in: catalog.cuisines)
+        if mine.countryCode == theirs.countryCode, mine.cityCode == theirs.cityCode {
+            names.append(catalog.cityName(countryCode: mine.countryCode, cityCode: mine.cityCode))
+        }
+        return Array(names.prefix(6))
     }
 }

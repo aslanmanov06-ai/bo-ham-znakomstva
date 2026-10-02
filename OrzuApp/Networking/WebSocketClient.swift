@@ -12,7 +12,8 @@ enum ServerEvent {
     /// Удалено у всех — или у этого пользователя на другом его устройстве.
     case messageDeleted(chatId: String, messageId: String)
     /// Собеседник userId получил (или прочитал) сообщения чата, отправленные не позже `at`.
-    case receipt(chatId: String, userId: String, kind: ReceiptKind, at: Date)
+    /// seenAt — когда прочитали на самом деле (только у «прочитано»; старый сервер его не присылает).
+    case receipt(chatId: String, userId: String, kind: ReceiptKind, at: Date, seenAt: Date?)
     /// Участник чата набирает сообщение. Сервер шлёт это не чаще раза в две секунды на человека.
     case typing(chatId: String, userId: String)
     /// Собеседник по личному чату вошёл в сеть или вышел из неё.
@@ -491,7 +492,8 @@ final class WebSocketClient: NSObject, ObservableObject {
                 let atString = json["at"] as? String,
                 let at = ISO8601Coding.date(from: atString)
             else { return }
-            events.send(.receipt(chatId: chatId, userId: userId, kind: type == "chat.read" ? .read : .delivered, at: at))
+            let seenAt = (json["seenAt"] as? String).flatMap(ISO8601Coding.date(from:))
+            events.send(.receipt(chatId: chatId, userId: userId, kind: type == "chat.read" ? .read : .delivered, at: at, seenAt: seenAt))
 
         case "typing":
             guard let chatId = json["chatId"] as? String, let userId = json["userId"] as? String else { return }

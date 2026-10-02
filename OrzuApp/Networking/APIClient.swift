@@ -961,8 +961,23 @@ final class BackgroundUploads: NSObject, URLSessionTaskDelegate, @unchecked Send
         lock.withLock { systemCompletionHandler = completionHandler }
     }
 
+    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
+        guard let uploadId = task.taskDescription else { return }
+        Task { @MainActor in
+            UploadProgressCenter.shared.update(uploadId: uploadId, sent: totalBytesSent, total: totalBytesExpectedToSend)
+        }
+    }
+
+    /// Отправку отменили в чате: загрузка больше не нужна.
+    func cancel(uploadId: String) {
+        session.getAllTasks { tasks in
+            for task in tasks where task.taskDescription == uploadId { task.cancel() }
+        }
+    }
+
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard let uploadId = task.taskDescription else { return }
+        Task { @MainActor in UploadProgressCenter.shared.finish(uploadId: uploadId) }
         let result: Result<Int, Error>
         if let error {
             result = .failure(error)

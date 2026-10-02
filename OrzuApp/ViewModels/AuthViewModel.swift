@@ -129,6 +129,7 @@ final class AuthViewModel: ObservableObject {
         APIClient.shared.clearResponseCache()
         DatingBrowseViewModel.forgetFilters()
         MessageOutbox.shared.removeAll()
+        ChatDraftStore.shared.removeAll()
         OwnSosAlertStore.alertId = nil
         AppLock.shared.reset()
         Task { await AttachmentLoader.shared.removeAll() }

@@ -33,7 +33,20 @@ struct ChatView: View {
     @State private var scrollTarget: String?
     @StateObject private var voiceRecorder = VoiceRecorder()
     @ObservedObject private var appearance = AppearanceSettings.shared
+    @EnvironmentObject private var authViewModel: AuthViewModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Низ ленты на экране: новые сообщения прокручивают её, кнопки «вниз» нет.
+    @State private var isAtBottom = true
+    /// Пришло, пока читали выше, — счётчик на кнопке «вниз».
+    @State private var unseenCount = 0
+    /// Верхнее видимое сообщение — по нему плавающая дата.
+    @State private var topVisibleRowId: String?
+    /// Сообщение после перехода к цитате: вспыхивает гранатовым ореолом и гаснет за секунду.
+    @State private var highlightedId: String?
+    /// Над этим пузырём сейчас разлетается сердце двойного касания.
+    @State private var heartBurstRowId: String?
+    @State private var didRestoreDraft = false
+    private static let bottomAnchorId = "chat-bottom"
 
     // body разбит на части: одним выражением компилятор не успевал вывести типы
     // («unable to type-check this expression in reasonable time»).
@@ -61,7 +74,15 @@ struct ChatView: View {
                 if deleted { onLeftChat() }
             }
             .onChange(of: draft) { _, text in
-                if editingMessage == nil { viewModel.draftChanged(text) }
+                guard editingMessage == nil else { return }
+                viewModel.draftChanged(text)
+                ChatDraftStore.shared.setDraft(text, chatId: viewModel.chat.id)
+            }
+            .onAppear {
+                // Недописанное с прошлого раза возвращается в поле.
+                guard !didRestoreDraft else { return }
+                didRestoreDraft = true
+                draft = ChatDraftStore.shared.draft(chatId: viewModel.chat.id)
             }
             .sheet(isPresented: $showSafetyNumber) {
                 SafetyNumberView(peerName: viewModel.chat.displayTitle, safetyNumber: viewModel.safetyNumber)
@@ -200,37 +221,91 @@ struct ChatView: View {
     }
 
     private var messageList: some View {
-        ScrollViewReader { proxy in
+        let layout = ChatFeedLayout.layout(viewModel.messages) { viewModel.systemText(for: $0) != nil }
+        return ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 6) {
-                    ForEach(viewModel.messages, id: \.rowId) { message in
-                        if let systemText = viewModel.systemText(for: message) {
-                            SystemEventRow(text: systemText)
-                                .id(message.rowId)
-                                .transition(.opacity)
-                        } else {
-                            messageRow(for: message)
-                        }
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if viewModel.hasMoreOlder {
+                        OlderHistoryLoader(isLoading: viewModel.isLoadingOlder)
+                            .id("older-loader")
+                            .onAppear { loadOlder(proxy: proxy) }
                     }
+                    if let welcome = viewModel.pairWelcome, !viewModel.messages.contains(where: { $0.systemEvent == nil }) {
+                        PairWelcomeView(
+                            welcome: welcome,
+                            myAvatarUrl: authViewModel.currentUser?.avatarUrl,
+                            myName: authViewModel.currentUser?.displayName ?? "",
+                            peerAvatarUrl: viewModel.chat.peer?.avatarUrl
+                        ) { phrase in
+                            draft = phrase
+                        }
+                        .id("pair-welcome")
+                        .transition(.opacity)
+                    }
+                    ForEach(viewModel.messages, id: \.rowId) { message in
+                        feedRow(for: message, layout: layout[message.rowId] ?? .single)
+                    }
+                    if viewModel.showsTypingBubble {
+                        TypingBubble(name: viewModel.chat.displayTitle)
+                            .padding(.top, 8)
+                            .id("typing")
+                            .transition(.bubbleArrival(isMine: false, reduceMotion: reduceMotion))
+                    }
+                    Color.clear
+                        .frame(height: 1)
+                        .id(Self.bottomAnchorId)
+                        .onAppear { isAtBottom = true }
+                        .onDisappear { isAtBottom = false }
                 }
+                .scrollTargetLayout()
                 .padding(.horizontal)
                 .padding(.vertical, 12)
                 // Анимируется только добавление в конец ленты: вставка пузыря и сдвиг остальных вверх.
                 .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.72), value: viewModel.arrivalCount)
+                .animation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.8), value: viewModel.showsTypingBubble)
             }
             .defaultScrollAnchor(.bottom)
+            .scrollPosition(id: $topVisibleRowId, anchor: .top)
             .scrollDismissesKeyboard(.interactively)
-            // Только когда появилось новое последнее сообщение: реакция или правка в середине ленты не должны её прокручивать.
+            .overlay(alignment: .top) { floatingDate }
+            .overlay(alignment: .bottomTrailing) {
+                if !isAtBottom || viewModel.isShowingHistorySlice {
+                    ScrollToBottomButton(count: unseenCount) { scrollToBottom(proxy: proxy) }
+                        .padding(.trailing, 14)
+                        .padding(.bottom, 10)
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.32, dampingFraction: 0.7), value: isAtBottom)
+            .onChange(of: isAtBottom) { _, atBottom in
+                if atBottom { unseenCount = 0 }
+            }
+            // Новое последнее сообщение прокручивает ленту, только если читали низ или написали сами.
             // rowId, а не id: подтверждение своего сообщения сервером не считается новым сообщением.
             .onChange(of: viewModel.messages.last?.rowId) { _, lastRowId in
-                guard let lastRowId, !viewModel.isShowingHistorySlice else { return }
-                withAnimation(.snappy) { proxy.scrollTo(lastRowId, anchor: .bottom) }
+                guard let lastRowId, !viewModel.isShowingHistorySlice, let last = viewModel.messages.last else { return }
+                if isAtBottom || viewModel.isMine(last) {
+                    withAnimation(.snappy) { proxy.scrollTo(lastRowId, anchor: .bottom) }
+                } else if viewModel.systemText(for: last) == nil {
+                    unseenCount += 1
+                }
+            }
+            .onChange(of: viewModel.showsTypingBubble) { _, shows in
+                guard shows, isAtBottom else { return }
+                withAnimation(.snappy) { proxy.scrollTo("typing", anchor: .bottom) }
+            }
+            // Много непрочитанного — открываем чат на разделителе «Новые сообщения», а не в самом низу.
+            .onChange(of: viewModel.firstUnreadId) { _, firstUnreadId in
+                guard let firstUnreadId, viewModel.unreadCountAtOpen > 8,
+                      let rowId = viewModel.messages.first(where: { $0.id == firstUnreadId })?.rowId else { return }
+                proxy.scrollTo(rowId, anchor: .top)
             }
             .onChange(of: scrollTarget) { _, target in
                 guard let target else { return }
                 let rowId = viewModel.messages.first { $0.id == target }?.rowId ?? target
                 withAnimation(.snappy) { proxy.scrollTo(rowId, anchor: .center) }
                 scrollTarget = nil
+                flash(messageId: target)
             }
             // Секретный чат и фото с таймером: собеседник узнает о снимке экрана.
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.userDidTakeScreenshotNotification)) { _ in
@@ -239,28 +314,126 @@ struct ChatView: View {
         }
     }
 
-    private func messageRow(for message: Message) -> some View {
-        selectableRow(for: message) {
+    /// Дата над первым сообщением дня, разделитель «Новые сообщения» и сама строка — с зазором 2 pt внутри группы и 8 между группами.
+    @ViewBuilder
+    private func feedRow(for message: Message, layout: ChatRowLayout) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let day = layout.dayLabel {
+                DateChip(text: day).padding(.vertical, 8)
+            }
+            if message.id == viewModel.firstUnreadId, viewModel.unreadCountAtOpen > 0 {
+                UnreadDivider(count: viewModel.unreadCountAtOpen).padding(.vertical, 6)
+            }
+            if let systemText = viewModel.systemText(for: message) {
+                SystemEventRow(text: systemText)
+            } else {
+                messageRow(for: message, continuesGroup: layout.continuesGroup)
+            }
+        }
+        .padding(.top, layout.continuesGroup ? 2 : 8)
+        .id(message.rowId)
+        .transition(viewModel.systemText(for: message) != nil
+            ? .opacity
+            : .bubbleArrival(isMine: viewModel.isMine(message), reduceMotion: reduceMotion))
+    }
+
+    /// Плавающая дата сверху, пока читают выше последних сообщений.
+    @ViewBuilder
+    private var floatingDate: some View {
+        if !isAtBottom, let rowId = topVisibleRowId,
+           let message = viewModel.messages.first(where: { $0.rowId == rowId }) {
+            DateChip(text: ChatFeedLayout.dayLabel(for: message.createdAt), floating: true)
+                .padding(.top, 6)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .allowsHitTesting(false)
+        }
+    }
+
+    private func loadOlder(proxy: ScrollViewProxy) {
+        Task {
+            guard let anchor = await viewModel.loadOlder() else { return }
+            // Подгруженное встало сверху — держим на месте то, что человек читал.
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { proxy.scrollTo(anchor, anchor: .top) }
+        }
+    }
+
+    private func scrollToBottom(proxy: ScrollViewProxy) {
+        unseenCount = 0
+        if viewModel.isShowingHistorySlice {
+            Task { await viewModel.loadHistory() }
+            return
+        }
+        withAnimation(.snappy) { proxy.scrollTo(Self.bottomAnchorId, anchor: .bottom) }
+    }
+
+    private func flash(messageId: String) {
+        withAnimation(.easeOut(duration: 0.2)) { highlightedId = messageId }
+        Task {
+            try? await Task.sleep(for: .seconds(0.6))
+            withAnimation(.easeOut(duration: 0.6)) {
+                if highlightedId == messageId { highlightedId = nil }
+            }
+        }
+    }
+
+    /// Двойное касание — ❤️ (повторное снимает). Сердце разлетается только когда реакцию ставят.
+    private func toggleHeart(on message: Message) {
+        guard !viewModel.pendingIds.contains(message.id) else { return }
+        let hasHeart = message.reactionSummary(currentUserId: viewModel.currentUserId).contains { $0.emoji == "❤️" && $0.isMine }
+        if !hasHeart {
+            heartBurstRowId = message.rowId
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Task {
+                try? await Task.sleep(for: .seconds(0.9))
+                if heartBurstRowId == message.rowId { heartBurstRowId = nil }
+            }
+        }
+        Task { await viewModel.toggleReaction("❤️", on: message) }
+    }
+
+    private func messageRow(for message: Message, continuesGroup: Bool) -> some View {
+        let canReply = !viewModel.pendingIds.contains(message.id) && viewModel.chat.canPost && !viewModel.peerKeyChanged && selectedIds == nil
+        return selectableRow(for: message) {
             MessageBubble(
                 message: message,
                 isMine: viewModel.isMine(message),
-                senderName: viewModel.senderName(for: message),
+                senderName: continuesGroup ? nil : viewModel.senderName(for: message),
                 replyAuthor: message.replyTo.map { viewModel.displayName(of: $0.senderId) },
                 status: viewModel.status(of: message),
                 isQuoted: message.id == viewModel.replyTo?.id || message.id == editingMessage?.id,
+                isHighlighted: message.id == highlightedId,
+                continuesGroup: continuesGroup,
                 reactions: message.reactionSummary(currentUserId: viewModel.currentUserId),
                 timedPhotoState: viewModel.timedPhotoState(of: message),
+                pendingUpload: pendingUpload(for: message),
+                showsHeartBurst: heartBurstRowId == message.rowId,
                 bubbleColor: appearance.bubbleColor.color,
                 onOpenAttachment: openAttachment,
                 onOpenTimedPhoto: { openTimedPhoto(message) },
                 onOpenReply: { if let reply = message.replyTo { show(messageId: reply.id) } },
+                onDoubleTap: selectedIds == nil ? { toggleHeart(on: message) } : nil,
                 onError: { viewModel.errorMessage = $0 }
             ) {
                 messageMenu(for: message)
             }
         }
-        .id(message.rowId)
-        .transition(.bubbleArrival(isMine: viewModel.isMine(message), reduceMotion: reduceMotion))
+        .swipeToReply(isEnabled: canReply) {
+            editingMessage = nil
+            viewModel.replyTo = message
+        }
+    }
+
+    /// Фото из очереди, которое ещё уходит на сервер, — с превью и прогрессом. Голосовые и файлы — как раньше, подписью.
+    private func pendingUpload(for message: Message) -> PendingUploadContent? {
+        guard viewModel.pendingIds.contains(message.id),
+              let pending = MessageOutbox.shared.pendingUpload(messageId: message.id),
+              pending.upload.mediaKind == .image || (pending.upload.mediaKind == nil && pending.upload.mimeType.hasPrefix("image/"))
+        else { return nil }
+        return PendingUploadContent(fileURL: pending.fileURL, uploadId: pending.upload.uploadId) {
+            viewModel.cancelPending(message)
+        }
     }
 
     private var topBanners: some View {
@@ -286,15 +459,6 @@ struct ChatView: View {
             }
             if let pinned = viewModel.pinnedMessage {
                 pinnedBanner(for: pinned)
-            }
-            if viewModel.isShowingHistorySlice {
-                Button("К последним сообщениям", systemImage: "arrow.down") {
-                    Task { await viewModel.loadHistory() }
-                }
-                .font(.app(.footnote, weight: .semibold))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .glassSurface()
             }
         }
     }
@@ -708,7 +872,7 @@ struct ChatView: View {
         if let editingMessage {
             return ComposerQuote(title: String(localized: "Редактирование"), text: editingMessage.previewText, cancelLabel: "Отменить редактирование") {
                 self.editingMessage = nil
-                draft = ""
+                draft = ChatDraftStore.shared.draft(chatId: viewModel.chat.id)
             }
         }
         if let replyTo = viewModel.replyTo {
@@ -778,9 +942,11 @@ struct ChatView: View {
             let text = draft
             Task { await viewModel.edit(editingMessage, text: text) }
             self.editingMessage = nil
-        } else {
-            viewModel.send(text: draft)
+            // После правки в поле возвращается недописанное до неё.
+            draft = ChatDraftStore.shared.draft(chatId: viewModel.chat.id)
+            return
         }
+        viewModel.send(text: draft)
         draft = ""
     }
 
@@ -795,6 +961,11 @@ struct ChatView: View {
                 }
             }
             .controlGroupStyle(.palette)
+        }
+        if let receipt = viewModel.readReceiptText(for: message) {
+            Section {
+                Label(receipt, systemImage: "checkmark.message")
+            }
         }
         if isConfirmed, viewModel.chat.canPost, !viewModel.peerKeyChanged {
             Button("Ответить", systemImage: "arrowshape.turn.up.left") {
@@ -898,6 +1069,13 @@ private struct SystemEventRow: View {
     }
 }
 
+/// Фото из очереди отправки, которое ещё уходит на сервер.
+struct PendingUploadContent {
+    let fileURL: URL
+    let uploadId: String?
+    let onCancel: () -> Void
+}
+
 private struct ForwardSelection: Identifiable {
     let id = UUID()
     let messages: [Message]
@@ -915,13 +1093,22 @@ private struct MessageBubble<MenuItems: View>: View {
     let status: DeliveryStatus?
     /// На это сообщение сейчас отвечают или его правят — пузырь подсвечен гранатовой рамкой.
     let isQuoted: Bool
+    /// Перешли сюда по цитате или из поиска — короткая вспышка ореолом.
+    let isHighlighted: Bool
+    /// Не первое в группе одного автора: сверху со стороны автора скругление малое.
+    let continuesGroup: Bool
     let reactions: [ReactionSummary]
     /// nil — не фото с таймером.
     let timedPhotoState: TimedPhotoState?
+    /// Фото ещё загружается: превью и прогресс вместо подписи «📷 Фото».
+    let pendingUpload: PendingUploadContent?
+    let showsHeartBurst: Bool
     let bubbleColor: Color
     let onOpenAttachment: (Attachment) -> Void
     let onOpenTimedPhoto: () -> Void
     let onOpenReply: () -> Void
+    /// nil — двойное касание выключено (режим выделения).
+    let onDoubleTap: (() -> Void)?
     let onError: (String) -> Void
     /// Пункты меню по долгому нажатию: меню висит на самом пузыре, чтобы подсвечивался он, а не вся строка.
     @ViewBuilder var menuItems: MenuItems
@@ -942,16 +1129,19 @@ private struct MessageBubble<MenuItems: View>: View {
                 if let reply = message.replyTo {
                     replyQuote(reply)
                 }
-                if let attachment = message.attachment {
+                if let pendingUpload {
+                    PendingPhotoUpload(fileURL: pendingUpload.fileURL, uploadId: pendingUpload.uploadId, onCancel: pendingUpload.onCancel)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                } else if let attachment = message.attachment {
                     attachmentContent(attachment)
                 }
                 // Время и галочки — в правом нижнем углу, как в «Сообщениях» и Telegram.
                 HStack(alignment: .lastTextBaseline, spacing: 6) {
-                    if !message.text.isEmpty {
-                        Text(message.text)
+                    if !message.text.isEmpty, pendingUpload == nil {
+                        Text(LinkifiedText.attributed(message.text, linkColor: isMine ? .white : .champagne))
                     }
                     footer
-                        .frame(maxWidth: message.text.isEmpty ? .infinity : nil, alignment: .trailing)
+                        .frame(maxWidth: message.text.isEmpty || pendingUpload != nil ? .infinity : nil, alignment: .trailing)
                 }
                 if !reactions.isEmpty {
                     ReactionChips(reactions: reactions, isMine: isMine)
@@ -964,14 +1154,20 @@ private struct MessageBubble<MenuItems: View>: View {
             // Пузырь собеседника на светлом фоне без границы сливается с ним.
             .overlay { if !isMine { bubbleShape.stroke(Color.appLine, lineWidth: 1) } }
             .overlay {
-                if isQuoted {
-                    bubbleShape.stroke(Color.brand, lineWidth: 1.5)
-                    bubbleShape.stroke(Color.brand.opacity(0.14), lineWidth: 8).padding(-4)
+                if isQuoted || isHighlighted {
+                    bubbleShape.stroke(Color.brand, lineWidth: isHighlighted ? 2 : 1.5)
+                    bubbleShape.stroke(Color.brand.opacity(isHighlighted ? 0.22 : 0.14), lineWidth: 8).padding(-4)
                 }
             }
             .animation(.snappy, value: isQuoted)
             .contentShape(.contextMenuPreview, bubbleShape)
+            .onTapGesture(count: 2) { onDoubleTap?() }
             .contextMenu { menuItems }
+            .overlay(alignment: isMine ? .topLeading : .topTrailing) {
+                if showsHeartBurst {
+                    HeartBurst().offset(x: isMine ? -14 : 14, y: -18)
+                }
+            }
 
             if !isMine { Spacer(minLength: 48) }
         }
@@ -1040,12 +1236,13 @@ private struct MessageBubble<MenuItems: View>: View {
     }
 
     /// Скруглённый «хвост» со стороны отправителя: свои — справа внизу, чужие — слева внизу.
+    /// Внутри группы сверху со стороны автора тоже малое скругление — пузыри складываются в столбик (макет «Лента»).
     private var bubbleShape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
-            topLeadingRadius: 18,
+            topLeadingRadius: !isMine && continuesGroup ? 6 : 18,
             bottomLeadingRadius: isMine ? 18 : 6,
             bottomTrailingRadius: isMine ? 6 : 18,
-            topTrailingRadius: 18,
+            topTrailingRadius: isMine && continuesGroup ? 6 : 18,
             style: .continuous
         )
     }

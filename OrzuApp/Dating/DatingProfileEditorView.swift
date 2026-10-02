@@ -877,6 +877,18 @@ enum RussianPlural {
         default: return String(localized: "\(count) лет")
         }
     }
+
+    /// «1 новое сообщение», «3 новых сообщения», «5 новых сообщений» — разделитель в чате.
+    static func newMessages(_ count: Int) -> String {
+        let lastTwo = count % 100
+        let last = count % 10
+        if (11...14).contains(lastTwo) { return String(localized: "\(count) новых сообщений") }
+        switch last {
+        case 1: return String(localized: "\(count) новое сообщение")
+        case 2...4: return String(localized: "\(count) новых сообщения")
+        default: return String(localized: "\(count) новых сообщений")
+        }
+    }
 }
 
 /// Редактируемая копия анкеты: форма правит её, а на сервер уходит одним запросом.

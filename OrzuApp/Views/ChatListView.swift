@@ -15,11 +15,11 @@ private enum ActiveSheet: Identifiable, Hashable {
 struct ChatListView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @StateObject private var viewModel = ChatListViewModel()
+    @ObservedObject private var drafts = ChatDraftStore.shared
     @ObservedObject private var push = PushManager.shared
     @State private var activeSheet: ActiveSheet?
     @State private var openedChat: Chat?
     @State private var query = ""
-    @State private var chatPendingClear: Chat?
     @State private var chatPendingDeletion: Chat?
     /// Люди с сервера по запросу из поиска — как «Глобальный поиск» в Telegram.
     @State private var foundUsers: [User] = []
@@ -89,6 +89,9 @@ struct ChatListView: View {
                         Task { openedChat = await viewModel.chat(withId: chatId) }
                     }
                 }
+                .onChange(of: openedChat?.id) { _, chatId in
+                    viewModel.activeChatId = chatId
+                }
                 .navigationDestination(item: $openedChat) { chat in
                     if let currentUserId = authViewModel.currentUser?.id {
                         ChatView(viewModel: ChatViewModel(chat: chat, currentUserId: currentUserId)) {
@@ -113,18 +116,6 @@ struct ChatListView: View {
                 if isSearchingUsers { ProgressView() } else { ContentUnavailableView.search(text: query) }
             } else if viewModel.chats.isEmpty && !viewModel.isLoading {
                 ContentUnavailableView("Пока нет чатов", systemImage: "bubble.left.and.bubble.right", description: Text("Нажмите ✎, чтобы найти собеседника"))
-            }
-        }
-        .confirmationDialog(
-            "Очистить историю?",
-            isPresented: Binding(get: { chatPendingClear != nil }, set: { if !$0 { chatPendingClear = nil } }),
-            titleVisibility: .visible,
-            presenting: chatPendingClear
-        ) { chat in
-            Button("Очистить у себя", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: false) } }
-            // Очистить у всех сервер разрешает только в личном и секретном чате, и не в чате удалённой пары.
-            if chat.canDelete && !chat.isClosed {
-                Button("Очистить у обоих", role: .destructive) { Task { await viewModel.clearHistory(chat, forEveryone: true) } }
             }
         }
         .confirmationDialog(
@@ -186,27 +177,48 @@ struct ChatListView: View {
         Button {
             openedChat = chat
         } label: {
-            ChatRow(chat: chat)
+            ChatRow(
+                chat: chat,
+                currentUserId: authViewModel.currentUser?.id,
+                isTyping: viewModel.typingChatIds.contains(chat.id),
+                draft: openedChat?.id == chat.id ? nil : drafts.drafts[chat.id]
+            )
         }
         .buttonStyle(.plain)
         .listRowBackground(Color.clear)
         .listRowSeparatorTint(Color.appLine)
+        // Макет «Чаты: свайпы»: вправо — «Прочитать» и «Закрепить», влево — «Удалить» и «Без звука».
         .swipeActions(edge: .leading) {
+            if (chat.unreadCount ?? 0) > 0 {
+                Button {
+                    Task { await viewModel.markRead(chat) }
+                } label: {
+                    Label("Прочитать", systemImage: "checkmark.message")
+                }
+                .tint(Color(red: 0.43, green: 0.35, blue: 0.23))
+            }
             Button {
                 Task { await viewModel.setPinned(chat, pinned: chat.pinnedAt == nil) }
             } label: {
                 Label(chat.pinnedAt == nil ? "Закрепить" : "Открепить", systemImage: chat.pinnedAt == nil ? "pin" : "pin.slash")
             }
-            .tint(.champagne)
+            .tint(Color(red: 0.54, green: 0.43, blue: 0.25))
         }
         .swipeActions(edge: .trailing) {
             if chat.canDelete {
                 Button(role: .destructive) { chatPendingDeletion = chat } label: {
                     Label(chat.isClosed ? "Убрать" : "Удалить", systemImage: "trash")
                 }
+                .tint(.brandDeep)
             }
-            Button { chatPendingClear = chat } label: { Label("Очистить", systemImage: "eraser") }
-                .tint(.gray)
+            if !chat.isClosed {
+                Button {
+                    Task { await viewModel.toggleMute(chat) }
+                } label: {
+                    Label(chat.isMuted ? "Со звуком" : "Без звука", systemImage: chat.isMuted ? "bell" : "bell.slash")
+                }
+                .tint(Color(red: 0.29, green: 0.25, blue: 0.28))
+            }
         }
     }
 
@@ -384,6 +396,13 @@ private struct FoundUserRow: View {
 
 private struct ChatRow: View {
     let chat: Chat
+    let currentUserId: String?
+    /// Собеседник набирает текст — вместо последнего сообщения «печатает…».
+    let isTyping: Bool
+    /// Недописанное в этом чате — «Черновик: …» гранатом.
+    let draft: String?
+
+    private var unread: Int { chat.unreadCount ?? 0 }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -392,21 +411,23 @@ private struct ChatRow: View {
                 .overlay(alignment: .bottomTrailing) {
                     if chat.peer?.presence?.online == true {
                         Circle()
-                            .fill(.green)
+                            .fill(Color.online)
                             .frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(Color.appBackground, lineWidth: 2))
+                            .overlay(Circle().stroke(Color.appBackground, lineWidth: 2.5))
+                            .transition(.scale.combined(with: .opacity))
                             .accessibilityLabel("в сети")
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: chat.peer?.presence?.online)
 
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     if chat.type == .channel {
                         Image(systemName: "megaphone.fill").font(.app(.caption)).foregroundStyle(.secondary)
                     } else if chat.type == .secret {
-                        Image(systemName: "lock.fill").font(.app(.caption)).foregroundStyle(.green)
+                        Image(systemName: "lock.fill").font(.app(.caption)).foregroundStyle(Color.online)
                     }
-                    Text(chat.displayTitle).font(.app(.body, weight: .semibold)).lineLimit(1)
+                    Text(chat.displayTitle).font(.app(.body, weight: .bold)).lineLimit(1)
                     if chat.type == .direct, chat.participants.first?.isBot == true {
                         BotBadge()
                     }
@@ -420,23 +441,75 @@ private struct ChatRow: View {
                             .accessibilityLabel("Закреплён")
                     }
                     if let date = chat.lastMessage?.createdAt {
-                        Text(Self.timeLabel(for: date)).font(.app(.footnote)).foregroundStyle(.secondary)
+                        // Есть непрочитанное — время гранатом и жирнее, как в макете.
+                        Text(Self.timeLabel(for: date))
+                            .font(.app(size: 12.5, weight: unread > 0 && !chat.isMuted ? .bold : .medium))
+                            .foregroundStyle(unread > 0 && !chat.isMuted ? Color.brand : Color.secondary)
                     }
                 }
-                if chat.isClosed {
-                    Label(closedSubtitle, systemImage: "lock")
-                        .font(.app(.subheadline))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                } else if let preview = chat.lastMessage?.previewText, !preview.isEmpty {
-                    Text(preview).font(.app(.subheadline)).foregroundStyle(.secondary).lineLimit(2)
-                } else if let username = chat.username {
-                    Text("@\(username)").font(.app(.subheadline)).foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    subtitle
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if unread > 0 {
+                        Text(unread > 99 ? "99+" : "\(unread)")
+                            .font(.app(size: 12, weight: .bold))
+                            .monospacedDigit()
+                            .foregroundStyle(chat.isMuted ? Color.secondary : Color.white)
+                            .padding(.horizontal, 7)
+                            .frame(minWidth: 22, minHeight: 22)
+                            .background(chat.isMuted ? Color.appElevated : Color.brand, in: Capsule())
+                            .contentTransition(.numericText(value: Double(unread)))
+                            .transition(.scale.combined(with: .opacity))
+                            .accessibilityLabel("Непрочитанных: \(unread)")
+                    }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: unread)
             }
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private var subtitle: some View {
+        if chat.isClosed {
+            Label(closedSubtitle, systemImage: "lock")
+                .font(.app(.subheadline))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        } else if isTyping {
+            HStack(spacing: 5) {
+                Text("печатает")
+                TypingDots(color: .brand, size: 4)
+            }
+            .font(.app(.subheadline))
+            .foregroundStyle(Color.brand)
+            .transition(.opacity)
+        } else if let draft, !draft.isEmpty {
+            (Text("Черновик: ").foregroundStyle(Color.brand).fontWeight(.semibold)
+                + Text(draft.replacingOccurrences(of: "\n", with: " ")).foregroundStyle(.secondary))
+                .font(.app(.subheadline))
+                .lineLimit(1)
+        } else if let last = chat.lastMessage, !last.previewText.isEmpty {
+            HStack(spacing: 4) {
+                if last.senderId == currentUserId, last.systemEvent == nil {
+                    Text("Вы:").foregroundStyle(.primary)
+                }
+                Text(last.previewText).foregroundStyle(.secondary).lineLimit(1)
+                if last.senderId == currentUserId, chat.type != .channel, let readAt = chat.readAt, readAt >= last.createdAt {
+                    Image(systemName: "checkmark")
+                        .overlay(Image(systemName: "checkmark").offset(x: 5))
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.brand)
+                        .padding(.trailing, 5)
+                        .accessibilityLabel("Прочитано")
+                }
+            }
+            .font(.app(.subheadline))
+            .lineLimit(1)
+        } else if let username = chat.username {
+            Text("@\(username)").font(.app(.subheadline)).foregroundStyle(.secondary)
+        }
     }
 
     private var closedSubtitle: String {

@@ -11,6 +11,25 @@ final class VoicePlayer: NSObject, ObservableObject {
     @Published private(set) var loadingId: String?
     /// 0…1 для полосы прогресса.
     @Published private(set) var progress: Double = 0
+    /// Сколько секунд уже проиграно — «0:09 / 0:24».
+    @Published private(set) var currentTime: TimeInterval = 0
+    /// Скорость голосовых: 1×, 1,5×, 2×. Запоминается для всех голосовых.
+    @Published private(set) var rate: Float = VoicePlayer.savedRate
+
+    static let rates: [Float] = [1, 1.5, 2]
+    private static let rateKey = "voicePlaybackRate"
+    private static var savedRate: Float {
+        let saved = UserDefaults.standard.float(forKey: rateKey)
+        return rates.contains(saved) ? saved : 1
+    }
+
+    /// Следующая скорость по кругу; играющее голосовое переключается сразу.
+    func cycleRate() {
+        let index = Self.rates.firstIndex(of: rate) ?? 0
+        rate = Self.rates[(index + 1) % Self.rates.count]
+        UserDefaults.standard.set(rate, forKey: Self.rateKey)
+        player?.rate = rate
+    }
 
     private var player: AVAudioPlayer?
     private var timer: Timer?
@@ -34,6 +53,10 @@ final class VoicePlayer: NSObject, ObservableObject {
         try AVAudioSession.sharedInstance().setActive(true)
         let player = try AVAudioPlayer(data: data)
         player.delegate = self
+        // Без enableRate до prepareToPlay AVAudioPlayer скорость молча игнорирует.
+        player.enableRate = true
+        player.prepareToPlay()
+        player.rate = rate
         self.player = player
         activeId = attachment.id
         resume()
@@ -45,6 +68,7 @@ final class VoicePlayer: NSObject, ObservableObject {
         activeId = nil
         isPlaying = false
         progress = 0
+        currentTime = 0
         stopTimer()
     }
 
@@ -65,6 +89,7 @@ final class VoicePlayer: NSObject, ObservableObject {
     private func tick() {
         guard let player, player.duration > 0 else { return }
         progress = player.currentTime / player.duration
+        currentTime = player.currentTime
     }
 
     private func stopTimer() {
