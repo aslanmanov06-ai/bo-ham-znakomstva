@@ -45,9 +45,6 @@ struct SelfieCamera: View {
             } else {
                 CameraPreview(session: camera.session)
                     .ignoresSafeArea()
-                if let gesture {
-                    GestureHint(gesture: gesture)
-                }
                 if failed {
                     Text("Камера недоступна — закройте и попробуйте ещё раз")
                         .font(.app(.subheadline, weight: .semibold))
@@ -56,8 +53,12 @@ struct SelfieCamera: View {
                         .padding(24)
                 }
             }
-            VStack {
+            VStack(spacing: 12) {
                 Spacer()
+                // Подсказка внизу, над затвором: у верхнего края её закрывали «чёлка» и Dynamic Island.
+                if photo == nil, let gesture {
+                    GestureHint(gesture: gesture)
+                }
                 bottomBar
             }
         }
@@ -197,27 +198,23 @@ extension SelfieCaptureSession: AVCapturePhotoCaptureDelegate {
     }
 }
 
-/// Плашка «✌️ Покажите: два пальца — знак V» у верхнего края камеры (макет «Камера с подсказкой жеста»).
+/// Плашка «✌️ Покажите: два пальца — знак V» над затвором камеры (макет «Камера с подсказкой жеста»).
 private struct GestureHint: View {
     let gesture: SelfieGesture
 
     var body: some View {
-        VStack {
-            HStack(spacing: 10) {
-                Text(gesture.emoji)
-                    .font(.system(size: 24))
-                Text("Покажите: \(gesture.title.lowercased(with: Locale(identifier: "ru_RU")))")
-                    .font(.app(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color(red: 18 / 255, green: 14 / 255, blue: 18 / 255).opacity(0.78), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            Spacer()
+        HStack(spacing: 10) {
+            Text(gesture.emoji)
+                .font(.system(size: 24))
+            Text("Покажите: \(gesture.title.lowercased(with: Locale(identifier: "ru_RU")))")
+                .font(.app(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color(red: 18 / 255, green: 14 / 255, blue: 18 / 255).opacity(0.78), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
+        .padding(.horizontal, 16)
         .accessibilityElement(children: .combine)
     }
 }
