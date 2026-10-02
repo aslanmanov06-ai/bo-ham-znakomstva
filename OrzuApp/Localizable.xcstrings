@@ -10345,6 +10345,22 @@
         }
       }
     },
+    "Связь потеряна. Последняя точка — в %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signal lost. Last location at %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Алоқа қатъ шуд. Нуқтаи охирин — соати %@"
+          }
+        }
+      }
+    },
     "Сделать админом" : {
       "localizations" : {
         "en" : {

@@ -9,6 +9,8 @@ final class SafetyAlertsViewModel: ObservableObject {
 
     /// Открытая тревога того, кто добавил вас в доверенные контакты.
     @Published var incomingAlert: SosAlert?
+    /// Тревоги, от которых давно нет геопозиции; новая точка снимает отметку.
+    @Published private(set) var signalLostAlertIds: Set<String> = []
     @Published var sanction: SanctionNotice?
     /// Встреча, которой поделился тот, кто добавил вас в доверенные контакты.
     @Published var sharedMeeting: SharedMeeting?
@@ -32,8 +34,13 @@ final class SafetyAlertsViewModel: ObservableObject {
     private func handle(event: ServerEvent) {
         switch event {
         case .sosAlert(let alert):
+            signalLostAlertIds.remove(alert.id)
+            incomingAlert = alert
+        case .sosSignalLost(let alert):
+            signalLostAlertIds.insert(alert.id)
             incomingAlert = alert
         case .sosClosed(let alert):
+            signalLostAlertIds.remove(alert.id)
             // Тревогу закрыли — снимаем экран, если показывали именно её.
             if incomingAlert?.id == alert.id {
                 incomingAlert = nil

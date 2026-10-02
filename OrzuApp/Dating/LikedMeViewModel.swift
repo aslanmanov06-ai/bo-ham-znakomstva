@@ -13,12 +13,18 @@ final class LikedMeViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        // Новый лайк приходит по сокету — полоса в ленте и экран обновляются сразу.
+        // Новый или отозванный лайк приходит по сокету — полоса в ленте и экран обновляются сразу.
         WebSocketClient.shared.events
             .receive(on: DispatchQueue.main)
             .sink { [weak self] event in
-                guard case .datingLiked = event else { return }
-                Task { await self?.load() }
+                switch event {
+                case .datingLiked:
+                    Task { await self?.load() }
+                case .datingLikeWithdrawn(let userId):
+                    self?.cards.removeAll { $0.card.profile.userId == userId }
+                default:
+                    break
+                }
             }
             .store(in: &cancellables)
     }

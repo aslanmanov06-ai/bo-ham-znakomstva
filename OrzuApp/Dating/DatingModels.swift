@@ -706,6 +706,8 @@ struct SosAlert: Decodable, Identifiable, Hashable {
     let createdAt: Date
     let updatedAt: Date
     let closedAt: Date?
+    /// Когда пришла последняя геопозиция; nil — у старых ответов сервера.
+    var lastLocationAt: Date? = nil
     /// Ссылка на карту — открывается и в Картах, и в браузере.
     let mapsUrl: String
 }

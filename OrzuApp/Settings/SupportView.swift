@@ -54,6 +54,11 @@ struct SupportView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .refreshable { await load() }
+        // Ответ поддержки, пока экран открыт, появляется сразу — без обновления вручную.
+        .onReceive(WebSocketClient.shared.events.receive(on: DispatchQueue.main)) { event in
+            guard case .supportAnswered = event else { return }
+            Task { await load() }
+        }
         .sheet(isPresented: $showNewTicket) {
             NavigationStack {
                 NewSupportTicketView { ticket in

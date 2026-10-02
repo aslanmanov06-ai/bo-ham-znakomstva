@@ -231,7 +231,7 @@ private struct MainTabView: View {
         }
         // Тревога доверенного контакта важнее текущего экрана — показываем её поверх вкладок.
         .fullScreenCover(item: $safetyAlerts.incomingAlert) { alert in
-            SosAlertView(alert: alert) { safetyAlerts.incomingAlert = nil }
+            SosAlertView(alert: alert, signalLost: safetyAlerts.signalLostAlertIds.contains(alert.id)) { safetyAlerts.incomingAlert = nil }
         }
         .alert(safetyAlerts.sanction?.title ?? "", isPresented: .constant(safetyAlerts.sanction != nil)) {
             Button("Понятно") { safetyAlerts.sanction = nil }

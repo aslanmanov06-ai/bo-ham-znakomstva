@@ -43,6 +43,8 @@ enum ServerEvent {
     case datingIntro(IncomingIntro)
     /// Меня лайкнули из ленты — «Вас лайкнули» пополнился.
     case datingLiked
+    /// Лайк отозвали — его карточка уходит из «Вас лайкнули».
+    case datingLikeWithdrawn(userId: String)
     /// Пару разорвали — её чат удалён у обоих.
     case datingUnmatched(matchId: String, chatId: String?)
     /// «Путь к браку» пары изменился: ступень, предложение или чек-лист.
@@ -58,8 +60,14 @@ enum ServerEvent {
     /// Тревога того, кто добавил вас в доверенные контакты (или обновление её геопозиции).
     case sosAlert(SosAlert)
     case sosClosed(SosAlert)
+    /// От открытой тревоги давно нет геопозиции — у человека, вероятно, сел телефон или пропала сеть.
+    case sosSignalLost(SosAlert)
     /// Санкция модератора: предупреждение, скрытие анкеты или блокировка аккаунта.
     case accountSanction(type: String, reason: String)
+    /// Модератор сменил мне имя или username.
+    case accountRenamed
+    /// Поддержка ответила на обращение.
+    case supportAnswered
     /// Тот, кто добавил вас в доверенные контакты, идёт на встречу и поделился, с кем, где и когда.
     case meetingShared(SharedMeeting)
     /// Собеседник по секретному чату сменил ключ шифрования (переустановил приложение или вошёл с другого телефона).
@@ -492,6 +500,14 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "dating.liked":
             events.send(.datingLiked)
 
+        case "dating.likeWithdrawn":
+            guard let userId = json["userId"] as? String else { return }
+            events.send(.datingLikeWithdrawn(userId: userId))
+
+        case "dating.meetingReminder":
+            // Напоминание о встрече ничего не меняет в данных: его показывает push (сервер шлёт его без live).
+            break
+
         case "dating.unmatched":
             guard let matchId = json["matchId"] as? String else { return }
             events.send(.datingUnmatched(matchId: matchId, chatId: json["chatId"] as? String))
@@ -529,6 +545,17 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "safety.sos.closed":
             guard let alert: SosAlert = decode(json["alert"]) else { return }
             events.send(.sosClosed(alert))
+
+        case "safety.sos.signalLost":
+            // Push об этом приходит с live: при открытом сокете баннера нет — предупреждение показывает экран тревоги.
+            guard let alert: SosAlert = decode(json["alert"]) else { return }
+            events.send(.sosSignalLost(alert))
+
+        case "account.renamed":
+            events.send(.accountRenamed)
+
+        case "support.answered":
+            events.send(.supportAnswered)
 
         case "account.sanction":
             guard

@@ -4,6 +4,8 @@ import SwiftUI
 /// Чужая тревога: показывается доверенному контакту поверх любого экрана — где человек, куда двигался и когда была связь.
 struct SosAlertView: View {
     let alert: SosAlert
+    /// Давно нет геопозиции: на карте — последняя известная точка, а не где человек сейчас.
+    var signalLost = false
     let onClose: () -> Void
     @State private var track: [SosTrackPoint] = []
 
@@ -21,9 +23,16 @@ struct SosAlertView: View {
                     .font(.app(.subheadline))
                     .multilineTextAlignment(.center)
             }
-            Text("Обновлено \(alert.updatedAt.formatted(date: .omitted, time: .shortened))")
-                .font(.app(.footnote))
-                .foregroundStyle(.secondary)
+            if signalLost {
+                Label("Связь потеряна. Последняя точка — в \((alert.lastLocationAt ?? alert.updatedAt).formatted(date: .omitted, time: .shortened))", systemImage: "antenna.radiowaves.left.and.right.slash")
+                    .font(.app(.subheadline, weight: .semibold))
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("Обновлено \(alert.updatedAt.formatted(date: .omitted, time: .shortened))")
+                    .font(.app(.footnote))
+                    .foregroundStyle(.secondary)
+            }
             if let accuracy = alert.accuracyM {
                 Text("Точность около \(Int(accuracy)) м")
                     .font(.app(.caption))

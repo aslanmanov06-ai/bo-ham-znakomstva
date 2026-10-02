@@ -39,6 +39,14 @@ final class AuthViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.handleSessionExpired() }
             .store(in: &cancellables)
+        // Модератор сменил имя или username — берём новые с сервера, а не ждём перезапуска.
+        WebSocketClient.shared.events
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] event in
+                guard case .accountRenamed = event else { return }
+                Task { await self?.refreshCurrentUser() }
+            }
+            .store(in: &cancellables)
         // Имя и аватар могли смениться на другом устройстве, пока приложение было без сети или в фоне.
         NotificationCenter.default.publisher(for: .networkBecameAvailable)
             .merge(with: NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification))
