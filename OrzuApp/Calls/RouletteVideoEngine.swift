@@ -1,7 +1,8 @@
 import AVFoundation
 import Combine
 import Foundation
-import WebRTC
+// Заголовки WebRTC не размечены под Sendable — без @preconcurrency каждый колбэк даёт предупреждение.
+@preconcurrency import WebRTC
 import os
 
 /// Видео рулетки: камера и микрофон живут, пока человек в видеорулетке, а соединение с собеседником пересоздаётся
@@ -246,13 +247,17 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
                     return
                 }
                 self.hasRemoteDescription = true
-                for candidate in self.pendingCandidates {
-                    connection.add(candidate) { error in
-                        if let error { self.logger.error("add pending candidate: \(error.localizedDescription, privacy: .public)") }
-                    }
-                }
+                let candidates = self.pendingCandidates
                 self.pendingCandidates.removeAll()
                 next?()
+                // answer не ждёт отложенных кандидатов — как и раньше, когда их добавляли колбэками.
+                for candidate in candidates {
+                    do {
+                        try await connection.add(candidate)
+                    } catch {
+                        self.logger.error("add pending candidate: \(error.localizedDescription, privacy: .public)")
+                    }
+                }
             }
         }
     }
@@ -269,15 +274,13 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
                     if let error { self?.logger.error("create \(type, privacy: .public): \(error.localizedDescription, privacy: .public)") }
                     return
                 }
-                connection.setLocalDescription(sdp) { error in
-                    Task { @MainActor in
-                        if let error {
-                            self.logger.error("setLocalDescription: \(error.localizedDescription, privacy: .public)")
-                            return
-                        }
-                        WebSocketClient.shared.sendRoulette(["type": type, "sessionId": sessionId, "sdp": sdp.sdp])
-                    }
+                do {
+                    try await connection.setLocalDescription(sdp)
+                } catch {
+                    self.logger.error("setLocalDescription: \(error.localizedDescription, privacy: .public)")
+                    return
                 }
+                WebSocketClient.shared.sendRoulette(["type": type, "sessionId": sessionId, "sdp": sdp.sdp])
             }
         }
     }

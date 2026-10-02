@@ -3,7 +3,8 @@ import CallKit
 import Combine
 import Foundation
 import PushKit
-import WebRTC
+// Заголовки WebRTC не размечены под Sendable — без @preconcurrency каждый колбэк даёт предупреждение.
+@preconcurrency import WebRTC
 import os
 
 enum CallState: Equatable {
@@ -353,13 +354,17 @@ final class CallManager: NSObject, ObservableObject {
                     return
                 }
                 link.hasRemoteDescription = true
-                for candidate in link.pendingCandidates {
-                    link.connection.add(candidate) { error in
-                        if let error { self.logger.error("add pending candidate: \(error.localizedDescription, privacy: .public)") }
-                    }
-                }
+                let candidates = link.pendingCandidates
                 link.pendingCandidates.removeAll()
                 next?()
+                // answer не ждёт отложенных кандидатов — как и раньше, когда их добавляли колбэками.
+                for candidate in candidates {
+                    do {
+                        try await link.connection.add(candidate)
+                    } catch {
+                        self.logger.error("add pending candidate: \(error.localizedDescription, privacy: .public)")
+                    }
+                }
             }
         }
     }
@@ -380,16 +385,14 @@ final class CallManager: NSObject, ObservableObject {
                     if let error { self?.logger.error("create \(signalType, privacy: .public): \(error.localizedDescription, privacy: .public)") }
                     return
                 }
-                link.connection.setLocalDescription(sdp) { error in
-                    Task { @MainActor in
-                        if let error {
-                            self.logger.error("setLocalDescription: \(error.localizedDescription, privacy: .public)")
-                            return
-                        }
-                        guard let callId = self.activeCall?.id else { return }
-                        WebSocketClient.shared.sendCall(["type": signalType, "callId": callId, "to": peerId, "sdp": sdp.sdp])
-                    }
+                do {
+                    try await link.connection.setLocalDescription(sdp)
+                } catch {
+                    self.logger.error("setLocalDescription: \(error.localizedDescription, privacy: .public)")
+                    return
                 }
+                guard let callId = self.activeCall?.id else { return }
+                WebSocketClient.shared.sendCall(["type": signalType, "callId": callId, "to": peerId, "sdp": sdp.sdp])
             }
         }
     }

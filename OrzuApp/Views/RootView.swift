@@ -162,7 +162,12 @@ private struct MainTabView: View {
         }
     }
 
+    /// Вкладки собраны слоями: одна длинная цепочка модификаторов не укладывается в лимит проверки типов компилятора.
     private var tabs: some View {
+        safetyLayer
+    }
+
+    private var tabView: some View {
         TabView(selection: $selection) {
             DatingTabView(dating: dating)
                 .tabItem { Label("Знакомства", systemImage: "heart.fill") }
@@ -185,6 +190,11 @@ private struct MainTabView: View {
                 .tag(AppTab.profile)
         }
         .tabBarMinimizesOnScroll()
+    }
+
+    /// Переходы между вкладками: push, deep link, уход в фон.
+    private var navigationLayer: some View {
+        tabView
         .onChange(of: selection) { _, tab in
             if tab != .roulette { roulette.stop() }
         }
@@ -220,6 +230,11 @@ private struct MainTabView: View {
             push.pendingDeepLink = nil
             await open(link)
         }
+    }
+
+    /// Человек или канал из открытой ссылки.
+    private var linkLayer: some View {
+        navigationLayer
         .sheet(item: $linkedUser) { user in
             NavigationStack {
                 PersonCardView(user: user) {
@@ -230,7 +245,7 @@ private struct MainTabView: View {
         }
         .alert(
             linkedChannel?.title ?? "",
-            isPresented: Binding(get: { linkedChannel != nil }, set: { if !$0 { linkedChannel = nil } }),
+            isPresented: isLinkedChannelPresented,
             presenting: linkedChannel
         ) { channel in
             Button("Подписаться") { Task { await join(channel) } }
@@ -243,6 +258,11 @@ private struct MainTabView: View {
         } message: {
             Text(linkError ?? "")
         }
+    }
+
+    /// SOS, санкции и встречи доверенных контактов — поверх всего остального.
+    private var safetyLayer: some View {
+        linkLayer
         .task(id: push.pendingSosId) {
             guard let sosId = push.pendingSosId else { return }
             push.pendingSosId = nil
@@ -260,13 +280,21 @@ private struct MainTabView: View {
         // Текст как в push о встрече: если что-то пойдёт не так, доверенный контакт уже знает, где искать.
         .alert(
             "\(safetyAlerts.sharedMeeting?.displayName ?? "") идёт на встречу",
-            isPresented: Binding(get: { safetyAlerts.sharedMeeting != nil }, set: { if !$0 { safetyAlerts.sharedMeeting = nil } }),
+            isPresented: isSharedMeetingPresented,
             presenting: safetyAlerts.sharedMeeting
         ) { _ in
             Button("Понятно") { safetyAlerts.sharedMeeting = nil }
         } message: { meeting in
             Text("Кто: \(meeting.withDisplayName)\nГде: \(meeting.place)\nКогда: \(meeting.startsAt.formatted(date: .long, time: .shortened))")
         }
+    }
+
+    private var isLinkedChannelPresented: Binding<Bool> {
+        Binding(get: { linkedChannel != nil }, set: { if !$0 { linkedChannel = nil } })
+    }
+
+    private var isSharedMeetingPresented: Binding<Bool> {
+        Binding(get: { safetyAlerts.sharedMeeting != nil }, set: { if !$0 { safetyAlerts.sharedMeeting = nil } })
     }
 }
 
