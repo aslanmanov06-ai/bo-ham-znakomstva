@@ -75,7 +75,9 @@ enum ServerEvent {
     /// Собеседник по секретному чату сменил ключ шифрования (переустановил приложение или вошёл с другого телефона).
     case e2eKeyChanged(userId: String)
     /// Рулетка (backend docs/roulette.md): встали в очередь, нашёлся собеседник, разговор закончился.
-    case rouletteWaiting(mode: RouletteMode, cityWaitSeconds: Int)
+    case rouletteWaiting(mode: RouletteMode, cityWaitSeconds: Int, expanded: Bool, ageMin: Int?, ageMax: Int?)
+    /// «Нравится» после конца разговора оказалось взаимным — пара создана.
+    case roulettePaired(sessionId: String, matchId: String, chatId: String?)
     case rouletteMatched(sessionId: String, mode: RouletteMode, peer: RoulettePeer, initiator: Bool)
     /// reason: peer-left, matched (тогда есть matchId и chatId), unavailable, error.
     case rouletteEnded(sessionId: String, reason: String, matchId: String?, chatId: String?)
@@ -666,7 +668,16 @@ final class WebSocketClient: NSObject, ObservableObject {
         switch type {
         case "roulette.waiting":
             guard let mode = (json["mode"] as? String).flatMap(RouletteMode.init(rawValue:)) else { return }
-            events.send(.rouletteWaiting(mode: mode, cityWaitSeconds: json["cityWaitSeconds"] as? Int ?? 0))
+            events.send(.rouletteWaiting(
+                mode: mode,
+                cityWaitSeconds: json["cityWaitSeconds"] as? Int ?? 0,
+                expanded: json["expanded"] as? Bool ?? false,
+                ageMin: json["ageMin"] as? Int,
+                ageMax: json["ageMax"] as? Int
+            ))
+        case "roulette.paired":
+            guard let sessionId, let matchId = json["matchId"] as? String else { return }
+            events.send(.roulettePaired(sessionId: sessionId, matchId: matchId, chatId: json["chatId"] as? String))
         case "roulette.matched":
             guard
                 let sessionId,

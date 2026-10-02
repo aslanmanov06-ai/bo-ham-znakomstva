@@ -25,6 +25,8 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     @Published private(set) var isConnected = false
     @Published private(set) var isMuted = false
     @Published private(set) var isCameraOff = false
+    /// iPhone счёл видео собеседника откровенным (RouletteSensitiveGuard) — показываем заглушку с выбором.
+    @Published private(set) var isSensitiveHidden = false
     /// Соединение не установилось или оборвалось — разговор продолжать бессмысленно.
     let connectionFailed = PassthroughSubject<String, Never>()
 
@@ -41,6 +43,8 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     private var isInitiator = false
     private var isRestartingIce = false
     private var watchdog: Task<Void, Never>?
+    /// RouletteSensitiveGuard (iOS 26+) текущего собеседника.
+    private var sensitiveGuard: AnyObject?
     /// Сколько ждём первого соединения с собеседником и восстановления после обрыва, прежде чем искать следующего.
     private static let connectTimeout: TimeInterval = 15
     private static let reconnectTimeout: TimeInterval = 10
@@ -144,10 +148,40 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
         sendOffer()
     }
 
+    /// «Всё равно показать» на заглушке откровенного видео.
+    func showSensitiveVideo() {
+        isSensitiveHidden = false
+        setRemoteAudio(enabled: true)
+        if #available(iOS 26.0, *) { (sensitiveGuard as? RouletteSensitiveGuard)?.continueStream() }
+    }
+
+    private func startSensitiveGuard(for track: RTCVideoTrack?) {
+        stopSensitiveGuard()
+        guard #available(iOS 26.0, *), let track, let sessionId else { return }
+        sensitiveGuard = RouletteSensitiveGuard(participant: sessionId, track: track) { [weak self] hide, muteAudio in
+            guard let self, hide, !self.isSensitiveHidden else { return }
+            self.isSensitiveHidden = true
+            if muteAudio { self.setRemoteAudio(enabled: false) }
+        }
+    }
+
+    private func stopSensitiveGuard() {
+        if #available(iOS 26.0, *) { (sensitiveGuard as? RouletteSensitiveGuard)?.stop() }
+        sensitiveGuard = nil
+        isSensitiveHidden = false
+    }
+
+    private func setRemoteAudio(enabled: Bool) {
+        for receiver in connection?.receivers ?? [] {
+            if let audio = receiver.track as? RTCAudioTrack { audio.isEnabled = enabled }
+        }
+    }
+
     /// Разговор закончился: камера остаётся включённой — следующий собеседник найдётся через секунды.
     func endSession() {
         watchdog?.cancel()
         watchdog = nil
+        stopSensitiveGuard()
         connection?.close()
         connection = nil
         sessionId = nil
@@ -288,6 +322,7 @@ extension RouletteVideoEngine: RTCPeerConnectionDelegate {
         Task { @MainActor in
             guard self.connection === peerConnection else { return }
             self.remoteTrack = track
+            self.startSensitiveGuard(for: track)
         }
     }
 

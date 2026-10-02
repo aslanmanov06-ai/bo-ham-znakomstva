@@ -16,6 +16,10 @@
 	<array>
 		<string>group.com.orzuapp.messenger</string>
 	</array>
+	<key>com.apple.developer.sensitivecontentanalysis.client</key>
+	<array>
+		<string>analysis</string>
+	</array>
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)com.orzuapp.messenger.shared</string>

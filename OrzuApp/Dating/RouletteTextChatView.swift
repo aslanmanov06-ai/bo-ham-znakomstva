@@ -8,6 +8,9 @@ struct RouletteTextChatView: View {
 
     @State private var draft = ""
     @FocusState private var isInputFocused: Bool
+    /// Карточка «Случайный вопрос»: сама — пока никто не написал, потом — по кнопке с лампочкой.
+    @State private var icebreaker: String?
+    @State private var icebreakerDismissed = false
 
     private static let bottomId = "bottom"
 
@@ -86,6 +89,11 @@ struct RouletteTextChatView: View {
                     ForEach(roulette.messages) { message in
                         RouletteBubble(message: message)
                     }
+                    if let question = shownIcebreaker {
+                        icebreakerCard(question)
+                            .padding(.top, 8)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
                     Color.clear.frame(height: 1).id(Self.bottomId)
                 }
                 .padding(.horizontal, 14)
@@ -94,6 +102,9 @@ struct RouletteTextChatView: View {
             .scrollDismissesKeyboard(.interactively)
             .defaultScrollAnchor(.bottom)
             .onChange(of: roulette.messages.count) {
+                withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.bottomId, anchor: .bottom) }
+            }
+            .onChange(of: icebreaker) {
                 withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.bottomId, anchor: .bottom) }
             }
         }
@@ -152,6 +163,66 @@ struct RouletteTextChatView: View {
         .animation(.easeInOut(duration: 0.2), value: roulette.notice)
     }
 
+    /// Пустая переписка — вопрос показывается сам, пока его не вставили или не закрыли.
+    private var shownIcebreaker: String? {
+        if icebreakerDismissed { return nil }
+        if let icebreaker { return icebreaker }
+        return roulette.messages.isEmpty ? RouletteIcebreakers.first(for: session.id) : nil
+    }
+
+    /// Макет «Переписка — случайный вопрос».
+    private func icebreakerCard(_ question: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("СЛУЧАЙНЫЙ ВОПРОС", systemImage: "lightbulb")
+                    .font(.app(.caption, weight: .bold))
+                    .foregroundStyle(Color.champagne)
+                Spacer()
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { icebreakerDismissed = true }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Закрыть")
+            }
+            Text(question)
+                .font(.app(.callout, weight: .semibold))
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Button {
+                    draft = question
+                    isInputFocused = true
+                    withAnimation(.easeOut(duration: 0.2)) { icebreakerDismissed = true }
+                } label: {
+                    Text("Вставить в сообщение")
+                        .font(.app(.subheadline, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 42)
+                        .background(.brandFill, in: Capsule())
+                }
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { icebreaker = RouletteIcebreakers.random(excluding: question) }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 42, height: 42)
+                        .background(Color.appElevated, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
+                }
+                .accessibilityLabel("Другой вопрос")
+            }
+            .buttonStyle(PressableButtonStyle())
+        }
+        .padding(16)
+        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.champagne.opacity(0.32), lineWidth: 1))
+    }
+
     private var likedTitle: String {
         session.peer.isFemale ? String(localized: "Ждём её ответа") : String(localized: "Ждём его ответа")
     }
@@ -159,6 +230,21 @@ struct RouletteTextChatView: View {
     private var input: some View {
         let canSend = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return HStack(spacing: 8) {
+            Button {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    icebreakerDismissed = false
+                    icebreaker = RouletteIcebreakers.random(excluding: shownIcebreaker)
+                }
+            } label: {
+                Image(systemName: "lightbulb")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.champagne)
+                    .frame(width: 44, height: 44)
+                    .background(Color.champagne.opacity(0.12), in: Circle())
+                    .overlay(Circle().strokeBorder(Color.champagne.opacity(0.45), lineWidth: 1))
+            }
+            .buttonStyle(PressableButtonStyle())
+            .accessibilityLabel("Случайный вопрос")
             TextField("Сообщение", text: $draft, axis: .vertical)
                 .font(.app(.body))
                 .lineLimit(1...5)
@@ -228,5 +314,40 @@ private struct RouletteBubble: View {
             .opacity(message.isPending ? 0.6 : 1)
             if !message.isMine { Spacer(minLength: 60) }
         }
+    }
+}
+
+/// Вопросы, с которых легко начать разговор незнакомым людям, — вместо «привет, как дела».
+enum RouletteIcebreakers {
+    static let all: [String] = [
+        String(localized: "Если бы завтра был выходной без дел — как бы вы его провели?"),
+        String(localized: "Какое место в Таджикистане вы советуете увидеть каждому?"),
+        String(localized: "Что вас может рассмешить даже в плохой день?"),
+        String(localized: "Какое блюдо вы готовите лучше всего?"),
+        String(localized: "Чем вы занимались бы, если бы деньги не были важны?"),
+        String(localized: "Какую книгу или фильм вы пересматривали больше одного раза?"),
+        String(localized: "Утро или вечер — когда вы настоящий вы?"),
+        String(localized: "О каком путешествии вы мечтаете?"),
+        String(localized: "Что для вас идеальная первая встреча?"),
+        String(localized: "Чему вы научились за последний год?"),
+        String(localized: "Какая песня сейчас у вас в голове?"),
+        String(localized: "Что в людях вам нравится с первой минуты?"),
+        String(localized: "Плов дома или в чайхане — и почему?"),
+        String(localized: "Какой совет из детства вы помните до сих пор?"),
+        String(localized: "Чай или кофе — и какой именно?"),
+        String(localized: "Что вас вдохновляет в вашей работе или учёбе?"),
+        String(localized: "Какой праздник в году вы ждёте больше всего?"),
+        String(localized: "Горы или море?"),
+        String(localized: "Чем вы гордитесь, но редко рассказываете?"),
+        String(localized: "Какой была бы ваша суперсила?"),
+    ]
+
+    static func random(excluding current: String?) -> String {
+        all.filter { $0 != current }.randomElement() ?? all[0]
+    }
+
+    /// Первый вопрос разговора — постоянный для него, чтобы не прыгал при каждой перерисовке.
+    static func first(for sessionId: String) -> String {
+        all[Int(UInt(bitPattern: sessionId.hashValue) % UInt(all.count))]
     }
 }

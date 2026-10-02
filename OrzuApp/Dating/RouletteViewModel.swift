@@ -26,6 +26,12 @@ final class RouletteViewModel: ObservableObject {
     static let autoSearchDelay: TimeInterval = 3
     /// Видео собеседника первые секунды размыто — на случай неприятного сюрприза.
     static let videoRevealDelay: TimeInterval = 3
+    /// Через сколько поиска без результата предлагаем «Расширить» (макет «Долгий поиск»).
+    static let expandOfferAfter: TimeInterval = 45
+    /// Сколько после конца разговора ещё можно нажать «Нравится» — как на сервере (LIKE_AFTER_END_MS).
+    static let likeAfterEndWindow: TimeInterval = 5 * 60
+    /// Как часто обновлять «сейчас здесь N» на экранах выбора режима и поиска.
+    static let onlineRefreshInterval: TimeInterval = 10
     private static let typingVisibleFor: TimeInterval = 4
     private static let typingSendInterval: TimeInterval = 2
 
@@ -37,6 +43,12 @@ final class RouletteViewModel: ObservableObject {
     @Published private(set) var peerTypingUntil: Date?
     @Published private(set) var cityWaitSeconds = 15
     @Published private(set) var searchStartedAt = Date()
+    /// Поиск расширен кнопкой «Расширить»: возраст шире, сразу вся страна.
+    @Published private(set) var searchExpanded = false
+    /// Возраст, по которому сервер ищет сейчас (после расширения — шире, чем в «Кого ищу»).
+    @Published private(set) var searchAges: ClosedRange<Int>?
+    /// Когда закончился последний разговор — «Нравится» после него работает likeAfterEndWindow.
+    private var endedAt = Date.distantPast
     /// Короткое пояснение под полем ввода или кнопками (контакты нельзя, слишком часто…).
     @Published var notice: String?
     @Published var errorMessage: String?
@@ -46,6 +58,7 @@ final class RouletteViewModel: ObservableObject {
     let video = RouletteVideoEngine()
 
     private var autoSearchTask: Task<Void, Never>?
+    private var reminderUpdate: Task<Void, Never>?
     private var lastTypingSentAt = Date.distantPast
     /// Карточки пар из dating.match: сервер присылает её раньше, чем roulette.ended с matchId.
     private var recentMatches: [String: DatingMatch] = [:]
@@ -94,7 +107,10 @@ final class RouletteViewModel: ObservableObject {
     func loadStatus() async {
         do {
             let status = try await APIClient.shared.fetchRouletteStatus()
-            self.status = status
+            // Переключатель напоминания уже сменился у человека на глазах — пока запрос шёл, не откатываем его.
+            var fresh = status
+            if reminderUpdate != nil { fresh.reminder = self.status?.reminder }
+            self.status = fresh
             // Видео по умолчанию, если оно доступно; иначе — переписка.
             if !isInRoulette, !status.modes.video.available, status.modes.text.available { selectedMode = .text }
         } catch {
@@ -119,6 +135,53 @@ final class RouletteViewModel: ObservableObject {
         join(mode)
     }
 
+    /// Счётчик «сейчас здесь» — тихо, без сообщения об ошибке: экран и без него работает.
+    func refreshOnline() async {
+        guard let status = try? await APIClient.shared.fetchRouletteStatus() else { return }
+        var fresh = status
+        if reminderUpdate != nil { fresh.reminder = self.status?.reminder }
+        self.status = fresh
+    }
+
+    /// «Напомнить о вечере рулетки». Переключатель меняется сразу; не сохранилось — возвращается обратно.
+    func setReminder(_ enabled: Bool) {
+        let previous = status?.reminder
+        status?.reminder = enabled
+        reminderUpdate?.cancel()
+        reminderUpdate = Task { [weak self] in
+            do {
+                try await APIClient.shared.setRouletteReminder(enabled)
+            } catch {
+                guard !Task.isCancelled, let self else { return }
+                self.status?.reminder = previous
+                self.errorMessage = error.localizedDescription
+            }
+            self?.reminderUpdate = nil
+        }
+    }
+
+    /// «Подходящих пока нет → Расширить».
+    func expandSearch() {
+        guard case .searching = phase, !searchExpanded else { return }
+        guard WebSocketClient.shared.sendRoulette(["type": "roulette.expand"]) else {
+            notice = String(localized: "Нет подключения к интернету")
+            return
+        }
+        searchExpanded = true
+    }
+
+    /// Возраст после «Расширить» — тот же расчёт, что на сервере (EXPAND_AGE_YEARS, не младше 18).
+    var expandedAges: ClosedRange<Int>? {
+        guard let search = status?.search else { return nil }
+        return max(18, search.ageMin - 5)...min(100, search.ageMax + 5)
+    }
+
+    /// «Нравится» ещё можно нажать на экране «собеседник ушёл».
+    var canLikeAfterEnd: Bool {
+        guard case .ended(_, let reported, _) = phase, !reported else { return false }
+        return Date().timeIntervalSince(endedAt) < Self.likeAfterEndWindow
+    }
+
     /// «Далее» — и в разговоре, и на экране «собеседник ушёл».
     func next() {
         guard let mode = currentMode else { return }
@@ -136,7 +199,7 @@ final class RouletteViewModel: ObservableObject {
     }
 
     func like() {
-        guard case .talking(let session) = phase, !liked else { return }
+        guard let session = activeSession ?? (canLikeAfterEnd ? reportableSession : nil), !liked else { return }
         guard WebSocketClient.shared.sendRoulette(["type": "roulette.like", "sessionId": session.id]) else { return }
         liked = true
     }
@@ -208,10 +271,12 @@ final class RouletteViewModel: ObservableObject {
 
     private func handle(event: ServerEvent) {
         switch event {
-        case .rouletteWaiting(let mode, let cityWait):
+        case .rouletteWaiting(let mode, let cityWait, let expanded, let ageMin, let ageMax):
             // Поиск на экране начинает join(); запоздалое событие (мы уже вышли или разговариваем) экран не меняет.
             guard phase == .searching(mode: mode) else { return }
             cityWaitSeconds = cityWait
+            searchExpanded = expanded
+            if let ageMin, let ageMax, ageMin <= ageMax { searchAges = ageMin...ageMax }
 
         case .rouletteMatched(let sessionId, let mode, let peer, let initiator):
             // Собеседник нашёлся, когда мы уже нажали «Стоп» (сообщения разминулись) — сервер должен узнать, что нас нет.
@@ -239,12 +304,23 @@ final class RouletteViewModel: ObservableObject {
                 showEnded(session, reported: false)
             }
 
+        case .roulettePaired(let sessionId, let matchId, _):
+            // Ещё на экране «собеседник ушёл» этого разговора — показываем пару; уже с другим — только подсказка.
+            if case .ended(let session, _, _) = phase, session.id == sessionId {
+                cancelAutoSearch()
+                video.stop()
+                phase = .matched(session, match: recentMatches[matchId])
+                if recentMatches[matchId] == nil { Task { await loadMatch(id: matchId, for: session) } }
+            } else if isInRoulette {
+                notice = String(localized: "Симпатия из прошлого разговора взаимна — пара уже в «Чатах»")
+            }
+
         case .datingMatch(let match):
             recentMatches[match.id] = match
             if case .matched(let session, nil) = phase { phase = .matched(session, match: match) }
 
         case .rouletteLiked(let sessionId):
-            if activeSession?.id == sessionId { liked = true }
+            if reportableSession?.id == sessionId { liked = true }
 
         case .rouletteMessage(let sessionId, let message):
             guard activeSession?.id == sessionId else { return }
@@ -307,12 +383,15 @@ final class RouletteViewModel: ObservableObject {
             return
         }
         searchStartedAt = Date()
+        searchExpanded = false
+        searchAges = status?.search.map { $0.ageMin...$0.ageMax }
         phase = .searching(mode: mode)
     }
 
     private func showEnded(_ session: Session, reported: Bool) {
         cancelAutoSearch()
         let at = Date().addingTimeInterval(Self.autoSearchDelay)
+        if case .talking = phase { endedAt = Date() }
         phase = .ended(session, reported: reported, autoSearchAt: at)
         // Жалоба ещё открыта — отсчёт начнётся, когда её закроют (resumeAutoSearch).
         guard reportTarget == nil else { return }

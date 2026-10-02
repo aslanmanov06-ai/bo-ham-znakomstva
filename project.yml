@@ -96,6 +96,8 @@ targets:
         # Общие с расширением уведомлений: id вошедшего и ключи собеседников (App Group), приватный ключ (Keychain).
         com.apple.security.application-groups: [group.com.orzuapp.messenger]
         keychain-access-groups: ["$(AppIdentifierPrefix)com.orzuapp.messenger.shared"]
+        # Рулетка: iPhone сам скрывает откровенное видео собеседника (SensitiveContentAnalysis, iOS 26+).
+        com.apple.developer.sensitivecontentanalysis.client: [analysis]
     # AppConfig.apiBaseURL указывает на https-домен с валидным сертификатом, а ATS не блокирует
     # http://localhost для отладки через SSH-туннель — исключение здесь не нужно. Если решите
     # открыть backend по обычному http на внешнем IP/домене без TLS, верните сюда

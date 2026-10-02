@@ -365,10 +365,23 @@ extension APIClient {
     }
 
     /// Жалоба на собеседника — во время разговора или после него. Разговор сервер сразу заканчивает.
+    /// «Напомнить о вечере рулетки».
+    func setRouletteReminder(_ enabled: Bool) async throws {
+        let _: RouletteReminderResponse = try await request(path: "/roulette/reminder", method: "PUT", body: RouletteReminderRequest(enabled: enabled), authorized: true)
+    }
+
     func reportRoulette(sessionId: String, category: ReportCategory, comment: String?) async throws {
         let body = RouletteReportBody(category: category, comment: comment)
         let _: EmptyResponse = try await request(path: "/roulette/sessions/\(sessionId)/report", method: "POST", body: body, authorized: true)
     }
+}
+
+private struct RouletteReminderRequest: Encodable {
+    let enabled: Bool
+}
+
+private struct RouletteReminderResponse: Decodable {
+    let reminder: Bool
 }
 
 private struct RouletteReportBody: Encodable {

@@ -63,6 +63,8 @@ final class PushManager: NSObject, ObservableObject {
     @Published var pendingSelfieRequest = false
     /// Push «Вас лайкнули» — открыть знакомства и список лайкнувших.
     @Published var pendingLikedMe = false
+    /// Push «Вечер рулетки» — открыть вкладку «Рулетка».
+    @Published var pendingRoulette = false
     /// Открыли ссылку на человека или канал. Ждёт, пока пользователь войдёт, — потом её разберут вкладки.
     @Published var pendingDeepLink: DeepLink?
 
@@ -147,12 +149,14 @@ extension PushManager: UNUserNotificationCenterDelegate {
         let dating = chatId == nil && (info["introId"] != nil || info["meetingId"] != nil || info["matchId"] != nil)
         let selfieRequest = info["moderation"] as? String == "dating.selfieRequested"
         let likedMe = info["type"] as? String == "dating.liked"
+        let roulette = info["type"] as? String == "roulette.reminder"
         await MainActor.run {
             self.pendingChatId = chatId
             self.pendingSosId = sosId
             self.pendingDating = dating || likedMe
             if selfieRequest { self.pendingSelfieRequest = true }
             if likedMe { self.pendingLikedMe = true }
+            if roulette { self.pendingRoulette = true }
         }
     }
 }

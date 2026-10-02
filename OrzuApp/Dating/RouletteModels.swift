@@ -61,10 +61,41 @@ struct RouletteStatus: Decodable, Hashable {
         let cityCode: String
     }
 
+    struct Online: Decodable, Hashable {
+        let text: Int
+        let video: Int
+
+        private enum CodingKeys: String, CodingKey {
+            case text = "TEXT"
+            case video = "VIDEO"
+        }
+
+        var total: Int { text + video }
+
+        func count(of mode: RouletteMode) -> Int {
+            mode == .video ? video : text
+        }
+    }
+
+    /// Часы «вечера рулетки» по местному времени: [from, to).
+    struct Evening: Decodable, Hashable {
+        let from: Int
+        let to: Int
+
+        /// «20:00–23:00».
+        var range: String {
+            String(format: "%02d:00–%02d:00", from, to % 24)
+        }
+    }
+
     let modes: Modes
     let bannedUntil: Date?
     let search: Search?
     let cityWaitSeconds: Int
+    /// Сколько людей сейчас ищут и разговаривают. nil — сервер старее приложения.
+    let online: Online?
+    let evening: Evening?
+    var reminder: Bool?
 
     func availability(of mode: RouletteMode) -> Availability {
         mode == .video ? modes.video : modes.text

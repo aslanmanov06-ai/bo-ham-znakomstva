@@ -205,6 +205,12 @@ private struct MainTabView: View {
             selection = .dating
             push.pendingDating = false
         }
+        // «Вечер рулетки» — сразу во вкладку рулетки.
+        .onChange(of: push.pendingRoulette) { _, pending in
+            guard pending else { return }
+            selection = .roulette
+            push.pendingRoulette = false
+        }
         // Просьба модератора о селфи открывается в «Моём профиле».
         .onChange(of: push.pendingSelfieRequest) { _, pending in
             if pending { selection = .profile }

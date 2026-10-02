@@ -20,19 +20,94 @@ struct RouletteVideoView: View {
             LinearGradient(colors: [.clear, .black.opacity(0.7)], startPoint: .center, endPoint: .bottom)
                 .allowsHitTesting(false)
             if !isRevealed { revealNotice }
-            VStack(spacing: 0) {
-                topBar
-                Spacer()
-                tools
-                    .padding(.bottom, 22)
-                mainButtons
-                    .padding(.bottom, 24)
+            if engine.isSensitiveHidden {
+                sensitiveCover
+            } else {
+                VStack(spacing: 0) {
+                    topBar
+                    if let notice = roulette.notice {
+                        Text(notice)
+                            .font(.app(.footnote, weight: .medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.45), in: Capsule())
+                            .padding(.top, 10)
+                            .transition(.opacity)
+                    }
+                    Spacer()
+                    tools
+                        .padding(.bottom, 22)
+                    mainButtons
+                        .padding(.bottom, 24)
+                }
+                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, 16)
         }
+        .animation(.easeInOut(duration: 0.2), value: engine.isSensitiveHidden)
         .background(Color.black)
         .environment(\.colorScheme, .dark)
         .task(id: session.id) { await reveal() }
+    }
+
+    // MARK: - Откровенное видео
+
+    /// Макет «Откровенное видео скрыто»: iPhone скрыл видео на устройстве, человек решает, что дальше.
+    private var sensitiveCover: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(places.peerLine(session.peer))
+                    .font(.app(.subheadline, weight: .semibold))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.white.opacity(0.14), in: Capsule())
+                Spacer()
+            }
+            .padding(.top, 14)
+            Spacer()
+            VStack(spacing: 12) {
+                Image(systemName: "eye.slash")
+                    .font(.system(size: 32, weight: .medium))
+                    .frame(width: 76, height: 76)
+                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                Text("Видео может быть откровенным")
+                    .font(.display(size: 21))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 6)
+                Text("iPhone скрыл его прямо на устройстве — мы ничего не видим и не сохраняем. Вы решаете, что дальше.")
+                    .font(.app(.subheadline))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 12)
+            Spacer()
+            VStack(spacing: 10) {
+                Button {
+                    roulette.next()
+                } label: {
+                    Label("Следующий собеседник", systemImage: "shuffle")
+                }
+                .buttonStyle(.appPrimary)
+                Button {
+                    roulette.beginReport()
+                } label: {
+                    Label("Пожаловаться и завершить", systemImage: "flag")
+                        .font(.app(.callout, weight: .semibold))
+                        .frame(maxWidth: .infinity, minHeight: AppMetrics.buttonHeight)
+                        .background(.white.opacity(0.14), in: Capsule())
+                }
+                .buttonStyle(PressableButtonStyle())
+                Button("Всё равно показать") { engine.showSensitiveVideo() }
+                    .font(.app(.subheadline, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.65))
+                    .padding(10)
+            }
+            .padding(.bottom, 24)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 20)
+        .background(Color.black.opacity(0.55))
     }
 
     // MARK: - Видео
@@ -51,7 +126,7 @@ struct RouletteVideoView: View {
                 RTCVideoRenderView(track: engine.remoteTrack)
             }
         }
-        .blur(radius: isRevealed ? 0 : 24)
+        .blur(radius: engine.isSensitiveHidden ? 40 : isRevealed ? 0 : 24)
         .scaleEffect(isRevealed ? 1 : 1.1)
         .clipped()
         .ignoresSafeArea()
