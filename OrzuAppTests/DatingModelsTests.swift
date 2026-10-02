@@ -247,11 +247,22 @@ final class DatingModelsTests: XCTestCase {
     }
 
     func testPeopleCountDeclension() {
-        XCTAssertEqual(LikedMeBanner.peopleCount(1), "1 человек")
-        XCTAssertEqual(LikedMeBanner.peopleCount(3), "3 человека")
-        XCTAssertEqual(LikedMeBanner.peopleCount(5), "5 человек")
-        XCTAssertEqual(LikedMeBanner.peopleCount(12), "12 человек")
-        XCTAssertEqual(LikedMeBanner.peopleCount(22), "22 человека")
+        XCTAssertEqual(LikedMeChip.peopleCount(1), "1 человек")
+        XCTAssertEqual(LikedMeChip.peopleCount(3), "3 человека")
+        XCTAssertEqual(LikedMeChip.peopleCount(5), "5 человек")
+        XCTAssertEqual(LikedMeChip.peopleCount(12), "12 человек")
+        XCTAssertEqual(LikedMeChip.peopleCount(22), "22 человека")
+    }
+
+    func testIntrosLeftDeclension() {
+        func limits(_ left: Int) -> DailyLimits {
+            DailyLimits(likesPerDay: 50, likesLeft: 10, introsPerDay: 5, introsLeft: left, resetsAt: Date())
+        }
+        XCTAssertEqual(limits(1).introsLeftText, "Сегодня можно написать ещё 1 раз. Новые — в полночь.")
+        XCTAssertEqual(limits(4).introsLeftText, "Сегодня можно написать ещё 4 раза. Новые — в полночь.")
+        XCTAssertEqual(limits(5).introsLeftText, "Сегодня можно написать ещё 5 раз. Новые — в полночь.")
+        XCTAssertEqual(limits(12).introsLeftText, "Сегодня можно написать ещё 12 раз. Новые — в полночь.")
+        XCTAssertEqual(limits(0).introsLeftText, "Сегодня сообщения закончились — новые появятся в полночь.")
     }
 
     // MARK: - Новые поля анкеты: старый сервер их не присылает, и разбор не должен ломаться

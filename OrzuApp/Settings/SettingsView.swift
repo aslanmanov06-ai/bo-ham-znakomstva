@@ -1,15 +1,24 @@
 import SwiftUI
 
-/// Аккаунт и приложение: открываются шестерёнкой из «Моего профиля», модель у них общая.
+/// Профиль, знакомства, аккаунт и приложение: открываются кнопкой «Настройки» из профиля, модель у них общая.
 struct SettingsView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @ObservedObject var viewModel: SettingsViewModel
     @ObservedObject var dating: DatingViewModel
     @State private var confirmLogout = false
+    @State private var displayName = ""
+    @State private var showPreview = false
+    @State private var showSelfie = false
+    @State private var showSafety = false
+    @State private var datingSettingsError: String?
 
     var body: some View {
         Form {
             if let settings = viewModel.settings {
+                profileSection(settings)
+                if dating.stage == .ready {
+                    datingSection
+                }
                 Section("Аккаунт") {
                     NavigationLink { MyDataView(viewModel: viewModel, dating: dating) } label: {
                         SettingsLabel(String(localized: "Мои данные"), systemImage: "person.text.rectangle.fill", color: .brand)
@@ -95,12 +104,120 @@ struct SettingsView: View {
         .confirmationDialog("Выйти из аккаунта?", isPresented: $confirmLogout, titleVisibility: .visible) {
             Button("Выйти", role: .destructive) { Task { await authViewModel.logout() } }
         }
+        .onAppear { displayName = viewModel.settings?.displayName ?? "" }
+        .onChange(of: viewModel.settings?.displayName) { _, name in displayName = name ?? "" }
+        .sheet(isPresented: $showPreview) {
+            NavigationStack { DatingProfilePreviewView(catalog: dating.catalog) }
+        }
+        .sheet(isPresented: $showSelfie) {
+            NavigationStack { SelfieVerificationView(dating: dating) }
+        }
+        .sheet(isPresented: $showSafety) {
+            NavigationStack { SafetyView() }
+        }
+        .alert("Ошибка", isPresented: .constant(datingSettingsError != nil)) {
+            Button("Ок") { datingSettingsError = nil }
+        } message: {
+            Text(datingSettingsError ?? "")
+        }
+    }
+
+    /// Имя, логин и ссылка на профиль — то, что видят другие.
+    private func profileSection(_ settings: AccountSettings) -> some View {
+        Section("Профиль") {
+            TextField("Имя", text: $displayName)
+                .submitLabel(.done)
+                .onSubmit { Task { await viewModel.saveDisplayName(displayName) } }
+            if displayName.trimmingCharacters(in: .whitespaces) != settings.displayName && !displayName.isEmpty {
+                Button("Сохранить имя") { Task { await viewModel.saveDisplayName(displayName) } }
+            }
+            NavigationLink { UsernameSettingsView(viewModel: viewModel, current: settings.username) } label: {
+                LabeledContent("Логин", value: "@\(settings.username)")
+            }
+            // Ссылка откроет вашу карточку в приложении у того, у кого оно стоит, и страницу на сайте — у остальных.
+            ShareLink(item: DeepLink.user(username: settings.username).url) {
+                Label("Поделиться профилем", systemImage: "square.and.arrow.up")
+            }
+        }
+    }
+
+    /// Всё о знакомствах, кроме самой анкеты и «Кого ищу» (они на экране профиля).
+    private var datingSection: some View {
+        Section {
+            Button { showPreview = true } label: {
+                SettingsLabel(String(localized: "Как меня видят"), systemImage: "eye.fill", color: .brand)
+            }
+            Button { showSelfie = true } label: {
+                LabeledContent {
+                    Text(selfieStatus)
+                } label: {
+                    SettingsLabel(String(localized: "Проверка по селфи"), systemImage: "checkmark.seal.fill", color: .champagne)
+                }
+            }
+            Button { showSafety = true } label: {
+                LabeledContent {
+                    Text("Контакты и SOS")
+                } label: {
+                    SettingsLabel(String(localized: "Безопасность"), systemImage: "shield.lefthalf.filled", color: .champagne)
+                }
+            }
+            Toggle(isOn: Binding(get: { dating.profile?.hasLocation ?? false }, set: { enabled in save { try await dating.setShowsDistance(enabled) } })) {
+                SettingsLabel(String(localized: "Расстояние до анкет"), systemImage: "location.fill", color: .brand)
+            }
+            .tint(DatingStyle.rose)
+            Toggle(isOn: Binding(get: { dating.profile?.hidden ?? false }, set: { hidden in save { try await dating.setHidden(hidden) } })) {
+                SettingsLabel(String(localized: "Скрыть анкету"), systemImage: "eye.slash.fill", color: .champagne)
+            }
+            .tint(DatingStyle.rose)
+            if let incognito = dating.incognito {
+                Toggle(isOn: Binding(get: { incognito }, set: { enabled in save { try await dating.setIncognito(enabled) } })) {
+                    SettingsLabel(String(localized: "Инкогнито"), systemImage: "theatermasks.fill", color: .brand)
+                }
+                .tint(DatingStyle.rose)
+            }
+            if let showActivity = dating.showActivity {
+                Toggle(isOn: Binding(get: { showActivity }, set: { enabled in save { try await dating.setShowActivity(enabled) } })) {
+                    SettingsLabel(String(localized: "Показывать, когда я в сети"), systemImage: "clock.fill", color: .champagne)
+                }
+                .tint(DatingStyle.rose)
+            }
+        } header: {
+            Text("Знакомства")
+        } footer: {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Расстояние видно только тем, у кого оно тоже включено. Точное место не хранится — только район около километра. Скрытую анкету не видят в ленте, а чаты и пары остаются.")
+                if dating.incognito != nil {
+                    Text("Инкогнито: анкету видят только те, кого вы лайкнули. Новых людей, которые сами найдут вас, станет меньше.")
+                }
+                if dating.showActivity != nil {
+                    Text("Если выключить, другие не увидят, что вы в сети или заходили сегодня.")
+                }
+            }
+        }
+        .tint(.primary)
+    }
+
+    private var selfieStatus: String {
+        if dating.selfieRequested { return String(localized: "Нужно новое селфи") }
+        if dating.needsSelfie { return dating.selfiePending ? String(localized: "На проверке") : String(localized: "Не пройдена") }
+        return String(localized: "Пройдена")
+    }
+
+    /// Переключатель знакомств: ошибку сервера показываем, а сам переключатель вернётся к значению из анкеты.
+    private func save(_ change: @escaping () async throws -> Void) {
+        Task {
+            do {
+                try await change()
+            } catch {
+                datingSettingsError = error.localizedDescription
+            }
+        }
     }
 
     private static let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
 }
 
-/// Строка настроек: значок фирменного цвета на лёгкой подложке того же цвета. Общая для «Моего профиля» и настроек.
+/// Строка настроек: значок фирменного цвета на лёгкой подложке того же цвета. Общая для профиля и настроек.
 struct SettingsLabel: View {
     let title: String
     let systemImage: String
@@ -194,7 +311,7 @@ struct UsernameSettingsView: View {
                     TextField("username", text: $username)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        // Сервер хранит username строчными — показываем сразу так, как он сохранится.
+                        // Сервер хранит логин строчными — показываем сразу так, как он сохранится.
                         .onChange(of: username) { username = username.lowercased() }
                         .submitLabel(.done)
                         .onSubmit(save)
@@ -203,7 +320,7 @@ struct UsernameSettingsView: View {
                 if !username.isEmpty && !UsernameRules.isValid(username) {
                     Text("3–32 символа: латинские буквы, цифры и «_».").foregroundStyle(.red)
                 } else {
-                    Text("По username вас находят в мессенджере и знакомствах, им же входят в приложение. Старый username освободится, и его сможет занять другой человек.")
+                    Text("По логину вас находят в мессенджере и знакомствах, им же входят в приложение. Старый логин освободится, и его сможет занять другой человек.")
                 }
             }
             Button("Сохранить", action: save)
@@ -214,7 +331,7 @@ struct UsernameSettingsView: View {
             }
         }
         .appScreenBackground()
-        .navigationTitle("Имя пользователя")
+        .navigationTitle("Логин")
         .onAppear { username = current }
     }
 

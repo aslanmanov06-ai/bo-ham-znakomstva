@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// Корень вкладки «Анкеты»: все анкеты нужного пола сеткой, с фильтрами и поиском по @username.
+/// Корень вкладки «Поиск»: все анкеты нужного пола сеткой, с фильтрами и поиском по @username.
 struct DatingBrowseTabView: View {
     @ObservedObject var dating: DatingViewModel
 
     var body: some View {
-        DatingGate(dating: dating, title: String(localized: "Анкеты")) {
+        DatingGate(dating: dating, title: String(localized: "Поиск")) {
             DatingBrowseView(dating: dating)
         }
     }
@@ -21,96 +21,201 @@ struct DatingBrowseView: View {
     /// Что сделать, когда окно поиска закроется: второе окно поверх закрывающегося SwiftUI не покажет.
     @State private var afterUsernameSearch: (() -> Void)?
     @State private var detailCard: DatingBrowseCard?
+    /// Подсказку «фильтр — только здесь» закрывают крестиком, и она больше не появляется.
+    @AppStorage("dating.browseHintClosed") private var hintClosed = false
 
     private let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
 
     var body: some View {
-        content
-            .background(DatingBackdrop())
-            .toolbar { toolbarContent }
-            // Фильтры поменяли здесь или «Кого ищу» в «Моём профиле» — сетка собирается заново.
-            .task(id: ReloadKey(filters: browse.filters, revision: dating.searchSettingsRevision)) { await browse.reload() }
-            .task {
-                // Разрешили — сетка перезагрузится уже с «N км»: setShowsDistance меняет searchSettingsRevision.
-                do {
-                    try await dating.askForDistanceIfUndecided()
-                } catch {
-                    // Ушли с вкладки, пока шёл запрос, — это не ошибка.
-                    guard !Task.isCancelled else { return }
-                    browse.errorMessage = error.localizedDescription
+        VStack(spacing: 0) {
+            header
+            if !hintClosed {
+                hint
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 10)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+            filterBar
+                .padding(.bottom, 6)
+            content
+                .frame(maxHeight: .infinity)
+        }
+        .animation(DatingStyle.spring, value: hintClosed)
+        .background(DatingBackdrop())
+        .toolbar(.hidden, for: .navigationBar)
+        // Фильтры поменяли здесь или «Кого ищу» в профиле — сетка собирается заново.
+        .task(id: ReloadKey(filters: browse.filters, revision: dating.searchSettingsRevision)) { await browse.reload() }
+        .task {
+            // Разрешили — сетка перезагрузится уже с «N км»: setShowsDistance меняет searchSettingsRevision.
+            do {
+                try await dating.askForDistanceIfUndecided()
+            } catch {
+                // Ушли с вкладки, пока шёл запрос, — это не ошибка.
+                guard !Task.isCancelled else { return }
+                browse.errorMessage = error.localizedDescription
+            }
+        }
+        .sheet(isPresented: $showFilters) {
+            NavigationStack {
+                DatingBrowseFiltersView(filters: browse.filters, catalog: dating.catalog, countryCode: dating.profile?.shared.countryCode, lookingFor: dating.lookingFor) {
+                    browse.apply($0)
                 }
             }
-            .sheet(isPresented: $showFilters) {
-                NavigationStack {
-                    DatingBrowseFiltersView(filters: browse.filters, catalog: dating.catalog, countryCode: dating.profile?.shared.countryCode, lookingFor: dating.lookingFor) {
-                        browse.apply($0)
-                    }
+        }
+        .sheet(isPresented: $showUsernameSearch, onDismiss: {
+            afterUsernameSearch?()
+            afterUsernameSearch = nil
+        }) {
+            NavigationStack {
+                DatingUsernameSearchView(catalog: dating.catalog) { card, action in
+                    afterUsernameSearch = { handleSearchResult(card, action) }
+                    showUsernameSearch = false
                 }
             }
-            .sheet(isPresented: $showUsernameSearch, onDismiss: {
-                afterUsernameSearch?()
-                afterUsernameSearch = nil
-            }) {
-                NavigationStack {
-                    DatingUsernameSearchView(catalog: dating.catalog) { card, action in
-                        afterUsernameSearch = { handleSearchResult(card, action) }
-                        showUsernameSearch = false
-                    }
-                }
+        }
+        .sheet(item: $detailCard) { item in
+            NavigationStack {
+                DatingProfileDetailView(
+                    profile: item.card.profile,
+                    catalog: dating.catalog,
+                    compatibility: item.card.compatibility,
+                    viewer: dating.profile?.shared,
+                    // Уже лайкнули — второй лайк ничего не изменит, кнопку не показываем.
+                    onLike: item.liked ? nil : { Task { await browse.like(item.card) } },
+                    onIntro: { PushManager.shared.openConversation(with: item.card.profile) }
+                )
             }
-            .sheet(item: $detailCard) { item in
-                NavigationStack {
-                    DatingProfileDetailView(
-                        profile: item.card.profile,
-                        catalog: dating.catalog,
-                        compatibility: item.card.compatibility,
-                        viewer: dating.profile?.shared,
-                        // Уже лайкнули — второй лайк ничего не изменит, кнопку не показываем.
-                        onLike: item.liked ? nil : { Task { await browse.like(item.card) } },
-                        onIntro: { PushManager.shared.openConversation(with: item.card.profile) }
-                    )
-                }
+        }
+        .fullScreenCover(item: $browse.newMatch) { match in
+            MatchCelebrationView(match: match, myPhotoId: dating.profile?.shared.photoIds.first) {
+                browse.newMatch = nil
             }
-            .fullScreenCover(item: $browse.newMatch) { match in
-                MatchCelebrationView(match: match, myPhotoId: dating.profile?.shared.photoIds.first) {
-                    browse.newMatch = nil
-                }
-            }
-            .alert("Ошибка", isPresented: .constant(browse.errorMessage != nil)) {
-                Button("Ок") { browse.errorMessage = nil }
-            } message: {
-                Text(browse.errorMessage ?? "")
-            }
+        }
+        .alert("Ошибка", isPresented: .constant(browse.errorMessage != nil)) {
+            Button("Ок") { browse.errorMessage = nil }
+        } message: {
+            Text(browse.errorMessage ?? "")
+        }
     }
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .navigationBarTrailing) {
+    private var header: some View {
+        HStack {
+            Text("Поиск")
+                .font(.display(size: 30, weight: .bold))
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
             Button {
                 showUsernameSearch = true
             } label: {
                 Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .background(Color.appSurface, in: Circle())
+                    .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("Найти по @username")
-
-            Button {
-                showFilters = true
-            } label: {
-                Image(systemName: browse.filters.activeCount > 0 ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                    .overlay(alignment: .topTrailing) {
-                        if browse.filters.activeCount > 0 {
-                            Text("\(browse.filters.activeCount)")
-                                .font(.app(.caption2, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 5)
-                                .frame(minWidth: 16, minHeight: 16)
-                                .background(DatingStyle.rose, in: Capsule())
-                                .offset(x: 9, y: -7)
-                        }
-                    }
-            }
-            .accessibilityLabel(browse.filters.activeCount > 0 ? "Фильтры, выбрано: \(browse.filters.activeCount)" : "Фильтры")
         }
+        .padding(.leading, 20)
+        .padding(.trailing, 16)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
+    }
+
+    /// Чем «Поиск» отличается от ленты: люди путали фильтр здесь с «Кого ищу».
+    private var hint: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.brand)
+                .padding(.top, 1)
+            Text("Все анкеты — ищите сами по фильтрам. Фильтр действует только здесь: на ленту «Знакомства» он не влияет.")
+                .font(.app(.subheadline))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                hintClosed = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Закрыть подсказку")
+        }
+        .padding(.leading, 14)
+        .padding(.trailing, 8)
+        .padding(.vertical, 12)
+        .background(Color.brandSoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.brand.opacity(0.4), lineWidth: 1))
+    }
+
+    /// «Фильтр · 4» и чипы того, что выбрано, — видно, почему в сетке именно эти люди.
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Button {
+                    showFilters = true
+                } label: {
+                    Label {
+                        Text(browse.filters.activeCount > 0 ? "Фильтр · \(browse.filters.activeCount)" : "Фильтр")
+                    } icon: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .font(.app(.subheadline, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .frame(height: 38)
+                    .background(.brandFill, in: Capsule())
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityLabel(browse.filters.activeCount > 0 ? "Фильтры, выбрано: \(browse.filters.activeCount)" : "Фильтры")
+
+                ForEach(filterChips, id: \.self) { chip in
+                    Button {
+                        showFilters = true
+                    } label: {
+                        Text(chip)
+                            .font(.app(.subheadline, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 14)
+                            .frame(height: 38)
+                            .background(Color.appSurface, in: Capsule())
+                            .overlay(Capsule().strokeBorder(Color.appLine, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+    }
+
+    /// Самые понятные из выбранных фильтров: возраст, город, расстояние, дети.
+    private var filterChips: [String] {
+        let filters = browse.filters
+        var chips: [String] = []
+        switch (filters.ageMin, filters.ageMax) {
+        case let (min?, max?): chips.append(String(localized: "\(min)–\(max) лет"))
+        case let (min?, nil): chips.append(String(localized: "от \(min) лет"))
+        case let (nil, max?): chips.append(String(localized: "до \(max) лет"))
+        case (nil, nil): break
+        }
+        if let cityCode = filters.cityCode {
+            let countryCode = dating.profile?.shared.countryCode ?? ""
+            chips.append(dating.catalog?.cityName(countryCode: countryCode, cityCode: cityCode) ?? cityCode)
+        }
+        if let distance = filters.maxDistanceKm {
+            chips.append(String(localized: "до \(distance) км"))
+        }
+        switch filters.children {
+        case "NONE": chips.append(String(localized: "Без детей"))
+        case "HAS": chips.append(String(localized: "С детьми"))
+        default: break
+        }
+        return chips
     }
 
     @ViewBuilder
@@ -216,7 +321,7 @@ private struct DatingBrowseTile: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
                 Text("\(profile.displayName), \(profile.age)")
-                    .font(.display(.subheadline))
+                    .font(.display(size: 17, weight: .bold))
                     .lineLimit(1)
                 if profile.verified {
                     VerifiedBadge()

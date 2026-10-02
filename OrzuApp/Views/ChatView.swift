@@ -4,6 +4,8 @@ import SwiftUI
 
 struct ChatView: View {
     @StateObject var viewModel: ChatViewModel
+    /// Чат пары: плашка «Вы пара · ступень…» открывает страницу пары («Путь к браку», встречи).
+    var onOpenPair: (() -> Void)? = nil
     let onLeftChat: () -> Void
     @State private var draft = ""
     @State private var showGroupInfo = false
@@ -450,12 +452,25 @@ struct ChatView: View {
                     .background(Color.champagneSoft, in: Capsule())
             }
             if let stage = viewModel.pairStageName {
-                Label("Вы пара · ступень «\(stage)» на пути к браку", systemImage: "heart.fill")
+                Button {
+                    onOpenPair?()
+                } label: {
+                    HStack(spacing: 6) {
+                        Label("Вы пара · ступень «\(stage)» на пути к браку", systemImage: "heart.fill")
+                        if onOpenPair != nil {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                    }
                     .font(.app(.caption, weight: .semibold))
                     .foregroundStyle(Color.champagne)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(Color.champagneSoft, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(onOpenPair == nil)
+                .accessibilityHint(onOpenPair == nil ? "" : String(localized: "Открыть «Путь к браку» и встречи"))
             }
             if let pinned = viewModel.pinnedMessage {
                 pinnedBanner(for: pinned)

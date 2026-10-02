@@ -159,6 +159,7 @@
 		F28C1AACE23CFAABE1AB7105 /* Presence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744A61C49A8BDDB112999B42 /* Presence.swift */; };
 		F41DDB6AE0A2B326B073CA0A /* SafetyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */; };
 		F47A69424CB61146A7E802F0 /* MyProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77530A50A68F3251CA0DC4A7 /* MyProfileView.swift */; };
+		ACF0359CFFF55ACA3BE1672D /* HowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A76D62A6CB1FC77ED831B3F0 /* HowItWorksView.swift */; };
 		F7F0B003AB53FC894FE6A32E /* DatingFormControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AB7B67F1877B6FEAD4A150 /* DatingFormControls.swift */; };
 		F86BC9F7339C8F37A49AA75E /* BotsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D94084A8749FDD46A4B779 /* BotsViewModel.swift */; };
 		F9D79794ACC783E0C190696C /* MeetingComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18C36179D46B5DDC90BB75D /* MeetingComposerView.swift */; };
@@ -245,6 +246,7 @@
 		744A61C49A8BDDB112999B42 /* Presence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presence.swift; sourceTree = "<group>"; };
 		75D18274BBB612E554469D55 /* EmailCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailCodeView.swift; sourceTree = "<group>"; };
 		77530A50A68F3251CA0DC4A7 /* MyProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyProfileView.swift; sourceTree = "<group>"; };
+		A76D62A6CB1FC77ED831B3F0 /* HowItWorksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowItWorksView.swift; sourceTree = "<group>"; };
 		7BB2B296E3CD7064AAB6E822 /* WebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketClient.swift; sourceTree = "<group>"; };
 		80102AFA05181C0EEF0B35B3 /* RTCVideoRenderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTCVideoRenderView.swift; sourceTree = "<group>"; };
 		80DE5251EBE30A78FFC16F08 /* CallManager+CallKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CallManager+CallKit.swift"; sourceTree = "<group>"; };
@@ -605,6 +607,7 @@
 				739248B839FE10422BFD8734 /* AccountRemovalView.swift */,
 				6950DA3BCFA23ECE1C35337B /* AppearanceSettings.swift */,
 				A41462F6591777C1D6C54E0F /* LegalDocumentView.swift */,
+				A76D62A6CB1FC77ED831B3F0 /* HowItWorksView.swift */,
 				77530A50A68F3251CA0DC4A7 /* MyProfileView.swift */,
 				D9580CCDC18A73F00940D201 /* NotificationSettingsView.swift */,
 				0B38AEC8926E73B50EC50474 /* SessionsView.swift */,
@@ -839,6 +842,7 @@
 				3645C8DB6E7444983058681E /* MessageOutbox.swift in Sources */,
 				85AC882D58DFFDBD110E6B77 /* MessageSearchView.swift in Sources */,
 				F47A69424CB61146A7E802F0 /* MyProfileView.swift in Sources */,
+				ACF0359CFFF55ACA3BE1672D /* HowItWorksView.swift in Sources */,
 				22CDA9B351F3D61FB1E8D54B /* NetworkMonitor.swift in Sources */,
 				2400587B4B22F1D5CB6D4FC8 /* NewChannelView.swift in Sources */,
 				73B31B11B045818405B8F4D8 /* NewChatView.swift in Sources */,

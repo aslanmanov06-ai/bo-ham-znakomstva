@@ -30,6 +30,8 @@ struct GoogleRegistrationView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
+                        RegistrationSteps(current: 1)
+                            .padding(.top, 6)
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Почти готово")
                                 .font(.display(size: 22))
@@ -53,11 +55,11 @@ struct GoogleRegistrationView: View {
                             }
                         }
 
-                        LabeledAppField(title: "Username", hint: String(localized: "По нему вас найдут в поиске."), error: usernameError) {
-                            TextField("латиница, цифры и «_»", text: $username)
+                        LabeledAppField(title: String(localized: "Логин"), hint: String(localized: "Латиница, цифры и «_». По логину вас можно найти и войти в приложение."), error: usernameError) {
+                            TextField("например, madina_k", text: $username)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                // Сервер хранит username строчными — показываем сразу так, как он сохранится.
+                                // Сервер хранит логин строчными — показываем сразу так, как он сохранится.
                                 .onChange(of: username) {
                                     usernameError = nil
                                     username = username.lowercased()
@@ -67,7 +69,7 @@ struct GoogleRegistrationView: View {
                             TextField("Как к вам обращаться", text: $displayName)
                                 .textContentType(.givenName)
                         }
-                        LabeledAppField(title: String(localized: "Телефон"), hint: String(localized: "Обязательно. Никому не показывается.")) {
+                        LabeledAppField(title: String(localized: "Телефон"), hint: String(localized: "Защищает от фейков и повторной регистрации нарушителей. Никому не показывается, SMS не отправляем.")) {
                             TextField("+992 90 123 45 67", text: $phone)
                                 .textContentType(.telephoneNumber)
                                 .keyboardType(.phonePad)

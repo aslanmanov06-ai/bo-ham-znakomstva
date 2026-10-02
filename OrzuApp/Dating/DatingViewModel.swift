@@ -32,12 +32,12 @@ final class DatingViewModel: ObservableObject {
     @Published private(set) var incognito: Bool?
     @Published private(set) var showActivity: Bool?
     @Published var errorMessage: String?
-    /// Растёт после смены «Кого ищу» или расстояния в «Моём профиле» — лента и сетка анкет перезагружаются.
+    /// Растёт после смены «Кого ищу» или расстояния в профиле — лента и сетка анкет перезагружаются.
     @Published private(set) var searchSettingsRevision = 0
     /// Своя анкета «Кого ищу». nil — ещё не загружена.
     @Published private(set) var criteria: SearchCriteriaSettings?
 
-    /// Загрузку запускают .task нескольких экранов (корень, вкладки, «Мой профиль») — все ждут одну и ту же.
+    /// Загрузку запускают .task нескольких экранов (корень, вкладки, профиль) — все ждут одну и ту же.
     /// Задача принадлежит модели, а не экрану: SwiftUI отменяет .task, когда пересоздаёт экран, и запрос
     /// обрывался с URLError.cancelled — вкладка показывала «Ошибка: Cancelled» и оставалась без анкеты.
     private var loadTask: Task<Void, Never>?
@@ -239,6 +239,14 @@ final class DatingViewModel: ObservableObject {
     }
 
     /// Значок «проверен» снимается после полной замены фото — тогда нужно новое селфи.
+    /// «Девушку, 22–30» — коротко о «Кого ищу» в профиле. nil — ещё не загружено.
+    var criteriaSummary: String? {
+        guard let criteria else { return nil }
+        guard criteria.criteriaSetAt != nil else { return String(localized: "Не заполнено") }
+        let who = criteria.lookingFor == "FEMALE" ? String(localized: "Девушку") : String(localized: "Мужчину")
+        return "\(who), \(criteria.ageMin)–\(criteria.ageMax)"
+    }
+
     var needsSelfie: Bool {
         guard let profile else { return false }
         return !profile.shared.verified

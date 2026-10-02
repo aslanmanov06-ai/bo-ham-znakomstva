@@ -1,22 +1,20 @@
 import SwiftUI
 
 /// Корень вкладки «Знакомства»: правила сообщества → анкета → лента подходящих анкет.
+/// Пустая лента ведёт в «Поиск» и рулетку — переключать вкладки умеет только корень, поэтому замыкания.
 struct DatingTabView: View {
     @ObservedObject var dating: DatingViewModel
-    @StateObject private var matches = MatchesViewModel()
+    let onOpenSearch: () -> Void
+    let onOpenRoulette: () -> Void
 
     var body: some View {
         DatingGate(dating: dating, title: String(localized: "Знакомства")) {
-            DatingFeedView(dating: dating, matches: matches)
-        }
-        .task(id: dating.stage) {
-            guard dating.stage == .ready else { return }
-            await matches.load()
+            DatingFeedView(dating: dating, onOpenSearch: onOpenSearch, onOpenRoulette: onOpenRoulette)
         }
     }
 }
 
-/// Общий вход во вкладки знакомств («Знакомства» и «Анкеты»): пока не приняты правила или нет анкеты,
+/// Общий вход во вкладки знакомств («Знакомства» и «Поиск»): пока не приняты правила или нет анкеты,
 /// вместо содержимого — они. Модель dating общая, поэтому правила, принятые в одной вкладке, открывают обе.
 struct DatingGate<Content: View>: View {
     @ObservedObject var dating: DatingViewModel

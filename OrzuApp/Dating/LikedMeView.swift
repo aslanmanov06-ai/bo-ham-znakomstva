@@ -1,33 +1,33 @@
 import SwiftUI
 
-/// Золотая полоса над карточкой в ленте (макет «Знакомства — вход в „Вас лайкнули“»). Без лайков её нет.
-struct LikedMeBanner: View {
+/// «Вас лайкнули» в шапке ленты: лица и число — нажатие открывает весь список.
+struct LikedMeChip: View {
     let cards: [DatingLikedCard]
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                HStack(spacing: -9) {
-                    ForEach(cards.prefix(3)) { liked in
-                        DatingPhotoView(attachmentId: liked.card.profile.photoIds.first, cornerRadius: 13)
-                            .frame(width: 26, height: 26)
+            HStack(spacing: 8) {
+                HStack(spacing: -10) {
+                    ForEach(cards.prefix(2)) { liked in
+                        DatingPhotoView(attachmentId: liked.card.profile.photoIds.first, cornerRadius: 15)
+                            .frame(width: 30, height: 30)
                             .clipShape(Circle())
                             .overlay(Circle().strokeBorder(Color.champagneSoft, lineWidth: 2))
                     }
                 }
-                (Text("Вас лайкнули ") + Text(Self.peopleCount(cards.count)).foregroundStyle(Color.champagne))
-                    .font(.app(.subheadline, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.champagne)
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 12, weight: .bold))
+                Text("\(cards.count)")
+                    .font(.app(.subheadline, weight: .bold))
+                    .monospacedDigit()
             }
-            .padding(.horizontal, 14)
-            .frame(height: 48)
+            .foregroundStyle(Color.champagne)
+            .padding(.leading, 7)
+            .padding(.trailing, 14)
+            .frame(height: 44)
             .background(Color.champagneSoft, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.champagne.opacity(0.35), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(Color.champagne.opacity(0.45), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Вас лайкнули \(Self.peopleCount(cards.count))")

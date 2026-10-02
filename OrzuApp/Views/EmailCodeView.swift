@@ -25,6 +25,7 @@ struct EmailCodeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                RegistrationSteps(current: 2)
                 envelope
                 intro
                 codeCells

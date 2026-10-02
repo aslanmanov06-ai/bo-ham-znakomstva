@@ -1,13 +1,11 @@
 import Combine
 import Foundation
 
-/// Пары и первые сообщения. Обновляется и по WebSocket: пара, входящее сообщение или разрыв
-/// приходят сразу, без перезагрузки экрана.
+/// Пары: новые — кружками в «Чатах», у каждой — страница «Путь к браку». Первые сообщения живут в общем
+/// ящике запросов (ChatRequestsView). Обновляется и по WebSocket: пара или разрыв приходят сразу.
 @MainActor
 final class MatchesViewModel: ObservableObject {
     @Published private(set) var matches: [DatingMatch] = []
-    @Published private(set) var incoming: [IncomingIntro] = []
-    @Published private(set) var sent: [SentIntro] = []
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
@@ -25,40 +23,9 @@ final class MatchesViewModel: ObservableObject {
     func load() async {
         isLoading = true
         defer { isLoading = false }
-        do {
-            matches = try await APIClient.shared.fetchMatches()
-            let intros = try await APIClient.shared.fetchIntros()
-            incoming = intros.incoming
-            sent = intros.sent
-        } catch let error as APIError where error.code == ServerErrorCode.inCouple {
-            // Пара найдена: лента и первые сообщения закрыты, но сами пары остаются видны.
-            incoming = []
-            sent = []
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    /// Ответ на первое сообщение создаёт пару — она сразу появляется в списке.
-    func reply(to intro: IncomingIntro, text: String) async -> DatingMatch? {
-        do {
-            let match = try await APIClient.shared.replyToIntro(introId: intro.id, text: text)
-            incoming.removeAll { $0.id == intro.id }
-            upsert(match)
-            return match
-        } catch {
-            errorMessage = error.localizedDescription
-            return nil
-        }
-    }
-
-    func decline(_ intro: IncomingIntro) async {
-        do {
-            try await APIClient.shared.declineIntro(introId: intro.id)
-            incoming.removeAll { $0.id == intro.id }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        // Пары второстепенны для списка чатов: без сети остаются прежними, ошибкой экран не мигает.
+        guard let loaded = try? await APIClient.shared.fetchMatches() else { return }
+        matches = loaded
     }
 
     func unmatch(_ match: DatingMatch) async {
@@ -79,12 +46,6 @@ final class MatchesViewModel: ObservableObject {
         switch event {
         case .datingMatch(let match):
             upsert(match)
-            // Пара могла возникнуть из первого сообщения — оно больше не ждёт ответа.
-            incoming.removeAll { $0.from.userId == match.partner.userId }
-            sent.removeAll { $0.to.userId == match.partner.userId }
-        case .datingIntro(let intro):
-            incoming.removeAll { $0.id == intro.id }
-            incoming.insert(intro, at: 0)
         case .datingUnmatched(let matchId, _):
             matches.removeAll { $0.id == matchId }
         default:

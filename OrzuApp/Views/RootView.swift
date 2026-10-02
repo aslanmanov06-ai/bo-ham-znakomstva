@@ -118,10 +118,13 @@ private struct MainTabView: View {
     @ObservedObject private var network = NetworkMonitor.shared
     @ObservedObject private var socket = WebSocketClient.shared
     @State private var selection = AppTab.dating
-    /// Анкета — часть профиля: её правят и во вкладках знакомств, и в «Моём профиле», поэтому модель одна на все.
+    /// Анкета — часть профиля: её правят и во вкладках знакомств, и в профиле, поэтому модель одна на все.
     @StateObject private var dating = DatingViewModel()
     /// Рулетка живёт на уровне вкладок: уход с вкладки или в фон заканчивает разговор (камера и сокет не нужны в фоне).
     @StateObject private var roulette = RouletteViewModel()
+    /// Чаты и пары — тоже: по ним число на вкладке «Чаты» видно, даже пока её не открывали.
+    @StateObject private var chats = ChatListViewModel()
+    @StateObject private var matches = MatchesViewModel()
     @Environment(\.scenePhase) private var scenePhase
     /// «Соединение…» показываем не сразу: обычно сокет подключается за доли секунды, и плашка только мигнула бы.
     @State private var isConnectingTooLong = false
@@ -169,27 +172,32 @@ private struct MainTabView: View {
 
     private var tabView: some View {
         TabView(selection: $selection) {
-            DatingTabView(dating: dating)
+            DatingTabView(dating: dating, onOpenSearch: { selection = .browse }, onOpenRoulette: { selection = .roulette })
                 .tabItem { Label("Знакомства", systemImage: "heart.fill") }
                 .tag(AppTab.dating)
 
             DatingBrowseTabView(dating: dating)
-                .tabItem { Label("Анкеты", systemImage: "square.grid.2x2.fill") }
+                .tabItem { Label("Поиск", systemImage: "magnifyingglass") }
                 .tag(AppTab.browse)
 
             RouletteTabView(dating: dating, roulette: roulette) { selection = .profile }
                 .tabItem { Label("Рулетка", systemImage: "shuffle") }
                 .tag(AppTab.roulette)
 
-            ChatListView()
+            ChatListView(viewModel: chats, matches: matches, dating: dating)
                 .tabItem { Label("Чаты", systemImage: "bubble.left.and.bubble.right.fill") }
+                .badge(chats.badgeCount)
                 .tag(AppTab.chats)
 
             NavigationStack { MyProfileView(dating: dating) { authViewModel.updateCurrentUser($0) } }
-                .tabItem { Label("Мой профиль", systemImage: "person.crop.circle.fill") }
+                .tabItem { Label("Профиль", systemImage: "person.fill") }
                 .tag(AppTab.profile)
         }
         .tabBarMinimizesOnScroll()
+        .task {
+            await chats.load()
+            await chats.loadRequestsCount()
+        }
     }
 
     /// Переходы между вкладками: push, deep link, уход в фон.
@@ -221,7 +229,7 @@ private struct MainTabView: View {
             selection = .roulette
             push.pendingRoulette = false
         }
-        // Просьба модератора о селфи открывается в «Моём профиле».
+        // Просьба модератора о селфи открывается в профиле.
         .onChange(of: push.pendingSelfieRequest) { _, pending in
             if pending { selection = .profile }
         }
@@ -357,8 +365,9 @@ private struct ProfileOnboardingView: View {
         }
         // Без анкеты в настройки не попасть — выход держим здесь, отдельной полосой над экраном.
         .safeAreaInset(edge: .top, spacing: 0) {
-            HStack {
-                Spacer()
+            HStack(alignment: .top, spacing: 16) {
+                // Продолжение регистрации: аккаунт и почта позади, осталось анкета (3) и фото (4).
+                RegistrationSteps(current: dating.stage == .ready ? 4 : 3)
                 Button("Выйти") {
                     Task { await authViewModel.logout() }
                 }

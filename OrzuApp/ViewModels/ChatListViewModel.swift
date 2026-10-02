@@ -8,6 +8,8 @@ final class ChatListViewModel: ObservableObject {
     @Published var errorMessage: String?
     /// Сколько запросов на переписку и первых сообщений ждут моего ответа — счётчик строки «Запросы».
     @Published private(set) var incomingRequestsCount = 0
+    /// Мои первые сообщения и запросы без ответа — строка «Ждут ответа».
+    @Published private(set) var sentRequestsCount = 0
     /// Незнакомому напрямую не написать: для него экран списка открывает запрос на переписку.
     @Published var requestTarget: User?
     /// Чаты, где собеседник сейчас набирает текст: строка показывает «печатает…» вместо последнего сообщения.
@@ -219,6 +221,13 @@ final class ChatListViewModel: ObservableObject {
         // Счётчик второстепенный: без сети остаётся прежним, а список чатов из-за него ошибкой не мигает.
         guard let inbox = try? await APIClient.shared.fetchChatRequests() else { return }
         incomingRequestsCount = inbox.incoming.count
+        sentRequestsCount = inbox.sent.count
+    }
+
+    /// Число на вкладке «Чаты»: непрочитанные сообщения (кроме чатов без звука) и неотвеченные запросы.
+    var badgeCount: Int {
+        let unread = chats.filter { !$0.isMuted && !$0.isClosed }.reduce(0) { $0 + ($1.unreadCount ?? 0) }
+        return unread + incomingRequestsCount
     }
 
     /// Событий может прийти пачкой (например, несколько сообщений подряд из нового чата) — держим один запрос
@@ -295,6 +304,10 @@ final class ChatListViewModel: ObservableObject {
             }
 
         case .datingIntro:
+            Task { await loadRequestsCount() }
+
+        case .datingMatch:
+            // Первое сообщение стало парой — из «Вам написали» или «Ждут ответа» оно уходит.
             Task { await loadRequestsCount() }
 
         case .presence(let userId, let presence):

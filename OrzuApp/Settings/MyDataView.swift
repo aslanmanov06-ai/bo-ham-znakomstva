@@ -14,7 +14,7 @@ struct MyDataView: View {
                         DataRow(String(localized: "Имя"), value: settings.displayName, systemImage: "person.fill", color: .brand)
                     }
                     NavigationLink { UsernameSettingsView(viewModel: viewModel, current: settings.username) } label: {
-                        DataRow(String(localized: "Username"), value: "@\(settings.username)", systemImage: "at", color: .brand)
+                        DataRow(String(localized: "Логин"), value: "@\(settings.username)", systemImage: "at", color: .brand)
                     }
                     if let profile = dating.profile {
                         NavigationLink { BirthDateEditView(dating: dating) } label: {
@@ -61,7 +61,7 @@ struct MyDataView: View {
                         )
                     }
                 } footer: {
-                    Text("Город, рост и остальное — в «Мой профиль → Анкета». Кого вы ищете — в «Мой профиль → Кого ищу».")
+                    Text("Город, рост и остальное — в «Профиль → Моя анкета». Кого вы ищете — в «Профиль → Кого ищу».")
                 }
             }
         }

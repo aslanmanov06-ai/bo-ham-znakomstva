@@ -177,6 +177,8 @@ struct DatingActionButton: View {
 
     let kind: Kind
     var size: CGFloat = 60
+    /// Поверх фото (лента): «Дальше» и «Написать» — на тёмном стекле, чтобы читались на любом снимке.
+    var onPhoto = false
     let action: () -> Void
 
     @State private var taps = 0
@@ -205,12 +207,22 @@ struct DatingActionButton: View {
                 .foregroundStyle(.white)
                 .background(.brandFill, in: Circle())
                 .shadow(color: Color.brand.opacity(0.4), radius: 14, y: 7)
+        case .skip where onPhoto:
+            icon
+                .foregroundStyle(.white)
+                .background(.black.opacity(0.35), in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1.5))
         case .skip:
             icon
                 .foregroundStyle(.secondary)
                 .background(Color.appSurface, in: Circle())
                 .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
                 .shadow(color: .black.opacity(0.10), radius: 10, y: 5)
+        case .intro where onPhoto:
+            icon
+                .foregroundStyle(Color(rgb: 0xF0C27B))
+                .background(.black.opacity(0.35), in: Circle())
+                .overlay(Circle().strokeBorder(Color(rgb: 0xF0C27B).opacity(0.6), lineWidth: 1.5))
         case .intro:
             icon
                 .foregroundStyle(DatingStyle.intro)
@@ -222,7 +234,7 @@ struct DatingActionButton: View {
     private var iconName: String {
         switch kind {
         case .skip: "xmark"
-        case .intro: "paperplane.fill"
+        case .intro: onPhoto ? "paperplane" : "paperplane.fill"
         case .like: "heart.fill"
         }
     }

@@ -5,7 +5,7 @@ import SwiftUI
 struct RouletteTabView: View {
     @ObservedObject var dating: DatingViewModel
     @ObservedObject var roulette: RouletteViewModel
-    /// «Кого ищу» меняется в «Моём профиле».
+    /// «Кого ищу» меняется в профиле.
     let onEditSearch: () -> Void
 
     var body: some View {

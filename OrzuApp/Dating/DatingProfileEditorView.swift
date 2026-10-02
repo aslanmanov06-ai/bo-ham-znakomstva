@@ -210,7 +210,7 @@ struct DatingProfileEditorView: View {
     private var verificationSubtitle: String {
         if !dating.needsSelfie { return String(localized: "Рядом с именем виден значок «проверен».") }
         return dating.selfiePending
-            ? String(localized: "Модератор сравнит селфи с фото анкеты — обычно это занимает несколько часов.")
+            ? String(localized: "Модератор сравнит селфи с фото анкеты — до 24 часов.")
             : String(localized: "Модератор сверит селфи с фото — так другие поймут, что вы настоящий.")
     }
 

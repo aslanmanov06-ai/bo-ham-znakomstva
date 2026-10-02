@@ -70,7 +70,7 @@ struct LoginView: View {
         GlassGroup(spacing: 12) {
             VStack(spacing: 12) {
                 AppField(systemImage: "person") {
-                    TextField("Username или почта", text: $username)
+                    TextField("Логин или почта", text: $username)
                         .textContentType(.username)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -145,13 +145,14 @@ struct LoginView: View {
         }
     }
 
-    private static func makeNonce() -> String {
+    /// Общие с регистрацией: там та же кнопка «Продолжить с Apple».
+    static func makeNonce() -> String {
         // UInt8.random берёт байты из SystemRandomNumberGenerator — криптостойкого генератора системы.
         let bytes = (0..<32).map { _ in UInt8.random(in: .min ... .max) }
         return Data(bytes).base64EncodedString()
     }
 
-    private static func sha256(_ value: String) -> String {
+    static func sha256(_ value: String) -> String {
         SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 

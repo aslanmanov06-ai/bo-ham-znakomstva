@@ -14,19 +14,29 @@ enum SwipeDirection: Equatable {
     }
 }
 
-/// Лента знакомств: подходящие анкеты стопкой, оценка кнопками или жестом, дневные лимиты.
-/// Фильтров здесь нет намеренно — подбор делает сервер; фильтры и поиск по @username — в сетке анкет.
+/// Лента знакомств: подходящие анкеты большой карточкой, оценка кнопками с подписями или жестом.
+/// Фильтров здесь нет намеренно — подбор делает сервер; фильтры и поиск по @username — во вкладке «Поиск».
+/// Пары и первые сообщения живут во вкладке «Чаты», отсюда туда не ведём — так переписка в одном месте.
 struct DatingFeedView: View {
     @ObservedObject var dating: DatingViewModel
-    @ObservedObject var matches: MatchesViewModel
+    let onOpenSearch: () -> Void
+    let onOpenRoulette: () -> Void
 
     @StateObject private var feed = DatingFeedViewModel()
     @ObservedObject private var push = PushManager.shared
     @StateObject private var likes = LikedMeViewModel()
     @State private var showLikedMe = false
     @State private var showProfileEditor = false
-    @State private var showMatches = false
+    @State private var showCriteria = false
     @State private var detailCard: DatingFeedCard?
+    /// Кому собираются написать, пока открыт лист «Как работает „Написать“».
+    @State private var introCard: DatingFeedCard?
+    @State private var showHint = false
+    @State private var showHowItWorks = false
+    /// Подсказка под ⓘ появляется сама один раз, дальше — по нажатию.
+    @AppStorage("dating.feedHintShown") private var feedHintShown = false
+    /// Лист про «Написать» показываем перед первым сообщением, потом пишем сразу.
+    @AppStorage("dating.introExplained") private var introExplained = false
     @State private var dragOffset: CGSize = .zero
     /// Карточки, которые уже улетели, но ответ сервера ещё не пришёл: из стопки их прячем сразу.
     @State private var departingCardIds: Set<String> = []
@@ -39,34 +49,45 @@ struct DatingFeedView: View {
     /// Сколько карточек видно в стопке: верхняя и две выглядывают из-под неё.
     private let stackDepth = 3
     private let prefetchDepth = 4
+    /// Высота кнопок с подписями поверх низа карточки: текст анкеты начинается выше них.
+    private static let actionAreaHeight: CGFloat = 112
+    /// Остаток лайков показываем, только когда их мало: в остальное время цифры — в подсказке ⓘ.
+    private static let lowLikesThreshold = 3
 
     var body: some View {
         VStack(spacing: 0) {
+            header
             if let profile = dating.profile, !profile.visibleToOthers {
                 visibilityBanner(profile)
                     .padding(.horizontal, 16)
-                    .padding(.top, 4)
+                    .padding(.bottom, 6)
             }
-            if !likes.cards.isEmpty && feed.blockedMessage == nil {
-                LikedMeBanner(cards: likes.cards) { showLikedMe = true }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 4)
+            if let limits = feed.limits, limits.likesLeft <= Self.lowLikesThreshold, feed.blockedMessage == nil {
+                limitsLabel(limits)
+                    .padding(.bottom, 6)
             }
             content
         }
-        .background(DatingBackdrop())
-        .safeAreaInset(edge: .bottom) { actionBar }
-        .toolbar { toolbarContent }
-        .navigationDestination(isPresented: $showMatches) {
-            MatchesView(dating: dating, matches: matches)
+        .overlay(alignment: .topTrailing) {
+            if showHint {
+                hintBubble
+            }
         }
+        .background(DatingBackdrop())
+        .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(isPresented: $showLikedMe) {
             LikedMeView(likes: likes, dating: dating)
+        }
+        .navigationDestination(isPresented: $showHowItWorks) {
+            HowItWorksView()
         }
         .task(id: dating.searchSettingsRevision) {
             await feed.load()
             await likes.load()
         }
+        .task { await showHintOnce() }
+        // Строка «Сейчас: 22–30 лет» на пустой ленте.
+        .task { if dating.criteria == nil { try? await dating.loadCriteria() } }
         .task(id: visibleCards.first?.id) { prefetchUpcomingPhotos() }
         // Нажали на push «Вас лайкнули».
         .task(id: push.pendingLikedMe) {
@@ -77,6 +98,16 @@ struct DatingFeedView: View {
         .sensoryFeedback(.selection, trigger: pastThreshold) { _, isPast in isPast }
         .sheet(isPresented: $showProfileEditor) {
             NavigationStack { DatingProfileEditorView(dating: dating) }
+        }
+        .sheet(isPresented: $showCriteria) {
+            NavigationStack { SearchCriteriaView(dating: dating) {} }
+        }
+        .sheet(item: $introCard) { card in
+            IntroExplainerSheet(name: card.profile.displayName, limits: feed.limits) {
+                introExplained = true
+                introCard = nil
+                PushManager.shared.openConversation(with: card.profile)
+            }
         }
         .sheet(item: $detailCard) { card in
             NavigationStack {
@@ -103,39 +134,96 @@ struct DatingFeedView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) {
-            Button {
-                showProfileEditor = true
-            } label: {
-                DatingPhotoView(attachmentId: dating.profile?.shared.photoIds.first, cornerRadius: 16)
-                    .frame(width: 32, height: 32)
-                    .clipShape(Circle())
+    /// Заголовок вкладки, кто лайкнул и ⓘ — одной строкой, чтобы карточке досталось больше места.
+    private var header: some View {
+        HStack(spacing: 10) {
+            Text("Знакомства")
+                .font(.display(size: 30, weight: .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            if !likes.cards.isEmpty && feed.blockedMessage == nil {
+                LikedMeChip(cards: likes.cards) { showLikedMe = true }
             }
-            .accessibilityLabel("Моя анкета")
-        }
-        ToolbarItemGroup(placement: .navigationBarTrailing) {
             Button {
-                showMatches = true
+                withAnimation(DatingStyle.spring) { showHint.toggle() }
             } label: {
-                Image(systemName: "bubble.left.and.bubble.right")
-                    .overlay(alignment: .topTrailing) {
-                        if pendingCount > 0 {
-                            Text("\(pendingCount)")
-                                .font(.app(.caption2, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 5)
-                                .frame(minWidth: 16, minHeight: 16)
-                                .background(DatingStyle.rose, in: Capsule())
-                                .offset(x: 9, y: -7)
-                                .transition(.scale.combined(with: .opacity))
-                        }
+                Image(systemName: "info.circle")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .background(Color.appSurface, in: Circle())
+                    .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Как работает лента")
+        }
+        .padding(.leading, 20)
+        .padding(.trailing, 16)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
+    }
+
+    /// Облачко под ⓘ: чем лента отличается от «Поиска» и сколько лайков и сообщений осталось на сегодня.
+    private var hintBubble: some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Здесь только те, кто подходит вам — и кому подходите вы. Искать самим — во вкладке «Поиск».")
+                    .font(.app(.subheadline))
+                    .fixedSize(horizontal: false, vertical: true)
+                if let limits = feed.limits {
+                    Text(limitsText(limits))
+                        .font(.app(.footnote))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button {
+                    showHint = false
+                    showHowItWorks = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Как это работает")
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
                     }
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: pendingCount)
+                    .font(.app(.footnote, weight: .semibold))
+                    .foregroundStyle(Color.brand)
+                }
+                .buttonStyle(.plain)
             }
-            .accessibilityLabel(pendingCount > 0 ? "Пары и сообщения, новых: \(pendingCount)" : "Пары и сообщения")
+            Button {
+                withAnimation(DatingStyle.spring) { showHint = false }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Закрыть подсказку")
         }
+        .padding(.leading, 16)
+        .padding(.trailing, 8)
+        .padding(.vertical, 12)
+        .frame(maxWidth: 300, alignment: .leading)
+        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.brand.opacity(0.45), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.3), radius: 18, y: 8)
+        .padding(.top, 58)
+        .padding(.trailing, 12)
+        .transition(.scale(scale: 0.9, anchor: .topTrailing).combined(with: .opacity))
+    }
+
+    private func showHintOnce() async {
+        guard !feedHintShown else { return }
+        feedHintShown = true
+        try? await Task.sleep(for: .milliseconds(600))
+        guard !Task.isCancelled else { return }
+        withAnimation(DatingStyle.spring) { showHint = true }
     }
 
     @ViewBuilder
@@ -145,16 +233,33 @@ struct DatingFeedView: View {
         } else if visibleCards.isEmpty {
             if feed.isLoading {
                 SkeletonCard()
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
             } else {
-                EmptyFeedView(photoId: dating.profile?.shared.photoIds.first) {
-                    Task { await feed.load() }
-                }
+                EmptyFeedView(
+                    criteriaLine: criteriaLine,
+                    canUndo: feed.canUndo,
+                    onExpandCriteria: { showCriteria = true },
+                    onOpenSearch: onOpenSearch,
+                    onOpenRoulette: onOpenRoulette,
+                    onUndo: { Task { await feed.undo() } },
+                    onRefresh: { Task { await feed.load() } }
+                )
             }
         } else {
             cardStack
         }
+    }
+
+    /// «Сейчас: 22–30 лет, Душанбе» — что именно расширять в «Кого ищу».
+    private var criteriaLine: String? {
+        guard let criteria = dating.criteria, criteria.criteriaSetAt != nil else { return nil }
+        var parts = [String(localized: "\(criteria.ageMin)–\(criteria.ageMax) лет")]
+        if let countryCode = dating.profile?.shared.countryCode {
+            let cities = criteria.cityCodes.map { dating.catalog?.cityName(countryCode: countryCode, cityCode: $0) ?? $0 }
+            if !cities.isEmpty { parts.append(cities.joined(separator: ", ")) }
+        }
+        return String(localized: "Сейчас: \(parts.joined(separator: ", "))")
     }
 
     private var visibleCards: [DatingFeedCard] {
@@ -171,7 +276,12 @@ struct DatingFeedView: View {
             ZStack {
                 ForEach(Array(visibleCards.prefix(stackDepth).enumerated()).reversed(), id: \.element.id) { index, card in
                     let isTop = index == 0
-                    DatingCardView(card: card, catalog: dating.catalog, swipeProgress: isTop ? swipeProgress : 0) {
+                    DatingCardView(
+                        card: card,
+                        catalog: dating.catalog,
+                        swipeProgress: isTop ? swipeProgress : 0,
+                        bottomInset: Self.actionAreaHeight
+                    ) {
                         detailCard = card
                     }
                     .scaleEffect(stackScale(at: index))
@@ -183,14 +293,29 @@ struct DatingFeedView: View {
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
                     .accessibilityAction(named: "Нравится") { send(card, .like) }
                     .accessibilityAction(named: "Пропустить") { send(card, .skip) }
+                    .accessibilityAction(named: "Написать") { write(card) }
                 }
             }
             .onAppear { stackWidth = proxy.size.width }
             .onChange(of: proxy.size.width) { _, width in stackWidth = width }
         }
+        // Кнопки лежат поверх карточки, но не двигаются вместе с ней: улетает анкета, а не кнопки.
+        .overlay(alignment: .bottom) {
+            if let card = visibleCards.first {
+                actionRow(for: card)
+                    .padding(.bottom, 14)
+            }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if feed.canUndo {
+                undoButton
+                    .padding(.leading, 12)
+                    .padding(.bottom, 46)
+            }
+        }
+        .animation(DatingStyle.spring, value: feed.canUndo)
         .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
+        .padding(.bottom, 8)
     }
 
     /// Нижние карточки подрастают по мере того, как тянут верхнюю: когда она улетит,
@@ -205,33 +330,22 @@ struct DatingFeedView: View {
         return CGFloat(index) * 14 - abs(swipeProgress) * 14
     }
 
-    private var actionBar: some View {
-        VStack(spacing: 10) {
-            if let card = visibleCards.first {
-                HStack(spacing: 22) {
-                    if feed.canUndo {
-                        undoButton
-                    }
-                    DatingActionButton(kind: .skip, size: 62) { send(card, .skip) }
-                        .scaleEffect(1 + max(-swipeProgress, 0) * 0.15)
-                    DatingActionButton(kind: .intro, size: 50) { PushManager.shared.openConversation(with: card.profile) }
-                    DatingActionButton(kind: .like, size: 72) { send(card, .like) }
-                        .scaleEffect(1 + max(swipeProgress, 0) * 0.15)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if feed.canUndo {
-                // Анкеты кончились, а последнюю ещё можно вернуть.
-                undoButton
+    /// Под каждой кнопкой — что она делает: значки без слов новичку непонятны.
+    private func actionRow(for card: DatingFeedCard) -> some View {
+        HStack(alignment: .top, spacing: 24) {
+            FeedAction(title: String(localized: "Дальше")) {
+                DatingActionButton(kind: .skip, size: 56, onPhoto: true) { send(card, .skip) }
+                    .scaleEffect(1 + max(-swipeProgress, 0) * 0.15)
             }
-            if let limits = feed.limits {
-                limitsLabel(limits)
+            FeedAction(title: String(localized: "Нравится")) {
+                DatingActionButton(kind: .like, size: 68) { send(card, .like) }
+                    .scaleEffect(1 + max(swipeProgress, 0) * 0.15)
+            }
+            FeedAction(title: String(localized: "Написать")) {
+                DatingActionButton(kind: .intro, size: 56, onPhoto: true) { write(card) }
             }
         }
-        .padding(.top, 6)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity)
-        .animation(DatingStyle.spring, value: visibleCards.isEmpty)
-        .animation(DatingStyle.spring, value: feed.canUndo)
+        .transition(.opacity)
     }
 
     private var undoButton: some View {
@@ -239,12 +353,11 @@ struct DatingFeedView: View {
             Task { await feed.undo() }
         } label: {
             Image(systemName: "arrow.uturn.backward")
-                .font(.system(size: 17, weight: .bold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Color.champagne)
-                .frame(width: 44, height: 44)
-                .background(Color.appSurface, in: Circle())
-                .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
-                .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                .frame(width: 40, height: 40)
+                .background(.black.opacity(0.35), in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
         }
         .buttonStyle(PressableButtonStyle())
         .disabled(feed.isUndoing)
@@ -296,15 +409,20 @@ struct DatingFeedView: View {
         .buttonStyle(.plain)
     }
 
-    private var pendingCount: Int {
-        matches.incoming.count
-    }
-
     private func limitsText(_ limits: DailyLimits) -> String {
         if limits.likesLeft == 0 {
             return String(localized: "Лайки закончились — вернутся \(limits.resetsAt.formatted(date: .omitted, time: .shortened))")
         }
         return String(localized: "Лайков сегодня: \(limits.likesLeft) из \(limits.likesPerDay) · сообщений: \(limits.introsLeft) из \(limits.introsPerDay)")
+    }
+
+    /// Перед первым «Написать» объясняем, что будет с сообщением; дальше — сразу к переписке.
+    private func write(_ card: DatingFeedCard) {
+        if introExplained {
+            PushManager.shared.openConversation(with: card.profile)
+        } else {
+            introCard = card
+        }
     }
 
     private func dragGesture(for card: DatingFeedCard) -> some Gesture {
@@ -378,19 +496,22 @@ struct DatingFeedView: View {
     }
 }
 
-/// Карточка кандидата: фото листаются тапом по краям, снизу — имя, совместимость и главное об анкете.
+/// Карточка кандидата на весь экран: фото листаются тапом по краям, сверху — совместимость,
+/// снизу — имя и главное об анкете, а под ними место для кнопок ленты.
 private struct DatingCardView: View {
     let card: DatingFeedCard
     let catalog: DatingCatalog?
     /// −1…1: насколько карточку утянули влево или вправо — от этого зависят штампы и подсветка.
     let swipeProgress: CGFloat
+    /// Сколько снизу занимают кнопки ленты поверх карточки.
+    let bottomInset: CGFloat
     let onOpen: () -> Void
 
     @State private var photoIndex = 0
     @State private var edgeTilt: Double = 0
     @State private var edgeBumps = 0
 
-    private let visibleInterests = 3
+    private let visibleInterests = 2
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -402,7 +523,15 @@ private struct DatingCardView: View {
 
             info
         }
-        .overlay(alignment: .top) { photoPager }
+        .overlay(alignment: .top) {
+            VStack(alignment: .leading, spacing: 10) {
+                photoPager
+                badges
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+        }
         .overlay { swipeStamps }
         .clipShape(RoundedRectangle(cornerRadius: DatingStyle.cardCornerRadius, style: .continuous))
         .overlay {
@@ -462,8 +591,6 @@ private struct DatingCardView: View {
                         .frame(height: 3.5)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
             .shadow(color: .black.opacity(0.25), radius: 2)
             .animation(.easeOut(duration: 0.2), value: photoIndex)
             .allowsHitTesting(false)
@@ -484,74 +611,62 @@ private struct DatingCardView: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: 300)
+            .frame(height: 260 + bottomInset)
         }
     }
 
     private var info: some View {
         Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 10) {
-                badges
-                HStack(alignment: .bottom, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text(card.profile.displayName)
-                                .font(.display(size: 26, weight: .semibold))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                            Text("\(card.profile.age)")
-                                .font(.display(size: 22, weight: .medium))
-                            if card.profile.verified {
-                                VerifiedBadge()
-                                    .font(.app(.title3))
-                            }
-                        }
-                        Label(subtitle, systemImage: "mappin.and.ellipse")
-                            .font(.app(.subheadline, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.9))
-                            .lineLimit(1)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(card.profile.displayName), \(card.profile.age)")
+                        .font(.display(size: 32, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    if card.profile.verified {
+                        VerifiedBadge()
+                            .font(.app(.title3))
                     }
-                    Spacer(minLength: 0)
-                    CompatibilityRing(score: card.compatibility.score)
                 }
-                if let reason = card.compatibility.reasons.first {
-                    Label(reason, systemImage: "sparkles")
-                        .font(.app(.footnote, weight: .semibold))
-                        .lineLimit(2)
+                if !subtitle.isEmpty {
+                    Label(subtitle, systemImage: "mappin.and.ellipse")
+                        .font(.app(.callout, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.92))
+                        .lineLimit(1)
                 }
                 chips
-                HStack(spacing: 4) {
-                    Text("Подробнее")
-                    Image(systemName: "chevron.up")
-                }
-                .font(.app(.caption, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.75))
-                .frame(maxWidth: .infinity)
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 18)
-            .padding(.bottom, 14)
+            .padding(.horizontal, 20)
+            .padding(.bottom, bottomInset)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityHint("Открыть анкету целиком")
     }
 
-    @ViewBuilder
+    /// Совместимость — золотой пилюлей сверху: это первое, на что смотрят, и фото она не закрывает.
     private var badges: some View {
-        if card.isNew || card.expanded || card.profile.activityStatus != nil {
-            HStack(spacing: 6) {
-                if let activity = card.profile.activityStatus {
-                    ActivityChip(activity: activity, onPhoto: true)
-                }
-                if card.isNew {
-                    DatingChip(text: String(localized: "Новенький"), systemImage: "sparkle", onPhoto: true)
-                }
-                if card.expanded {
-                    DatingChip(text: String(localized: "Шире фильтров"), systemImage: "arrow.up.left.and.arrow.down.right", onPhoto: true)
-                }
+        HStack(spacing: 6) {
+            Text("\(min(max(card.compatibility.score, 0), 100))% совместимость")
+                .font(.app(.footnote, weight: .bold))
+                .foregroundStyle(Color(rgb: 0x120E12))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Color(rgb: 0xF0C27B), in: Capsule())
+            if let activity = card.profile.activityStatus {
+                ActivityChip(activity: activity, onPhoto: true)
+            }
+            if card.isNew {
+                DatingChip(text: String(localized: "Новенький"), systemImage: "sparkle", onPhoto: true)
+            }
+            if card.expanded {
+                DatingChip(text: String(localized: "Шире фильтров"), systemImage: "arrow.up.left.and.arrow.down.right", onPhoto: true)
             }
         }
+        .lineLimit(1)
+        .allowsHitTesting(false)
     }
 
     private var chips: some View {
@@ -559,10 +674,7 @@ private struct DatingCardView: View {
         let interests = catalog?.names(of: card.profile.interests, in: catalog?.interests ?? []) ?? []
         return FlowLayout(spacing: 6) {
             if let goal {
-                DatingChip(text: goal, systemImage: "heart", onPhoto: true)
-            }
-            if let profession = card.profile.profession, !profession.isEmpty {
-                DatingChip(text: profession, systemImage: "briefcase", onPhoto: true)
+                DatingChip(text: goal, onPhoto: true)
             }
             ForEach(interests.prefix(visibleInterests), id: \.self) { interest in
                 DatingChip(text: interest, onPhoto: true)
@@ -588,8 +700,13 @@ private struct DatingCardView: View {
         .allowsHitTesting(false)
     }
 
+    /// «Душанбе · 3 км · Врач».
     private var subtitle: String {
-        card.profile.locationLine(catalog: catalog)
+        let profession = card.profile.profession.flatMap { $0.isEmpty ? nil : $0 }
+        return [card.profile.locationLine(catalog: catalog), profession]
+            .compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
     }
 }
 
@@ -647,39 +764,216 @@ private struct SkeletonCard: View {
     }
 }
 
-/// Анкеты закончились: своё фото в центре «радара» — ищем дальше.
+/// Анкеты на сегодня закончились: вместо тупика — что можно сделать дальше.
 private struct EmptyFeedView: View {
-    let photoId: String?
+    let criteriaLine: String?
+    let canUndo: Bool
+    let onExpandCriteria: () -> Void
+    let onOpenSearch: () -> Void
+    let onOpenRoulette: () -> Void
+    let onUndo: () -> Void
     let onRefresh: () -> Void
 
     var body: some View {
-        VStack(spacing: 22) {
-            Spacer()
-            ZStack {
-                PulseRings()
-                    .frame(width: 120, height: 120)
-                DatingPhotoView(attachmentId: photoId, cornerRadius: 60)
-                    .frame(width: 120, height: 120)
-                    .overlay(Circle().strokeBorder(.white, lineWidth: 4))
-                    .shadow(color: DatingStyle.rose.opacity(0.35), radius: 16, y: 6)
-            }
-            .frame(height: 260)
-            VStack(spacing: 8) {
-                Text("Анкеты закончились")
-                    .font(.app(.title2, weight: .bold))
-                Text("Загляните позже — каждый день появляются новые люди. А все анкеты с фильтрами — во вкладке «Анкеты».")
+        ScrollView {
+            VStack(spacing: 12) {
+                Image(systemName: "heart")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(DatingStyle.rose)
+                    .frame(width: 96, height: 96)
+                    .background(Color.appSurface, in: Circle())
+                    .padding(.top, 32)
+                    .padding(.bottom, 8)
+                    .accessibilityHidden(true)
+                Text("Вы посмотрели всех на сегодня")
+                    .font(.display(size: 26, weight: .bold))
+                    .multilineTextAlignment(.center)
+                Text("Новые анкеты появляются каждый день. А пока можно расширить поиск или познакомиться по-другому.")
                     .font(.app(.subheadline))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+
+                row(
+                    systemImage: "person.2", tint: .champagne,
+                    title: String(localized: "Расширить «Кого ищу»"),
+                    subtitle: criteriaLine ?? String(localized: "Возраст, город, семейное положение"),
+                    action: onExpandCriteria
+                )
+                row(
+                    systemImage: "magnifyingglass", tint: .brand,
+                    title: String(localized: "Искать самим во вкладке «Поиск»"),
+                    subtitle: String(localized: "Все анкеты и свои фильтры"),
+                    action: onOpenSearch
+                )
+                row(
+                    systemImage: "shuffle", tint: .brand,
+                    title: String(localized: "Попробовать рулетку"),
+                    subtitle: String(localized: "Случайный собеседник прямо сейчас"),
+                    action: onOpenRoulette
+                )
+
+                if canUndo {
+                    Button("Вернуть последнюю анкету", systemImage: "arrow.uturn.backward", action: onUndo)
+                        .font(.app(.callout, weight: .semibold))
+                        .foregroundStyle(Color.champagne)
+                        .padding(.top, 8)
+                }
+                Button("Обновить ленту", systemImage: "arrow.clockwise", action: onRefresh)
+                    .font(.app(.callout, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 8)
             }
-            .padding(.horizontal, 32)
-            Button("Обновить", systemImage: "arrow.clockwise", action: onRefresh)
-                .glassProminentButtonStyle()
-                .tint(DatingStyle.rose)
-                .controlSize(.large)
-            Spacer()
+            .padding(.horizontal, 16)
+            .padding(.bottom, 24)
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private func row(systemImage: String, tint: Color, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 42, height: 42)
+                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.app(.body, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.app(.footnote))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(14)
+            .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PressableButtonStyle())
+    }
+}
+
+/// Круглая кнопка ленты с подписью под ней.
+private struct FeedAction<Control: View>: View {
+    let title: String
+    @ViewBuilder let button: Control
+
+    var body: some View {
+        VStack(spacing: 6) {
+            button
+            Text(title)
+                .font(.app(.subheadline, weight: .semibold))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
+                .accessibilityHidden(true)
+        }
+        .frame(minWidth: 72)
+    }
+}
+
+/// «Как работает „Написать“» — перед первым сообщением незнакомому человеку.
+/// Сроки и правила те же, что у сервера: сообщение живёт сутки, повторно — через 7 дней, без контактов.
+private struct IntroExplainerSheet: View {
+    let name: String
+    let limits: DailyLimits?
+    let onConfirm: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 14) {
+                    Image(systemName: "paperplane")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(Color.champagne)
+                        .frame(width: 52, height: 52)
+                        .background(Color.champagneSoft, in: Circle())
+                    Text("Как работает «Написать»")
+                        .font(.display(size: 24, weight: .bold))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                step(1, title: String(localized: "Сообщение придёт вместе с лайком"),
+                     text: String(localized: "\(name) увидит его в «Чатах» → «Вам написали»."))
+                step(2, title: String(localized: "Ответит — и вы пара"),
+                     text: String(localized: "Откроется обычный чат во вкладке «Чаты»."))
+                step(3, title: String(localized: "Не ответит за сутки — сообщение исчезнет"),
+                     text: String(localized: "Об отказе вы не узнаете. Написать снова можно через 7 дней."))
+
+                Label {
+                    Text("Без ссылок, телефонов и контактов в других мессенджерах — такие сообщения не уйдут.")
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "shield")
+                        .foregroundStyle(Color.brand)
+                }
+                .font(.app(.subheadline))
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.appElevated, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                if let limits {
+                    Text(limits.introsLeftText)
+                        .font(.app(.footnote))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 28)
+            .padding(.bottom, 12)
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button("Понятно, написать", action: onConfirm)
+                .buttonStyle(.appPrimary)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+        }
+        .presentationDetents([.fraction(0.8), .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Color.appSurface)
+    }
+
+    private func step(_ number: Int, title: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text("\(number)")
+                .font(.app(.callout, weight: .bold))
+                .foregroundStyle(Color.champagne)
+                .frame(width: 30, height: 30)
+                .background(Color.champagneSoft, in: Circle())
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.app(.body, weight: .semibold))
+                Text(text)
+                    .font(.app(.subheadline))
+                    .foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+extension DailyLimits {
+    /// «Сегодня можно написать ещё 4 раза. Новые — в полночь.»
+    var introsLeftText: String {
+        guard introsLeft > 0 else {
+            return String(localized: "Сегодня сообщения закончились — новые появятся в полночь.")
+        }
+        let lastTwo = introsLeft % 100
+        let last = introsLeft % 10
+        if (2...4).contains(last) && !(12...14).contains(lastTwo) {
+            return String(localized: "Сегодня можно написать ещё \(introsLeft) раза. Новые — в полночь.")
+        }
+        return String(localized: "Сегодня можно написать ещё \(introsLeft) раз. Новые — в полночь.")
     }
 }
 

@@ -2,9 +2,6 @@ import SwiftUI
 
 private enum ActiveSheet: Identifiable, Hashable {
     case newChat
-    case newChannel
-    case channelDirectory
-    case bots
     /// Анкета найденного человека с кнопкой «Написать».
     case person(User)
     case requests
@@ -12,9 +9,13 @@ private enum ActiveSheet: Identifiable, Hashable {
     var id: Self { self }
 }
 
+/// Вся переписка в одном месте: новые пары, первые сообщения и запросы, обычные чаты.
 struct ChatListView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
-    @StateObject private var viewModel = ChatListViewModel()
+    /// Модели живут на уровне вкладок: по ним считается число на вкладке «Чаты».
+    @ObservedObject var viewModel: ChatListViewModel
+    @ObservedObject var matches: MatchesViewModel
+    @ObservedObject var dating: DatingViewModel
     @ObservedObject private var drafts = ChatDraftStore.shared
     @ObservedObject private var push = PushManager.shared
     @State private var activeSheet: ActiveSheet?
@@ -29,6 +30,8 @@ struct ChatListView: View {
     @State private var pendingPerson: User?
     /// Вкладка «Удалённые»: чаты удалённых пар, только для чтения, отдельно от обычных.
     @State private var showDeleted = false
+    /// Пара, открытая из шапки её чата: «Путь к браку», встречи, удаление пары.
+    @State private var openedPair: DatingMatch?
 
     // body разбит на части: одним выражением компилятор не успевал вывести типы
     // («unable to type-check this expression in reasonable time»).
@@ -37,20 +40,19 @@ struct ChatListView: View {
             chatList
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Menu {
-                            Button("Новый чат", systemImage: "person") { activeSheet = .newChat }
-                            Button("Новый канал", systemImage: "megaphone") { activeSheet = .newChannel }
-                            Button("Найти канал", systemImage: "magnifyingglass") { activeSheet = .channelDirectory }
-                            Button("Мои боты", systemImage: "cpu") { activeSheet = .bots }
-                        } label: {
+                        Button { activeSheet = .newChat } label: {
                             Image(systemName: "square.and.pencil")
                         }
-                        .accessibilityLabel("Создать")
+                        .accessibilityLabel("Новый чат")
                     }
                 }
                 .task {
                     await viewModel.load()
                     await viewModel.loadRequestsCount()
+                }
+                .task(id: dating.stage) {
+                    guard dating.stage == .ready else { return }
+                    await matches.load()
                 }
                 // Незнакомому сервер не дал открыть чат — открываем переписку, где первое сообщение уйдёт запросом.
                 .onChange(of: viewModel.requestTarget) { _, user in
@@ -79,6 +81,7 @@ struct ChatListView: View {
                 .refreshable {
                     await viewModel.load()
                     await viewModel.loadRequestsCount()
+                    if dating.stage == .ready { await matches.load() }
                 }
                 .sheet(item: $activeSheet) { sheet in
                     sheetContent(for: sheet)
@@ -94,11 +97,22 @@ struct ChatListView: View {
                 }
                 .navigationDestination(item: $openedChat) { chat in
                     if let currentUserId = authViewModel.currentUser?.id {
-                        ChatView(viewModel: ChatViewModel(chat: chat, currentUserId: currentUserId)) {
+                        ChatView(
+                            viewModel: ChatViewModel(chat: chat, currentUserId: currentUserId),
+                            onOpenPair: pair(forChatId: chat.id).map { match in { openedPair = match } }
+                        ) {
                             openedChat = nil
                             viewModel.removeChat(id: chat.id)
                         }
                     }
+                }
+                .navigationDestination(item: $openedPair) { match in
+                    MatchDetailView(match: match, dating: dating, matches: matches)
+                        .alert("Ошибка", isPresented: Binding(get: { matches.errorMessage != nil }, set: { if !$0 { matches.errorMessage = nil } })) {
+                            Button("Ок") { matches.errorMessage = nil }
+                        } message: {
+                            Text(matches.errorMessage ?? "")
+                        }
                 }
         }
     }
@@ -109,13 +123,14 @@ struct ChatListView: View {
         }
         .listStyle(.plain)
         .appScreenBackground()
-        .searchable(text: $query, prompt: "Чаты и люди по @username")
+        .searchable(text: $query, prompt: "Поиск по чатам и @username")
         .task(id: searchNeedle) { await searchUsers(searchNeedle) }
         .overlay {
             if !searchNeedle.isEmpty && filteredChats.isEmpty && newPeople.isEmpty && userSearchError == nil {
                 if isSearchingUsers { ProgressView() } else { ContentUnavailableView.search(text: query) }
-            } else if viewModel.chats.isEmpty && !viewModel.isLoading {
-                ContentUnavailableView("Пока нет чатов", systemImage: "bubble.left.and.bubble.right", description: Text("Нажмите ✎, чтобы найти собеседника"))
+            } else if viewModel.chats.isEmpty && !viewModel.isLoading && newMatches.isEmpty
+                        && viewModel.incomingRequestsCount == 0 && viewModel.sentRequestsCount == 0 {
+                ContentUnavailableView("Пока нет чатов", systemImage: "bubble.left.and.bubble.right", description: Text("Здесь появятся пары и переписка. Лайкайте анкеты в «Знакомствах» или нажмите ✎, чтобы написать по @username."))
             }
         }
         .confirmationDialog(
@@ -138,21 +153,30 @@ struct ChatListView: View {
 
     @ViewBuilder
     private var listContent: some View {
+        if searchNeedle.isEmpty && !showDeleted && !newMatches.isEmpty {
+            NewMatchesStrip(matches: newMatches) { match in
+                guard let chatId = match.chatId else { return }
+                Task { openedChat = await viewModel.chat(withId: chatId) }
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 6, trailing: 0))
+        }
+
+        if searchNeedle.isEmpty && !showDeleted && (viewModel.incomingRequestsCount > 0 || viewModel.sentRequestsCount > 0) {
+            RequestsCard(incoming: viewModel.incomingRequestsCount, sent: viewModel.sentRequestsCount) {
+                activeSheet = .requests
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
+        }
+
         if searchNeedle.isEmpty {
             ChatTabs(showDeleted: $showDeleted, deletedCount: viewModel.chats.filter(\.isClosed).count)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 6, trailing: 16))
-        }
-
-        if searchNeedle.isEmpty && !showDeleted && viewModel.incomingRequestsCount > 0 {
-            Button { activeSheet = .requests } label: {
-                RequestsCard(count: viewModel.incomingRequestsCount)
-            }
-            .buttonStyle(.plain)
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 10, trailing: 16))
         }
 
         ForEach(visibleChats) { chat in
@@ -258,17 +282,6 @@ struct ChatListView: View {
                     }
                 }
             }
-        case .newChannel:
-            NewChannelView { title, username in
-                activeSheet = nil
-                Task {
-                    if let chat = await viewModel.createChannel(title: title, username: username) {
-                        openedChat = chat
-                    }
-                }
-            }
-        case .bots:
-            BotsView()
         case .person(let user):
             NavigationStack {
                 PersonCardView(user: user) {
@@ -286,20 +299,20 @@ struct ChatListView: View {
                     }
                 }
             }
-        case .channelDirectory:
-            ChannelDirectoryView { channel in
-                activeSheet = nil
-                Task {
-                    if let chat = await viewModel.joinChannel(channel) {
-                        openedChat = chat
-                    }
-                }
-            }
         }
     }
 
     private var searchNeedle: String {
         query.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Пары, где ещё никто не написал: кружками сверху, чтобы не потерялись среди чатов.
+    private var newMatches: [DatingMatch] {
+        matches.matches.filter { !$0.hasMessages && $0.chatId != nil }
+    }
+
+    private func pair(forChatId chatId: String) -> DatingMatch? {
+        matches.matches.first { $0.chatId == chatId }
     }
 
     /// Уже открытые чаты фильтруем на месте — по названию и @username.
@@ -346,32 +359,114 @@ struct ChatListView: View {
     }
 }
 
-/// «Запросы на переписку» — плашкой над чатами, пока есть неотвеченные.
+/// Первые сообщения и запросы — одной карточкой над чатами: «Вам написали» и «Ждут ответа».
+/// Обе строки открывают общий ящик запросов, где ответ превращает сообщение в чат.
 private struct RequestsCard: View {
-    let count: Int
+    let incoming: Int
+    let sent: Int
+    let onOpen: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "tray.full.fill")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 42, height: 42)
-                .background(.brandFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Запросы на переписку").font(.app(.body, weight: .semibold))
-                Text("Первые сообщения и новые знакомые")
+        VStack(spacing: 0) {
+            if incoming > 0 {
+                row(
+                    systemImage: "tray.fill", iconColor: .white, iconBackground: AnyShapeStyle(.brandFill),
+                    title: String(localized: "Вам написали"), subtitle: String(localized: "Ответьте — и откроется чат")
+                ) {
+                    CountBadge(count: incoming)
+                }
+            }
+            if incoming > 0 && sent > 0 {
+                Divider().overlay(Color.appLine)
+            }
+            if sent > 0 {
+                row(
+                    systemImage: "clock", iconColor: .champagne, iconBackground: AnyShapeStyle(Color.champagneSoft),
+                    title: String(localized: "Ждут ответа"), subtitle: String(localized: "Вы написали первым")
+                ) {
+                    HStack(spacing: 10) {
+                        Text("\(sent)")
+                            .font(.app(.body, weight: .medium))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+        }
+        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
+    }
+
+    private func row<Trailing: View>(
+        systemImage: String, iconColor: Color, iconBackground: AnyShapeStyle,
+        title: String, subtitle: String, @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        Button(action: onOpen) {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(iconColor)
+                    .frame(width: 40, height: 40)
+                    .background(iconBackground, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.app(.body, weight: .semibold))
+                    Text(subtitle)
+                        .font(.app(.footnote))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                trailing()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// «Новые пары» — кружками в ряд: с ними ещё никто не написал, нажатие открывает чат пары.
+private struct NewMatchesStrip: View {
+    let matches: [DatingMatch]
+    let onOpen: (DatingMatch) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                (Text("Новые пары ") + Text("\(matches.count)").foregroundStyle(Color.brand))
+                    .font(.app(.body, weight: .bold))
+                Spacer()
+                Text("Напишите первым")
                     .font(.app(.footnote))
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
-            Spacer(minLength: 8)
-            CountBadge(count: count)
+            .padding(.horizontal, 20)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(matches) { match in
+                        Button { onOpen(match) } label: {
+                            VStack(spacing: 6) {
+                                RingedAvatar(photoId: match.partner.photoId, size: 60, highlighted: true)
+                                Text(match.partner.displayName)
+                                    .font(.app(.footnote, weight: .medium))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                            }
+                            .frame(width: 72)
+                        }
+                        .buttonStyle(PressableButtonStyle())
+                        .accessibilityLabel("Новая пара: \(match.partner.displayName)")
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(Color.brandSoft, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -544,7 +639,7 @@ struct BotBadge: View {
     }
 }
 
-/// Переключатель «Все / Удалённые» под поиском (макеты «Чаты — вкладка „Все“» и «„Удалённые“»).
+/// Переключатель «Все / Удалённые пары» под поиском (макеты «Чаты — вкладка „Все“» и «„Удалённые“»).
 private struct ChatTabs: View {
     @Binding var showDeleted: Bool
     let deletedCount: Int
@@ -552,7 +647,7 @@ private struct ChatTabs: View {
     var body: some View {
         HStack(spacing: 4) {
             tab(String(localized: "Все"), selected: !showDeleted) { showDeleted = false }
-            tab(String(localized: "Удалённые"), count: deletedCount, selected: showDeleted) { showDeleted = true }
+            tab(String(localized: "Удалённые пары"), count: deletedCount, selected: showDeleted) { showDeleted = true }
         }
         .padding(4)
         .frame(height: 40)

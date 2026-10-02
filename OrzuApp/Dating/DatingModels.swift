@@ -227,7 +227,7 @@ enum VisibilityIssue: String, Codable, Hashable {
 
     var explanation: String {
         switch self {
-        case .hidden: return String(localized: "Анкета скрыта вами — включите её в «Моём профиле»")
+        case .hidden: return String(localized: "Анкета скрыта вами — включите её в «Настройках»")
         case .deactivated: return String(localized: "Аккаунт деактивирован")
         case .notVerified: return String(localized: "Нужно подтвердить анкету селфи")
         case .noApprovedPhotos: return String(localized: "Нет ни одного фото, одобренного модератором")

@@ -161,6 +161,22 @@
         }
       }
     },
+    "%@ увидит его в «Чатах» → «Вам написали»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ will see it in Chats → Messages for you."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ онро дар «Чатҳо» → «Ба шумо навиштанд» мебинад."
+          }
+        }
+      }
+    },
     "%@, %lld, совместимость %lld%%" : {
       "localizations" : {
         "en" : {
@@ -341,6 +357,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld нафар"
+          }
+        }
+      }
+    },
+    "%lld%% совместимость" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% match"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% мувофиқат"
+          }
+        }
+      }
+    },
+    "%lld–%lld лет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld years"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld–%2$lld сола"
           }
         }
       }
@@ -713,6 +761,22 @@
         }
       }
     },
+    "Анкета заполнена" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile completed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкета пур карда шуд"
+          }
+        }
+      }
+    },
     "Анкета заполнена на %lld процентов" : {
       "localizations" : {
         "en" : {
@@ -857,6 +921,22 @@
         }
       }
     },
+    "Анкета скрыта вами — включите её в «Настройках»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You hid your profile — turn it back on in Settings"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаро шумо пинҳон кардед — онро дар «Танзимот» фаъол кунед"
+          }
+        }
+      }
+    },
     "Анкета скрыта или ещё не прошла проверку" : {
       "localizations" : {
         "en" : {
@@ -969,6 +1049,22 @@
         }
       }
     },
+    "Анкеты пока нет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No dating profile yet"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло анкета нест"
+          }
+        }
+      }
+    },
     "Ассалому алейкум! Как дела?" : {
       "localizations" : {
         "en" : {
@@ -997,6 +1093,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Занги аудиоӣ"
+          }
+        }
+      }
+    },
+    "Без анкеты вас не видят в ленте и «Поиске»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Without a profile nobody sees you in the feed or Search."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бе анкета шуморо дар навор ва «Ҷустуҷӯ» намебинанд."
+          }
+        }
+      }
+    },
+    "Без детей" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No children"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бе фарзанд"
           }
         }
       }
@@ -1061,6 +1189,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Бе онҳо аз ҷуфтҳо ва паёмҳои нав огоҳ намешавед"
+          }
+        }
+      }
+    },
+    "Без ссылок, телефонов и контактов в других мессенджерах — такие сообщения не уйдут." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No links, phone numbers or other messenger contacts — such messages won't be sent."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бе пайвандҳо, рақамҳои телефон ва тамосҳо дар дигар мессенҷерҳо — чунин паёмҳо фиристода намешаванд."
           }
         }
       }
@@ -1221,6 +1365,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Имрӯз ворид шуда буд"
+          }
+        }
+      }
+    },
+    "Быстрее всего — без пароля" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fastest — no password needed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аз ҳама зудтар — бе рамз"
           }
         }
       }
@@ -1497,6 +1657,22 @@
         }
       }
     },
+    "Вашу анкету видят" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People can see your profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаи шуморо мебинанд"
+          }
+        }
+      }
+    },
     "Вашу анкету не видят другие" : {
       "localizations" : {
         "en" : {
@@ -1541,6 +1717,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ақаллан %lld аломат ворид кунед"
+          }
+        }
+      }
+    },
+    "Вернуть последнюю анкету" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bring back the last profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаи охиринро баргардонед"
           }
         }
       }
@@ -1913,6 +2105,22 @@
         }
       }
     },
+    "Влияет на ленту «Знакомства»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shapes your Dating feed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ба навори «Шиносоӣ» таъсир мерасонад"
+          }
+        }
+      }
+    },
     "Вложение" : {
       "localizations" : {
         "en" : {
@@ -1957,6 +2165,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Синну сол"
+          }
+        }
+      }
+    },
+    "Возраст, город, семейное положение" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Age, city, marital status"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синну сол, шаҳр, вазъи оилавӣ"
           }
         }
       }
@@ -2085,6 +2309,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ҳама"
+          }
+        }
+      }
+    },
+    "Все анкеты и свои фильтры" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All profiles, your own filters"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамаи анкетаҳо ва филтрҳои худ"
+          }
+        }
+      }
+    },
+    "Все анкеты — ищите сами по фильтрам. Фильтр действует только здесь: на ленту «Знакомства» он не влияет." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All profiles — search yourself with filters. The filter works only here: it doesn't affect your Dating feed."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамаи анкетаҳо — худатон бо филтрҳо ҷустуҷӯ кунед. Филтр танҳо дар ин ҷо амал мекунад: ба навори «Шиносоӣ» таъсир намерасонад."
+          }
+        }
+      }
+    },
+    "Все анкеты. Ищите сами по своему фильтру." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All profiles. Search yourself with your own filter."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамаи анкетаҳо. Худатон бо филтри худ ҷӯед."
           }
         }
       }
@@ -2313,6 +2585,22 @@
         }
       }
     },
+    "Вы написали первым" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You wrote first"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо аввал навиштед"
+          }
+        }
+      }
+    },
     "Вы отменили" : {
       "localizations" : {
         "en" : {
@@ -2373,6 +2661,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Шумо анкета ва паёмҳои ин шахсро дигар намебинед ва ӯ низ аз они шуморо."
+          }
+        }
+      }
+    },
+    "Вы посмотрели всех на сегодня" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You've seen everyone for today"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз ҳамаро дидед"
           }
         }
       }
@@ -2857,6 +3161,22 @@
         }
       }
     },
+    "Город, рост и остальное — в «Профиль → Моя анкета». Кого вы ищете — в «Профиль → Кого ищу»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "City, height and the rest are in Profile → My dating profile. Who you're looking for is in Profile → Looking for."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шаҳр, қад ва дигар чизҳо — дар «Профил → Анкетаи ман». Киро меҷӯед — дар «Профил → Киро меҷӯям»."
+          }
+        }
+      }
+    },
     "Готово" : {
       "localizations" : {
         "en" : {
@@ -2953,6 +3273,22 @@
         }
       }
     },
+    "Дальше" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Минбаъд"
+          }
+        }
+      }
+    },
     "Дата рождения" : {
       "localizations" : {
         "en" : {
@@ -2965,6 +3301,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Санаи таваллуд"
+          }
+        }
+      }
+    },
+    "Девушку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A woman"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Духтар"
           }
         }
       }
@@ -3205,6 +3557,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "То %lld нафарро илова кунед, ки ҳангоми SOS ҷойгиршавии шуморо мегиранд."
+          }
+        }
+      }
+    },
+    "Добавьте фото — прежние не прошли проверку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a photo — the previous ones didn't pass review"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Акс илова кунед — аксҳои пештара аз санҷиш нагузаштанд"
           }
         }
       }
@@ -3509,6 +3877,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Боз"
+          }
+        }
+      }
+    },
+    "Её показывают тем, кому вы подходите." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's shown to people you're a match for."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Онро ба онҳое нишон медиҳанд, ки шумо ба онҳо мувофиқ ҳастед."
+          }
+        }
+      }
+    },
+    "Ждут ответа" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awaiting reply"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Интизори ҷавоб"
           }
         }
       }
@@ -3833,6 +4233,22 @@
         }
       }
     },
+    "Закрыть подсказку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close tip"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Маслиҳатро пӯшидан"
+          }
+        }
+      }
+    },
     "Заметка" : {
       "localizations" : {
         "en" : {
@@ -3961,6 +4377,22 @@
         }
       }
     },
+    "Заполните анкету" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill in your profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаро пур кунед"
+          }
+        }
+      }
+    },
     "Заполните анкету, подтвердите её селфи — и вы появитесь в ленте у тех, кто ищет такого человека, как вы." : {
       "localizations" : {
         "en" : {
@@ -4073,6 +4505,22 @@
         }
       }
     },
+    "Защищает от фейков и повторной регистрации нарушителей. Никому не показывается, SMS не отправляем." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protects against fake accounts and banned users signing up again. Never shown to anyone, and we don't send SMS."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аз аккаунтҳои қалбакӣ ва бақайдгирии такрории вайронкунандагон муҳофизат мекунад. Ба касе нишон дода намешавад, SMS намефиристем."
+          }
+        }
+      }
+    },
     "Звоним…" : {
       "localizations" : {
         "en" : {
@@ -4137,6 +4585,22 @@
         }
       }
     },
+    "Здесь появятся пары и переписка. Лайкайте анкеты в «Знакомствах» или нажмите ✎, чтобы написать по @username." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your matches and conversations will appear here. Like profiles in Dating or tap ✎ to message someone by @username."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷуфтҳо ва мукотиба дар ин ҷо пайдо мешаванд. Дар «Шиносоӣ» анкетаҳоро лайк кунед ё ✎-ро пахш кунед, то бо @username нависед."
+          }
+        }
+      }
+    },
     "Здесь появятся сообщения от тех, с кем вы ещё не переписывались" : {
       "localizations" : {
         "en" : {
@@ -4149,6 +4613,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Дар ин ҷо паёмҳои касоне пайдо мешаванд, ки бо онҳо ҳанӯз мукотиба накардаед"
+          }
+        }
+      }
+    },
+    "Здесь только те, кто подходит вам — и кому подходите вы. Искать самим — во вкладке «Поиск»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only people who suit you — and whom you suit. To search yourself, use the Search tab."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар ин ҷо танҳо онҳое ҳастанд, ки ба шумо мувофиқанд — ва шумо ба онҳо. Худатон ҷустан — дар ҷадвали «Ҷустуҷӯ»."
           }
         }
       }
@@ -4473,6 +4953,22 @@
         }
       }
     },
+    "Искать самим во вкладке «Поиск»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search yourself in the Search tab"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Худатон дар ҷадвали «Ҷустуҷӯ» ҷӯед"
+          }
+        }
+      }
+    },
     "Исчезнет через %@" : {
       "localizations" : {
         "en" : {
@@ -4581,6 +5077,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Чӣ тавр пайваст кардан"
+          }
+        }
+      }
+    },
+    "Как работает «Написать»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How “Message” works"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Навиштан» чӣ тавр кор мекунад"
+          }
+        }
+      }
+    },
+    "Как работает лента" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How the feed works"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навор чӣ тавр кор мекунад"
+          }
+        }
+      }
+    },
+    "Как только модератор всё проверит, анкета появится в ленте со значком «проверен». Переписка и «Поиск» работают уже сейчас." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once a moderator has checked everything, your profile will appear in the feed with a “verified” badge. Messaging and Search already work."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамин ки модератор ҳамаро санҷад, анкета бо нишони «тасдиқшуда» дар навор пайдо мешавад. Мукотиба ва «Ҷустуҷӯ» ҳозир ҳам кор мекунанд."
+          }
+        }
+      }
+    },
+    "Как это работает" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How it works"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ин чӣ тавр кор мекунад"
           }
         }
       }
@@ -4905,6 +5465,22 @@
         }
       }
     },
+    "Коротко о главном: что значат слова, которые встречаются в знакомствах." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The essentials: what the words you see in dating mean."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мухтасар дар бораи асосӣ: калимаҳое, ки дар шиносоӣ вомехӯранд, чӣ маъно доранд."
+          }
+        }
+      }
+    },
     "Кто может добавлять в группы" : {
       "localizations" : {
         "en" : {
@@ -4985,6 +5561,38 @@
         }
       }
     },
+    "Лайк взаимный — вы пара, и открывается чат." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When the like is mutual, you're a match and a chat opens."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Лайк мутақобил бошад — шумо ҷуфт ҳастед ва чат кушода мешавад."
+          }
+        }
+      }
+    },
+    "Лайк и пара" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Like and match"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Лайк ва ҷуфт"
+          }
+        }
+      }
+    },
     "Лайки закончились — вернутся %@" : {
       "localizations" : {
         "en" : {
@@ -4997,6 +5605,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Лайкҳо тамом шуданд — соати %@ бармегарданд"
+          }
+        }
+      }
+    },
+    "Лайки, пары, проверка, «Путь к браку»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Likes, matches, verification, Path to marriage"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Лайкҳо, ҷуфтҳо, санҷиш, «Роҳ ба никоҳ»"
           }
         }
       }
@@ -5017,6 +5641,22 @@
         }
       }
     },
+    "Латиница, цифры и «_». По логину вас можно найти и войти в приложение." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latin letters, digits and “_”. People can find you by your login, and you sign in with it."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳарфҳои лотинӣ, рақамҳо ва «_». Бо логин шуморо ёфтан мумкин аст ва бо он ба барнома ворид мешавед."
+          }
+        }
+      }
+    },
     "Лента закрыта" : {
       "localizations" : {
         "en" : {
@@ -5029,6 +5669,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Навор баста аст"
+          }
+        }
+      }
+    },
+    "Лента тех, кто подходит вам и кому подходите вы. Подбирает приложение." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A feed of people who suit you and whom you suit. The app picks them."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навори онҳое, ки ба шумо мувофиқанд ва шумо ба онҳо. Барнома интихоб мекунад."
+          }
+        }
+      }
+    },
+    "Логин" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Login"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Логин"
+          }
+        }
+      }
+    },
+    "Логин или почта" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Login or email"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Логин ё почта"
           }
         }
       }
@@ -5193,6 +5881,38 @@
         }
       }
     },
+    "Модератор сверяет селфи с фото — до 24 часов. Потом значок «проверен»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A moderator compares your selfie with your photos — within 24 hours. Then you get the “verified” badge."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модератор селфиро бо аксҳо муқоиса мекунад — то 24 соат. Баъд нишони «тасдиқшуда»."
+          }
+        }
+      }
+    },
+    "Модератор сравнит селфи с фото анкеты — до 24 часов." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A moderator will compare your selfie with your profile photos — within 24 hours."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модератор селфиро бо аксҳои анкета муқоиса мекунад — то 24 соат."
+          }
+        }
+      }
+    },
     "Модератор сравнит селфи с фото анкеты — обычно это занимает несколько часов." : {
       "localizations" : {
         "en" : {
@@ -5269,6 +5989,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Анкетаи ман"
+          }
+        }
+      }
+    },
+    "Мужчину" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A man"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мард"
           }
         }
       }
@@ -5785,6 +6521,22 @@
         }
       }
     },
+    "Не заполнено" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not set"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пур нашудааст"
+          }
+        }
+      }
+    },
     "Не меньше 8 символов" : {
       "localizations" : {
         "en" : {
@@ -5797,6 +6549,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "На камтар аз 8 аломат"
+          }
+        }
+      }
+    },
+    "Не ответит за сутки — сообщение исчезнет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reply within a day — the message disappears"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Агар дар як шабонарӯз ҷавоб надиҳад — паём нест мешавад"
           }
         }
       }
@@ -5829,6 +6597,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Тасдиқ нашудааст"
+          }
+        }
+      }
+    },
+    "Не пройдена" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not passed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нагузашт"
           }
         }
       }
@@ -6489,6 +7273,22 @@
         }
       }
     },
+    "Новая пара: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New match: %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷуфти нав: %@"
+          }
+        }
+      }
+    },
     "Новенький" : {
       "localizations" : {
         "en" : {
@@ -6553,6 +7353,22 @@
         }
       }
     },
+    "Новые анкеты появляются каждый день. А пока можно расширить поиск или познакомиться по-другому." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New profiles appear every day. Meanwhile, widen your search or meet people another way."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаҳои нав ҳар рӯз пайдо мешаванд. Ҳоло метавонед ҷустуҷӯро васеъ кунед ё бо роҳи дигар шинос шавед."
+          }
+        }
+      }
+    },
     "Новые пары" : {
       "localizations" : {
         "en" : {
@@ -6565,6 +7381,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ҷуфтҳои нав"
+          }
+        }
+      }
+    },
+    "Новые пары " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New matches "
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷуфтҳои нав "
           }
         }
       }
@@ -6793,6 +7625,22 @@
         }
       }
     },
+    "Об отказе вы не узнаете. Написать снова можно через 7 дней." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You won't be told about a decline. You can write again in 7 days."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар бораи рад шумо огоҳ намешавед. Пас аз 7 рӯз боз навиштан мумкин аст."
+          }
+        }
+      }
+    },
     "Обжалование отправлено. Модератор пересмотрит решение, ответ придёт на почту аккаунта." : {
       "localizations" : {
         "en" : {
@@ -6869,6 +7717,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Навсозӣ дар App Store"
+          }
+        }
+      }
+    },
+    "Обновить ленту" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh feed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наворро навсозӣ кунед"
           }
         }
       }
@@ -6965,6 +7829,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Маълумот"
+          }
+        }
+      }
+    },
+    "Общие шаги пары от знакомства до никаха. Ступень меняется, когда согласны оба." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared steps of a couple from meeting to nikah. The stage changes when both agree."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Қадамҳои умумии ҷуфт аз шиносоӣ то никоҳ. Зина вақте иваз мешавад, ки ҳарду розӣ бошанд."
           }
         }
       }
@@ -7273,6 +8153,22 @@
         }
       }
     },
+    "Ответит — и вы пара" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They reply — you're a match"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавоб диҳад — шумо ҷуфт ҳастед"
+          }
+        }
+      }
+    },
     "Ответите — и вы станете парой" : {
       "localizations" : {
         "en" : {
@@ -7333,6 +8229,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Бо лайк ҷавоб диҳед — ва шумо ҷуфт ҳастед. Агар гузаронед, он шахс намедонад."
+          }
+        }
+      }
+    },
+    "Ответьте — и откроется чат" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reply — and a chat opens"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавоб диҳед — чат кушода мешавад"
           }
         }
       }
@@ -7465,6 +8377,38 @@
         }
       }
     },
+    "Откроется обычный чат во вкладке «Чаты»." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A regular chat opens in the Chats tab."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар ҷадвали «Чатҳо» чати оддӣ кушода мешавад."
+          }
+        }
+      }
+    },
+    "Открыть «Путь к браку» и встречи" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Path to marriage and meetings"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Роҳ ба никоҳ» ва вохӯриҳоро кушоед"
+          }
+        }
+      }
+    },
     "Открыть анкету" : {
       "localizations" : {
         "en" : {
@@ -7477,6 +8421,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Кушодани анкета"
+          }
+        }
+      }
+    },
+    "Открыть анкету целиком" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the full profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаро пурра кушоед"
           }
         }
       }
@@ -8393,6 +9353,22 @@
         }
       }
     },
+    "Первое сообщение вместе с лайком. Ответят за сутки — вы пара." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A first message along with a like. If they reply within a day, you're a match."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паёми аввал якҷоя бо лайк. Дар як шабонарӯз ҷавоб диҳанд — шумо ҷуфт ҳастед."
+          }
+        }
+      }
+    },
     "Первое фото — главное. Новые фото и видео проверяет модератор: до проверки их видите только вы." : {
       "localizations" : {
         "en" : {
@@ -8469,6 +9445,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Пеш аз вохӯрии аввал"
+          }
+        }
+      }
+    },
+    "Переписка и «Поиск» работают уже сейчас." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messaging and Search already work."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мукотиба ва «Ҷустуҷӯ» ҳозир ҳам кор мекунанд."
           }
         }
       }
@@ -8581,6 +9573,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Мувофиқат аз рӯи шавқу завқ ҳисоб мешавад — ҳар чизе, ки ба дилатон наздик аст, қайд кунед."
+          }
+        }
+      }
+    },
+    "По логину вас находят в мессенджере и знакомствах, им же входят в приложение. Старый логин освободится, и его сможет занять другой человек." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People find you by your login in messages and dating, and you sign in with it. Your old login will be freed and someone else may take it."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бо логин шуморо дар мессенҷер ва шиносоӣ меёбанд ва бо он ба барнома ворид мешаванд. Логини кӯҳна озод мешавад ва онро шахси дигар гирифта метавонад."
           }
         }
       }
@@ -9017,6 +10025,22 @@
         }
       }
     },
+    "Поиск по чатам и @username" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search chats and @username"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷустуҷӯ дар чатҳо ва @username"
+          }
+        }
+      }
+    },
     "Поиск по чату" : {
       "localizations" : {
         "en" : {
@@ -9045,6 +10069,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ҷустуҷӯи паёмҳо"
+          }
+        }
+      }
+    },
+    "Пока вас не видят в ленте" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're not visible in the feed yet"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло шуморо дар навор намебинанд"
           }
         }
       }
@@ -9337,6 +10377,38 @@
         }
       }
     },
+    "Понятно, написать" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it, write"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фаҳмо, навиштан"
+          }
+        }
+      }
+    },
+    "Попробовать рулетку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try roulette"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рулеткаро озмоед"
+          }
+        }
+      }
+    },
     "Почта" : {
       "localizations" : {
         "en" : {
@@ -9497,6 +10569,22 @@
         }
       }
     },
+    "Приватность, уведомления, почта, пароль, выход" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy, notifications, email, password, sign out"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Махфият, огоҳиномаҳо, почта, рамз, баромад"
+          }
+        }
+      }
+    },
     "Привычки и образование" : {
       "localizations" : {
         "en" : {
@@ -9561,6 +10649,22 @@
         }
       }
     },
+    "Придёт код подтверждения. Никому не показывается." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll send a confirmation code. Never shown to anyone."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рамзи тасдиқ меояд. Ба касе нишон дода намешавад."
+          }
+        }
+      }
+    },
     "Приложение" : {
       "localizations" : {
         "en" : {
@@ -9573,6 +10677,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Барнома"
+          }
+        }
+      }
+    },
+    "Примите правила сообщества во вкладке «Знакомства» — и заполните анкету." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accept the community rules in the Dating tab — then fill in your profile."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Қоидаҳои ҷомеаро дар ҷадвали «Шиносоӣ» қабул кунед — ва анкетаро пур кунед."
           }
         }
       }
@@ -9721,6 +10841,22 @@
         }
       }
     },
+    "Проверка селфи" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selfie verification"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Санҷиши селфи"
+          }
+        }
+      }
+    },
     "Проверяем сами каждые 30 секунд" : {
       "localizations" : {
         "en" : {
@@ -9781,6 +10917,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Гузашт"
+          }
+        }
+      }
+    },
+    "Пройдите проверку по селфи" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete selfie verification"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аз санҷиш бо селфи гузаред"
           }
         }
       }
@@ -9877,6 +11029,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Касб"
+          }
+        }
+      }
+    },
+    "Профиль" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профил"
           }
         }
       }
@@ -10073,6 +11241,22 @@
         }
       }
     },
+    "Расширить «Кого ищу»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widen “Looking for”"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Киро меҷӯям»-ро васеъ кунед"
+          }
+        }
+      }
+    },
     "Регистрация" : {
       "localizations" : {
         "en" : {
@@ -10217,6 +11401,22 @@
         }
       }
     },
+    "Рулетка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roulette"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рулетка"
+          }
+        }
+      }
+    },
     "Рядом с вашим именем стоит значок «проверен» — такие анкеты вызывают больше доверия." : {
       "localizations" : {
         "en" : {
@@ -10261,6 +11461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Дар назди ном нишони «тасдиқшуда» пайдо мешавад"
+          }
+        }
+      }
+    },
+    "С детьми" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Has children"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бо фарзанд"
           }
         }
       }
@@ -10409,6 +11625,54 @@
         }
       }
     },
+    "Сегодня можно написать ещё %lld раз. Новые — в полночь." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can write %lld more times today. More at midnight."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз боз %lld маротиба навиштан мумкин аст. Навҳо — нисфи шаб."
+          }
+        }
+      }
+    },
+    "Сегодня можно написать ещё %lld раза. Новые — в полночь." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can write %lld more times today. More at midnight."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз боз %lld маротиба навиштан мумкин аст. Навҳо — нисфи шаб."
+          }
+        }
+      }
+    },
+    "Сегодня сообщения закончились — новые появятся в полночь." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No messages left today — more at midnight."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паёмҳои имрӯза тамом шуданд — навҳо нисфи шаб пайдо мешаванд."
+          }
+        }
+      }
+    },
     "Сейчас · %@" : {
       "localizations" : {
         "en" : {
@@ -10421,6 +11685,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ҳозир · %@"
+          }
+        }
+      }
+    },
+    "Сейчас: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now: %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло: %@"
           }
         }
       }
@@ -10473,6 +11753,22 @@
         }
       }
     },
+    "Селфи на проверке — " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selfie under review — "
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Селфи дар санҷиш — "
+          }
+        }
+      }
+    },
     "Селфи отклонено — попробуйте ещё раз" : {
       "localizations" : {
         "en" : {
@@ -10485,6 +11781,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Селфи рад шуд — боз кӯшиш кунед"
+          }
+        }
+      }
+    },
+    "Селфи проверено" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selfie verified"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Селфи тасдиқ шуд"
           }
         }
       }
@@ -10709,6 +12021,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Паёми хидматӣ"
+          }
+        }
+      }
+    },
+    "Случайный собеседник прямо сейчас" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A random person to talk to right now"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамсуҳбати тасодуфӣ ҳозир"
+          }
+        }
+      }
+    },
+    "Случайный собеседник прямо сейчас — видео или переписка." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A random person to talk to right now — video or text."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамсуҳбати тасодуфӣ ҳозир — видео ё мукотиба."
           }
         }
       }
@@ -11061,6 +12405,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Паём фиристода нашуд: %@"
+          }
+        }
+      }
+    },
+    "Сообщение незнакомому человеку. Чат откроется, когда он ответит." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A message to someone you don't know yet. The chat opens when they reply."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паём ба шахси ношинос. Чат вақте кушода мешавад, ки ӯ ҷавоб диҳад."
+          }
+        }
+      }
+    },
+    "Сообщение придёт вместе с лайком" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your message arrives with a like"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паём якҷоя бо лайк меравад"
           }
         }
       }
@@ -11913,6 +13289,22 @@
         }
       }
     },
+    "Удалённые пары" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removed matches"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷуфтҳои нестшуда"
+          }
+        }
+      }
+    },
     "Указать" : {
       "localizations" : {
         "en" : {
@@ -12057,6 +13449,38 @@
         }
       }
     },
+    "Фильтр" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Филтр"
+          }
+        }
+      }
+    },
+    "Фильтр · %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter · %lld"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Филтр · %lld"
+          }
+        }
+      }
+    },
     "Фильтры" : {
       "localizations" : {
         "en" : {
@@ -12169,6 +13593,22 @@
         }
       }
     },
+    "Фото добавлено" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo added"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Акс илова шуд"
+          }
+        }
+      }
+    },
     "Фото и видео" : {
       "localizations" : {
         "en" : {
@@ -12201,6 +13641,22 @@
         }
       }
     },
+    "Фото на проверке" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo under review"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Акс дар санҷиш"
+          }
+        }
+      }
+    },
     "Фото просмотрено" : {
       "localizations" : {
         "en" : {
@@ -12229,6 +13685,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Акс бо таймер"
+          }
+        }
+      }
+    },
+    "Фото, о себе, интересы" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos, about me, interests"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аксҳо, дар бораи худ, шавқҳо"
           }
         }
       }
@@ -12565,6 +14037,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Қадами %lld аз %lld"
+          }
+        }
+      }
+    },
+    "Шаг %lld из %lld · аккаунт → код из письма → анкета → фото" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %1$lld of %2$lld · account → email code → profile → photo"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Қадами %1$lld аз %2$lld · аккаунт → рамз аз мактуб → анкета → акс"
           }
         }
       }
@@ -13001,6 +14489,54 @@
         }
       }
     },
+    "до %lld км" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "within %lld km"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "то %lld км"
+          }
+        }
+      }
+    },
+    "до %lld лет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "up to %lld years"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "то %lld сола"
+          }
+        }
+      }
+    },
+    "до 24 часов" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "up to 24 hours"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "то 24 соат"
+          }
+        }
+      }
+    },
     "есть ли дети" : {
       "localizations" : {
         "en" : {
@@ -13061,6 +14597,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "таҳр."
+          }
+        }
+      }
+    },
+    "или по почте" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "or with email"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ё бо почта"
           }
         }
       }
@@ -13177,6 +14729,22 @@
         }
       }
     },
+    "например, madina_k" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e.g. madina_k"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "масалан, madina_k"
+          }
+        }
+      }
+    },
     "не задан" : {
       "localizations" : {
         "en" : {
@@ -13221,6 +14789,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "маълумот"
+          }
+        }
+      }
+    },
+    "от %lld лет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from %lld years"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "аз %lld сола"
           }
         }
       }

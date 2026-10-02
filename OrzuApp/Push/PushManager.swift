@@ -59,7 +59,7 @@ final class PushManager: NSObject, ObservableObject {
     }
     /// Тревога доверенного контакта: её нужно открыть сразу, из любой вкладки.
     @Published var pendingSosId: String?
-    /// Модератор попросил новое селфи — открыть «Мой профиль» и экран проверки.
+    /// Модератор попросил новое селфи — открыть профиль и экран проверки.
     @Published var pendingSelfieRequest = false
     /// Push «Вас лайкнули» — открыть знакомства и список лайкнувших.
     @Published var pendingLikedMe = false
