@@ -106,7 +106,7 @@ private struct ActiveCallView: View {
                 if isVideo && !callManager.isCameraOff {
                     HStack {
                         Spacer()
-                        RTCVideoRenderView(track: callManager.localVideoTrack)
+                        RTCVideoRenderView(track: callManager.localVideoTrack, mirrored: true)
                             .frame(width: 110, height: 160)
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.3), lineWidth: 1))

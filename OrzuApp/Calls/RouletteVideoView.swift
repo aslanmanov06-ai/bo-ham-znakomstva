@@ -206,7 +206,7 @@ struct RouletteVideoView: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 14) {
                 glassCircle(systemImage: "flag", title: String(localized: "Пожаловаться"), size: 44) { roulette.beginReport() }
-                RTCVideoRenderView(track: engine.isCameraOff ? nil : engine.localTrack)
+                RTCVideoRenderView(track: engine.isCameraOff ? nil : engine.localTrack, mirrored: engine.isFrontCamera)
                     .background(Color(rgb: 0x2E2329))
                     .frame(width: 104, height: 144)
                     .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))

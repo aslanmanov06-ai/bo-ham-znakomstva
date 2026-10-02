@@ -26,7 +26,6 @@ struct SelfieVerificationView: View {
             }
             .fullScreenCover(isPresented: $showCamera) {
                 SelfieCamera(gesture: gesture) { submit($0) }
-                    .ignoresSafeArea()
             }
             .alert("Ошибка", isPresented: .constant(errorMessage != nil)) {
                 Button("Ок") { errorMessage = nil }

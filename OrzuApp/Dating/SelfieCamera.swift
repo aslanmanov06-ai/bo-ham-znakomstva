@@ -1,20 +1,25 @@
 import AVFoundation
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
 
-/// Системная камера, сразу фронтальная и без выбора из галереи: селфи для проверки анкеты — только снятое сейчас,
+/// Своя камера вместо UIImagePickerController: системная показывает фронтальную камеру зеркально, а снимок
+/// сохраняет неотражённым — после съёмки фото «переворачивалось». Здесь и превью, и снимок как в зеркале.
+/// Только фронтальная камера и без галереи: селфи для проверки анкеты — только снятое сейчас,
 /// иначе проверку прошли бы чужим фото из интернета.
-struct SelfieCamera: UIViewControllerRepresentable {
+struct SelfieCamera: View {
     /// Жест подсказкой поверх камеры — чтобы не держать его в голове во время съёмки.
     let gesture: SelfieGesture?
     let onCapture: (UIImage) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var camera = SelfieCaptureSession()
+    /// Снятое фото: как у системной камеры — «Переснять» или «Использовать фото».
+    @State private var photo: UIImage?
+    @State private var failed = false
 
     /// На Симуляторе и iPad без фронтальной камеры снять селфи нечем.
     static var isAvailable: Bool {
-        UIImagePickerController.isSourceTypeAvailable(.camera) && UIImagePickerController.isCameraDeviceAvailable(.front)
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) != nil
     }
 
     /// Спрашивает доступ, если человек ещё не отвечал. Отказ бросает MediaPermissionError.camera с подсказкой про Настройки.
@@ -29,54 +34,165 @@ struct SelfieCamera: UIViewControllerRepresentable {
         }
     }
 
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.mediaTypes = [UTType.image.identifier]
-        picker.cameraCaptureMode = .photo
-        picker.cameraDevice = .front
-        picker.allowsEditing = false
-        picker.delegate = context.coordinator
-        if let gesture {
-            let hint = UIHostingController(rootView: GestureHint(gesture: gesture))
-            // Контроллер подсказки живёт, пока открыта камера: без владельца его вид не обновлялся бы.
-            context.coordinator.hint = hint
-            hint.view.backgroundColor = .clear
-            // Подсказка только показывает жест: нажатия проходят к кнопкам камеры.
-            hint.view.isUserInteractionEnabled = false
-            // Во весь экран камеры и вместе с ним при повороте; наследоваться от UIImagePickerController Apple не велит.
-            hint.view.frame = picker.view.bounds
-            hint.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            picker.cameraOverlayView = hint.view
-        }
-        return picker
-    }
-
-    func updateUIViewController(_ picker: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onCapture: onCapture, dismiss: { dismiss() })
-    }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        private let onCapture: (UIImage) -> Void
-        private let dismiss: () -> Void
-        fileprivate var hint: UIViewController?
-
-        init(onCapture: @escaping (UIImage) -> Void, dismiss: @escaping () -> Void) {
-            self.onCapture = onCapture
-            self.dismiss = dismiss
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                onCapture(image)
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            if let photo {
+                Image(uiImage: photo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                CameraPreview(session: camera.session)
+                    .ignoresSafeArea()
+                if let gesture {
+                    GestureHint(gesture: gesture)
+                }
+                if failed {
+                    Text("Камера недоступна — закройте и попробуйте ещё раз")
+                        .font(.app(.subheadline, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(24)
+                }
             }
-            dismiss()
+            VStack {
+                Spacer()
+                bottomBar
+            }
         }
+        .task {
+            do {
+                try await camera.start()
+            } catch {
+                failed = true
+            }
+        }
+        .onDisappear { camera.stop() }
+    }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            dismiss()
+    /// Нижняя панель как у системной камеры: «Отменить» и затвор, после снимка — «Переснять» и «Использовать фото».
+    private var bottomBar: some View {
+        ZStack {
+            if photo == nil {
+                Button(action: shoot) {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 64, height: 64)
+                        .padding(5)
+                        .overlay(Circle().strokeBorder(.white, lineWidth: 4))
+                }
+                .buttonStyle(PressableButtonStyle())
+                .disabled(failed || camera.isCapturing)
+                .accessibilityLabel("Сделать снимок")
+            }
+            HStack {
+                if photo == nil {
+                    Button("Отменить") { dismiss() }
+                } else {
+                    Button("Переснять") { photo = nil }
+                    Spacer()
+                    Button("Использовать фото") {
+                        if let photo { onCapture(photo) }
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+                Spacer()
+            }
+            .font(.app(.body))
+            .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color.black.opacity(0.45).ignoresSafeArea(edges: .bottom))
+    }
+
+    private func shoot() {
+        Task {
+            if let image = await camera.capture() {
+                photo = image
+            }
+        }
+    }
+}
+
+/// Сессия фронтальной камеры для одного снимка.
+/// @unchecked Sendable: сессия настраивается и запускается только на sessionQueue, а isCapturing и
+/// продолжение снимка меняются только на главном потоке.
+final class SelfieCaptureSession: NSObject, ObservableObject, @unchecked Sendable {
+    let session = AVCaptureSession()
+    @Published private(set) var isCapturing = false
+
+    private let output = AVCapturePhotoOutput()
+    // startRunning блокирует поток — вся работа с сессией на своей очереди.
+    private let sessionQueue = DispatchQueue(label: "SelfieCaptureSession.session")
+    private var continuation: CheckedContinuation<UIImage?, Never>?
+    /// Портретная ориентация: у фронтальной камеры буфер «лежит на боку».
+    private static let portraitRotationAngle: CGFloat = 90
+
+    func start() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async {
+                do {
+                    try self.configure()
+                    self.session.startRunning()
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func stop() {
+        sessionQueue.async { self.session.stopRunning() }
+    }
+
+    /// Снимок как в зеркале — таким, каким человек видел себя в превью. nil — снять не удалось.
+    @MainActor
+    func capture() async -> UIImage? {
+        guard !isCapturing, session.isRunning else { return nil }
+        if let connection = output.connection(with: .video) {
+            // Без отключения автоподстройки установка isVideoMirrored бросает исключение.
+            if connection.isVideoMirroringSupported {
+                connection.automaticallyAdjustsVideoMirroring = false
+                connection.isVideoMirrored = true
+            }
+            if connection.isVideoRotationAngleSupported(Self.portraitRotationAngle) {
+                connection.videoRotationAngle = Self.portraitRotationAngle
+            }
+        }
+        isCapturing = true
+        defer { isCapturing = false }
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            output.capturePhoto(with: AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg]), delegate: self)
+        }
+    }
+
+    private func configure() throws {
+        guard session.inputs.isEmpty else { return }
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+
+        session.sessionPreset = .photo
+        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else {
+            throw CocoaError(.featureUnsupported)
+        }
+        let input = try AVCaptureDeviceInput(device: camera)
+        guard session.canAddInput(input), session.canAddOutput(output) else { throw CocoaError(.featureUnsupported) }
+        session.addInput(input)
+        session.addOutput(output)
+    }
+}
+
+extension SelfieCaptureSession: AVCapturePhotoCaptureDelegate {
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        let image = error == nil ? photo.fileDataRepresentation().flatMap(UIImage.init(data:)) : nil
+        Task { @MainActor in
+            self.continuation?.resume(returning: image)
+            self.continuation = nil
         }
     }
 }

@@ -26,6 +26,8 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     @Published private(set) var isConnected = false
     @Published private(set) var isMuted = false
     @Published private(set) var isCameraOff = false
+    /// Своё превью зеркалим только для фронтальной камеры: основную показываем как есть.
+    @Published private(set) var isFrontCamera = true
     /// iPhone счёл видео собеседника откровенным (RouletteSensitiveGuard) — показываем заглушку с выбором.
     @Published private(set) var isSensitiveHidden = false
     /// Соединение не установилось или оборвалось — разговор продолжать бессмысленно.
@@ -35,7 +37,9 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     private var iceServers: [RTCIceServer] = []
     private var audioTrack: RTCAudioTrack?
     private var capturer: RTCCameraVideoCapturer?
-    private var cameraPosition = AVCaptureDevice.Position.front
+    private var cameraPosition = AVCaptureDevice.Position.front {
+        didSet { isFrontCamera = cameraPosition == .front }
+    }
     private var connection: RTCPeerConnection?
     private var sessionId: String?
     private var pendingCandidates: [RTCIceCandidate] = []

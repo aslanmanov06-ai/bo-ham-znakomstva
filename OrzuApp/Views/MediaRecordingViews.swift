@@ -163,7 +163,8 @@ struct VideoNoteRecorderView: View {
     }
 }
 
-private struct CameraPreview: UIViewRepresentable {
+/// Превью камеры; фронтальную слой сам показывает зеркально.
+struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
 
     func makeUIView(context: Context) -> PreviewUIView {
