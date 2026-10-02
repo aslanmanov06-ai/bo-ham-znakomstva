@@ -35,8 +35,16 @@ final class MessageStatusTests: XCTestCase {
         pending.clientMessageId = "m1"
         var confirmed = Message(id: "server-7", chatId: "c1", senderId: "me", text: "hi", createdAt: sentAt)
         confirmed.clientMessageId = "m1"
-        XCTAssertEqual(pending.rowId, "m1")
+        XCTAssertEqual(pending.rowId, "me:m1")
         XCTAssertEqual(confirmed.rowId, pending.rowId)
+    }
+
+    /// clientMessageId выбирает отправитель: чужой ключ, равный id существующего сообщения, не даёт двух строк с одним id.
+    func testForeignClientMessageIdDoesNotCollideWithExistingRow() {
+        let existing = message()
+        var crafted = Message(id: "server-9", chatId: "c1", senderId: "mallory", text: "hi", createdAt: sentAt)
+        crafted.clientMessageId = existing.id
+        XCTAssertNotEqual(crafted.rowId, existing.rowId)
     }
 
     func testRowIdFallsBackToIdForIncoming() {

@@ -4,6 +4,8 @@ import os
 
 enum ServerEvent {
     case newMessage(Message)
+    /// Моё сообщение — отправленное с другого устройства или ответ на отправленное отсюда (тогда его узнают по clientMessageId).
+    case ownMessage(Message)
     case error(message: String)
     /// Сообщение отредактировали или поменялись реакции.
     case messageUpdated(Message)
@@ -435,6 +437,13 @@ final class WebSocketClient: NSObject, ObservableObject {
                 let message = try? decoder.decode(Message.self, from: messageData)
             else { return }
             events.send(.newMessage(message))
+
+        case "message.own":
+            guard
+                let messageData = try? JSONSerialization.data(withJSONObject: json["message"] as Any),
+                let message = try? decoder.decode(Message.self, from: messageData)
+            else { return }
+            events.send(.ownMessage(message))
 
         case "message.updated":
             guard

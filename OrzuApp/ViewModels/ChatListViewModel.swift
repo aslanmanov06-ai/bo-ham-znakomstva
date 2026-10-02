@@ -186,7 +186,7 @@ final class ChatListViewModel: ObservableObject {
 
     private func handle(event: ServerEvent) {
         switch event {
-        case .newMessage(let message):
+        case .newMessage(let message), .ownMessage(let message):
             applyIncoming(message: message)
 
         case .messageUpdated(let message):

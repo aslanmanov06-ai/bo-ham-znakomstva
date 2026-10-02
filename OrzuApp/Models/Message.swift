@@ -35,8 +35,10 @@ struct Message: Codable, Identifiable, Hashable {
     static let viewTimerOptions = [10, 15, 30, 60]
 
     /// Постоянный id строки в ленте. Своё сообщение сохраняет его и после того, как сервер выдал настоящий id:
-    /// строка не пересоздаётся, и анимация появления не повторяется.
-    var rowId: String { clientMessageId ?? id }
+    /// строка не пересоздаётся, и анимация появления не повторяется. clientMessageId задаёт отправитель и уникален
+    /// только в паре с ним — без senderId участник группы мог бы прислать ключ, равный id чужого сообщения,
+    /// и две строки получили бы один id. Двоеточия в id сервера нет, поэтому с ним такой ключ тоже не совпадёт.
+    var rowId: String { clientMessageId.map { "\(senderId):\($0)" } ?? id }
 
     var previewText: String {
         if systemEvent == Self.screenshotEvent { return String(localized: "📸 Снимок экрана") }

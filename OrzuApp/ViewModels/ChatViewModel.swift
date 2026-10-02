@@ -631,6 +631,17 @@ final class ChatViewModel: ObservableObject {
                 }
             }
 
+        case .ownMessage(let message):
+            guard message.chatId == chat.id else { return }
+            // Отправлено отсюда, и событие обогнало ответ на запрос — подтверждаем пузырь из очереди, а не добавляем второй.
+            if let clientMessageId = message.clientMessageId, pendingIds.contains(clientMessageId) {
+                replace(tempId: clientMessageId, with: message)
+                return
+            }
+            // Написано на другом устройстве.
+            guard !messages.contains(where: { $0.id == message.id }), !isShowingHistorySlice else { return }
+            appendArrived(decrypted(message))
+
         case .typing(let chatId, let userId):
             guard chatId == chat.id, userId != currentUserId else { return }
             startTyping(userId: userId)
