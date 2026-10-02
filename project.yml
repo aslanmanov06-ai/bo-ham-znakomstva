@@ -33,8 +33,8 @@ targets:
         # Google Cloud Console → Credentials → OAuth client ID типа iOS (bundle id com.orzuapp.messenger).
         # REVERSED — тот же id задом наперёд («com.googleusercontent.apps.…»): схема, по которой Google возвращает в приложение.
         # Пусто — кнопка «Войти через Google» не показывается. Этот же client ID нужен backend в GOOGLE_CLIENT_IDS.
-        GOOGLE_IOS_CLIENT_ID: "690572679681-1c0us20qredokgjto3krkkepmob50op8.apps.googleusercontent.com"
-        GOOGLE_REVERSED_CLIENT_ID: "com.googleusercontent.apps.690572679681-1c0us20qredokgjto3krkkepmob50op8"
+        GOOGLE_IOS_CLIENT_ID: "957301832780-2mlfbpgrfgqqqpqs8ohslsa5g22mqd1n.apps.googleusercontent.com"
+        GOOGLE_REVERSED_CLIENT_ID: "com.googleusercontent.apps.957301832780-2mlfbpgrfgqqqpqs8ohslsa5g22mqd1n"
         PRODUCT_BUNDLE_IDENTIFIER: com.orzuapp.messenger
         # Assets.xcassets: фирменный гранатовый цвет (кнопки, пузыри сообщений) и иконка 1024×1024 со светлым и тёмным вариантом.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
