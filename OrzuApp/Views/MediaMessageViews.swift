@@ -96,14 +96,20 @@ struct VoiceMessageView: View {
     static func barHeights(seed: String, count: Int) -> [CGFloat] {
         var state: UInt64 = 0xcbf29ce484222325
         for byte in seed.utf8 { state = (state ^ UInt64(byte)) &* 0x100000001b3 }
-        return (0..<count).map { index in
+        let lastIndex = Double(max(count - 1, 1))
+        var heights: [CGFloat] = []
+        heights.reserveCapacity(count)
+        for index in 0..<count {
             state ^= state << 13
             state ^= state >> 7
             state ^= state << 17
             // По краям пониже — волна «дышит» к середине.
-            let edge = 1 - abs(Double(index) / Double(max(count - 1, 1)) * 2 - 1) * 0.35
-            return CGFloat(6 + Double(state % 19) * edge)
+            let position: Double = Double(index) / lastIndex * 2 - 1
+            let edge: Double = 1 - abs(position) * 0.35
+            let jitter: Double = Double(state % 19)
+            heights.append(CGFloat(6 + jitter * edge))
         }
+        return heights
     }
 }
 
