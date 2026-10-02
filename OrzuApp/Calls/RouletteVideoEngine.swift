@@ -1,6 +1,5 @@
 import AVFoundation
 import Combine
-import CoreMedia
 import Foundation
 import WebRTC
 import os
@@ -29,8 +28,6 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     /// Соединение не установилось или оборвалось — разговор продолжать бессмысленно.
     let connectionFailed = PassthroughSubject<String, Never>()
 
-    private static let maxLocalVideoWidth: Int32 = 640
-
     private let logger = Logger(subsystem: "com.orzuapp.messenger", category: "Roulette")
     private var iceServers: [RTCIceServer] = []
     private var audioTrack: RTCAudioTrack?
@@ -40,6 +37,9 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     private var sessionId: String?
     private var pendingCandidates: [RTCIceCandidate] = []
     private var hasRemoteDescription = false
+    /// Этот телефон шлёт offer — он же перезапускает ICE, когда связь прервалась.
+    private var isInitiator = false
+    private var isRestartingIce = false
     private var cancellables = Set<AnyCancellable>()
 
     override init() {
@@ -100,14 +100,28 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
             return
         }
         _ = connection.add(audioTrack, streamIds: ["roulette"])
-        _ = connection.add(localTrack, streamIds: ["roulette"])
+        if let sender = connection.add(localTrack, streamIds: ["roulette"]) {
+            VideoQuality.configure(sender, maxBitrateBps: VideoQuality.oneToOneBitrateBps)
+        }
         self.connection = connection
         sessionId = id
-        if initiator {
-            sendLocalDescription(type: "roulette.offer") { constraints, completion in
-                connection.offer(for: constraints, completionHandler: completion)
-            }
+        isInitiator = initiator
+        if initiator { sendOffer() }
+    }
+
+    private func sendOffer() {
+        guard let connection else { return }
+        sendLocalDescription(type: "roulette.offer") { constraints, completion in
+            connection.offer(for: constraints, completionHandler: completion)
         }
+    }
+
+    /// Связь прервалась (сменилась сеть) — новые ICE-кандидаты и offer, не дожидаясь, пока соединение упадёт совсем.
+    fileprivate func restartIce() {
+        guard let connection, isInitiator, !isRestartingIce else { return }
+        isRestartingIce = true
+        connection.restartIce()
+        sendOffer()
     }
 
     /// Разговор закончился: камера остаётся включённой — следующий собеседник найдётся через секунды.
@@ -117,6 +131,8 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
         sessionId = nil
         pendingCandidates.removeAll()
         hasRemoteDescription = false
+        isInitiator = false
+        isRestartingIce = false
         remoteTrack = nil
         isConnected = false
     }
@@ -216,11 +232,9 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
         guard
             let capturer,
             let camera = RTCCameraVideoCapturer.captureDevices().first(where: { $0.position == position }),
-            let format = RTCCameraVideoCapturer.supportedFormats(for: camera)
-                .first(where: { CMVideoFormatDescriptionGetDimensions($0.formatDescription).width <= Self.maxLocalVideoWidth }),
-            let fps = format.videoSupportedFrameRateRanges.first?.maxFrameRate
+            let quality = VideoQuality.captureFormat(for: camera)
         else { return }
-        capturer.startCapture(with: camera, format: format, fps: Int(fps))
+        capturer.startCapture(with: camera, format: quality.format, fps: quality.fps)
     }
 
     /// WebRTC настроен на ручной звук (его включает CallKit для звонков) — в рулетке включаем сами.
@@ -270,6 +284,9 @@ extension RouletteVideoEngine: RTCPeerConnectionDelegate {
             switch newState {
             case .connected, .completed:
                 self.isConnected = true
+                self.isRestartingIce = false
+            case .disconnected:
+                self.restartIce()
             case .failed:
                 self.connectionFailed.send(sessionId)
             default:

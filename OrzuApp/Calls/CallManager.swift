@@ -1,7 +1,6 @@
 import AVFoundation
 import CallKit
 import Combine
-import CoreMedia
 import Foundation
 import PushKit
 import WebRTC
@@ -47,6 +46,8 @@ final class CallManager: NSObject, ObservableObject {
         let title: String
         let isVideo: Bool
         let isOutgoing: Bool
+        /// Групповой звонок: видео уходит каждому участнику отдельно, поэтому битрейт на каждого ниже.
+        let isGroup: Bool
         var isAnswered: Bool
     }
 
@@ -56,6 +57,9 @@ final class CallManager: NSObject, ObservableObject {
         let connection: RTCPeerConnection
         var pendingCandidates: [RTCIceCandidate] = []
         var hasRemoteDescription = false
+        /// Этот телефон слал offer собеседнику — он же перезапускает ICE, когда связь прервалась.
+        var isOfferer = false
+        var isRestartingIce = false
 
         init(connection: RTCPeerConnection) {
             self.connection = connection
@@ -63,7 +67,6 @@ final class CallManager: NSObject, ObservableObject {
     }
 
     private static let endedStateDisplayNanoseconds: UInt64 = 800_000_000
-    private static let maxLocalVideoWidth: Int32 = 640
 
     /// Одна фабрика на приложение — её же использует видео рулетки (RouletteVideoEngine).
     static let factory: RTCPeerConnectionFactory = {
@@ -114,7 +117,7 @@ final class CallManager: NSObject, ObservableObject {
         guard activeCall == nil, chat.canCall else { return }
 
         let title = chat.type == .group ? chat.displayTitle : (chat.participants.first?.displayName ?? chat.displayTitle)
-        let call = ActiveCall(id: UUID().uuidString, uuid: UUID(), title: title, isVideo: video, isOutgoing: true, isAnswered: true)
+        let call = ActiveCall(id: UUID().uuidString, uuid: UUID(), title: title, isVideo: video, isOutgoing: true, isGroup: chat.type == .group, isAnswered: true)
         activeCall = call
         state = .outgoingRinging(title: title, isVideo: video)
 
@@ -198,6 +201,7 @@ final class CallManager: NSObject, ObservableObject {
             title: incoming.displayTitle,
             isVideo: incoming.isVideo,
             isOutgoing: false,
+            isGroup: incoming.isGroup,
             isAnswered: false
         )
         activeCall = call
@@ -293,9 +297,8 @@ final class CallManager: NSObject, ObservableObject {
             }
             // Mesh: offer новому участнику шлёт каждый, кто уже в звонке, — встречных offer не бывает.
             guard let link = peerLink(for: userId) else { return }
-            createAndSendLocalDescription(link: link, to: userId, signalType: "call.offer") { constraints, completion in
-                link.connection.offer(for: constraints, completionHandler: completion)
-            }
+            link.isOfferer = true
+            sendOffer(link: link, to: userId)
 
         case .callOffer(let callId, let from, let sdp):
             guard callId == activeCall?.id, let link = peerLink(for: from) else { return }
@@ -425,12 +428,10 @@ final class CallManager: NSObject, ObservableObject {
     private func startCapturingLocalVideo(capturer: RTCCameraVideoCapturer) {
         guard
             let camera = RTCCameraVideoCapturer.captureDevices().first(where: { $0.position == .front }),
-            let format = RTCCameraVideoCapturer.supportedFormats(for: camera)
-                .first(where: { CMVideoFormatDescriptionGetDimensions($0.formatDescription).width <= Self.maxLocalVideoWidth }),
-            let fps = format.videoSupportedFrameRateRanges.first?.maxFrameRate
+            let quality = VideoQuality.captureFormat(for: camera)
         else { return }
 
-        capturer.startCapture(with: camera, format: format, fps: Int(fps))
+        capturer.startCapture(with: camera, format: quality.format, fps: quality.fps)
     }
 
     /// Соединение с собеседником создаётся по первому сигналу от него или о нём; локальные треки общие для всех.
@@ -449,8 +450,9 @@ final class CallManager: NSObject, ObservableObject {
             return nil
         }
         _ = connection.add(localAudioTrack, streamIds: ["stream0"])
-        if let localVideoTrack {
-            _ = connection.add(localVideoTrack, streamIds: ["stream0"])
+        if let localVideoTrack, let sender = connection.add(localVideoTrack, streamIds: ["stream0"]) {
+            let isGroup = activeCall?.isGroup ?? false
+            VideoQuality.configure(sender, maxBitrateBps: isGroup ? VideoQuality.groupBitrateBps : VideoQuality.oneToOneBitrateBps)
         }
 
         let link = PeerLink(connection: connection)
@@ -487,6 +489,21 @@ final class CallManager: NSObject, ObservableObject {
                 provider.reportOutgoingCall(with: call.uuid, connectedAt: nil)
             }
         }
+    }
+
+    private func sendOffer(link: PeerLink, to userId: String) {
+        createAndSendLocalDescription(link: link, to: userId, signalType: "call.offer") { constraints, completion in
+            link.connection.offer(for: constraints, completionHandler: completion)
+        }
+    }
+
+    /// Связь прервалась (сменилась сеть: Wi-Fi ↔ мобильная, туннель, лифт) — новые ICE-кандидаты и offer, не дожидаясь,
+    /// пока соединение упадёт совсем. Перезапускает тот, кто слал offer, — иначе две стороны послали бы встречные.
+    fileprivate func restartIce(with userId: String) {
+        guard let link = peers[userId], link.isOfferer, !link.isRestartingIce else { return }
+        link.isRestartingIce = true
+        link.connection.restartIce()
+        sendOffer(link: link, to: userId)
     }
 
     fileprivate func peerDidFail(_ userId: String) {
@@ -574,7 +591,10 @@ extension CallManager: RTCPeerConnectionDelegate {
             guard let userId = self.peerId(of: peerConnection) else { return }
             switch newState {
             case .connected, .completed:
+                self.peers[userId]?.isRestartingIce = false
                 self.peerDidConnect(userId)
+            case .disconnected:
+                self.restartIce(with: userId)
             case .failed:
                 self.peerDidFail(userId)
             default:
