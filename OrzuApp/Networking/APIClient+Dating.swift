@@ -356,6 +356,24 @@ extension APIClient {
         let body = ReportBody(userId: userId, category: category, comment: comment, messageId: messageId)
         let _: EmptyResponse = try await request(path: "/reports", method: "POST", body: body, authorized: true)
     }
+
+    // MARK: - Рулетка
+
+    /// Какие режимы доступны и по кому идёт поиск. Сам поиск и разговор — по WebSocket (roulette.*).
+    func fetchRouletteStatus() async throws -> RouletteStatus {
+        try await request(path: "/roulette/status", method: "GET", body: nil as String?, authorized: true)
+    }
+
+    /// Жалоба на собеседника — во время разговора или после него. Разговор сервер сразу заканчивает.
+    func reportRoulette(sessionId: String, category: ReportCategory, comment: String?) async throws {
+        let body = RouletteReportBody(category: category, comment: comment)
+        let _: EmptyResponse = try await request(path: "/roulette/sessions/\(sessionId)/report", method: "POST", body: body, authorized: true)
+    }
+}
+
+private struct RouletteReportBody: Encodable {
+    let category: ReportCategory
+    let comment: String?
 }
 
 private struct DatingLocationBody: Encodable {

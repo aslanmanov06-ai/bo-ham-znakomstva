@@ -109,7 +109,7 @@ private struct ConnectionBanner: View {
 /// Основная навигация: в iOS 26 панель вкладок становится плавающей стеклянной и сворачивается при прокрутке.
 private struct MainTabView: View {
     private enum AppTab {
-        case dating, browse, chats, profile
+        case dating, browse, roulette, chats, profile
     }
 
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -120,6 +120,9 @@ private struct MainTabView: View {
     @State private var selection = AppTab.dating
     /// Анкета — часть профиля: её правят и во вкладках знакомств, и в «Моём профиле», поэтому модель одна на все.
     @StateObject private var dating = DatingViewModel()
+    /// Рулетка живёт на уровне вкладок: уход с вкладки или в фон заканчивает разговор (камера и сокет не нужны в фоне).
+    @StateObject private var roulette = RouletteViewModel()
+    @Environment(\.scenePhase) private var scenePhase
     /// «Соединение…» показываем не сразу: обычно сокет подключается за доли секунды, и плашка только мигнула бы.
     @State private var isConnectingTooLong = false
     /// Человек или канал из открытой ссылки.
@@ -169,6 +172,10 @@ private struct MainTabView: View {
                 .tabItem { Label("Анкеты", systemImage: "square.grid.2x2.fill") }
                 .tag(AppTab.browse)
 
+            RouletteTabView(dating: dating, roulette: roulette) { selection = .profile }
+                .tabItem { Label("Рулетка", systemImage: "shuffle") }
+                .tag(AppTab.roulette)
+
             ChatListView()
                 .tabItem { Label("Чаты", systemImage: "bubble.left.and.bubble.right.fill") }
                 .tag(AppTab.chats)
@@ -178,6 +185,12 @@ private struct MainTabView: View {
                 .tag(AppTab.profile)
         }
         .tabBarMinimizesOnScroll()
+        .onChange(of: selection) { _, tab in
+            if tab != .roulette { roulette.stop() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { roulette.stop() }
+        }
         // Нажали на push о сообщении — чат откроет ChatListView, но вкладка должна быть видна.
         .onChange(of: push.pendingChatId) { _, chatId in
             if chatId != nil { selection = .chats }

@@ -74,6 +74,20 @@ enum ServerEvent {
     case meetingShared(SharedMeeting)
     /// Собеседник по секретному чату сменил ключ шифрования (переустановил приложение или вошёл с другого телефона).
     case e2eKeyChanged(userId: String)
+    /// Рулетка (backend docs/roulette.md): встали в очередь, нашёлся собеседник, разговор закончился.
+    case rouletteWaiting(mode: RouletteMode, cityWaitSeconds: Int)
+    case rouletteMatched(sessionId: String, mode: RouletteMode, peer: RoulettePeer, initiator: Bool)
+    /// reason: peer-left, matched (тогда есть matchId и chatId), unavailable, error.
+    case rouletteEnded(sessionId: String, reason: String, matchId: String?, chatId: String?)
+    /// Моё «Нравится» принято; собеседник о нём не знает.
+    case rouletteLiked(sessionId: String)
+    case rouletteMessage(sessionId: String, message: RouletteWireMessage)
+    case rouletteMessageAck(sessionId: String, clientId: String?, message: RouletteWireMessage)
+    case rouletteTyping(sessionId: String)
+    case rouletteOffer(sessionId: String, sdp: String)
+    case rouletteAnswer(sessionId: String, sdp: String)
+    case rouletteIce(sessionId: String, candidate: String, sdpMLineIndex: Int32, sdpMid: String?)
+    case rouletteError(code: String, message: String, clientId: String?, until: Date?)
 }
 
 enum ReceiptKind {
@@ -279,6 +293,18 @@ final class WebSocketClient: NSObject, ObservableObject {
     func sendTyping(chatId: String) {
         guard isReady else { return }
         sendJSON(["type": "typing", "chatId": chatId])
+    }
+
+    /// Рулетка живёт только при открытом сокете: сервер выводит из неё, как только соединение закрылось.
+    /// Поэтому без соединения ничего не копим — false, и экран говорит «нет подключения».
+    @discardableResult
+    func sendRoulette(_ payload: [String: Any]) -> Bool {
+        guard isReady else {
+            connect()
+            return false
+        }
+        sendJSON(payload)
+        return true
     }
 
     func sendCall(_ payload: [String: Any]) {
@@ -577,6 +603,9 @@ final class WebSocketClient: NSObject, ObservableObject {
             let text = json["message"] as? String ?? String(localized: "Неизвестная ошибка")
             events.send(.error(message: text))
 
+        case let roulette where roulette.hasPrefix("roulette."):
+            handleRoulette(type: roulette, json: json)
+
         case "call.incoming":
             guard let call = IncomingCall(json: json) else { return }
             events.send(.callIncoming(call))
@@ -627,6 +656,63 @@ final class WebSocketClient: NSObject, ObservableObject {
             guard let callId = json["callId"] as? String else { return }
             events.send(.callBusy(callId: callId))
 
+        default:
+            break
+        }
+    }
+
+    private func handleRoulette(type: String, json: [String: Any]) {
+        let sessionId = json["sessionId"] as? String
+        switch type {
+        case "roulette.waiting":
+            guard let mode = (json["mode"] as? String).flatMap(RouletteMode.init(rawValue:)) else { return }
+            events.send(.rouletteWaiting(mode: mode, cityWaitSeconds: json["cityWaitSeconds"] as? Int ?? 0))
+        case "roulette.matched":
+            guard
+                let sessionId,
+                let mode = (json["mode"] as? String).flatMap(RouletteMode.init(rawValue:)),
+                let peer: RoulettePeer = decode(json["peer"])
+            else { return }
+            events.send(.rouletteMatched(sessionId: sessionId, mode: mode, peer: peer, initiator: json["initiator"] as? Bool ?? false))
+        case "roulette.ended":
+            guard let sessionId else { return }
+            events.send(.rouletteEnded(
+                sessionId: sessionId,
+                reason: json["reason"] as? String ?? "peer-left",
+                matchId: json["matchId"] as? String,
+                chatId: json["chatId"] as? String
+            ))
+        case "roulette.liked":
+            guard let sessionId else { return }
+            events.send(.rouletteLiked(sessionId: sessionId))
+        case "roulette.message", "roulette.message.ack":
+            guard let sessionId, let message: RouletteWireMessage = decode(json["message"]) else { return }
+            if type == "roulette.message" {
+                events.send(.rouletteMessage(sessionId: sessionId, message: message))
+            } else {
+                events.send(.rouletteMessageAck(sessionId: sessionId, clientId: json["clientId"] as? String, message: message))
+            }
+        case "roulette.typing":
+            guard let sessionId else { return }
+            events.send(.rouletteTyping(sessionId: sessionId))
+        case "roulette.offer", "roulette.answer":
+            guard let sessionId, let sdp = json["sdp"] as? String else { return }
+            events.send(type == "roulette.offer" ? .rouletteOffer(sessionId: sessionId, sdp: sdp) : .rouletteAnswer(sessionId: sessionId, sdp: sdp))
+        case "roulette.ice":
+            guard
+                let sessionId,
+                let candidateJSON = json["candidate"] as? [String: Any],
+                let candidate = candidateJSON["candidate"] as? String,
+                let sdpMLineIndex = candidateJSON["sdpMLineIndex"] as? Int
+            else { return }
+            events.send(.rouletteIce(sessionId: sessionId, candidate: candidate, sdpMLineIndex: Int32(sdpMLineIndex), sdpMid: candidateJSON["sdpMid"] as? String))
+        case "roulette.error":
+            events.send(.rouletteError(
+                code: json["code"] as? String ?? "",
+                message: json["message"] as? String ?? String(localized: "Неизвестная ошибка"),
+                clientId: json["clientId"] as? String,
+                until: (json["until"] as? String).flatMap(ISO8601Coding.date(from:))
+            ))
         default:
             break
         }

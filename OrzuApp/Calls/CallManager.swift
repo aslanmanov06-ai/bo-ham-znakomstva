@@ -65,7 +65,8 @@ final class CallManager: NSObject, ObservableObject {
     private static let endedStateDisplayNanoseconds: UInt64 = 800_000_000
     private static let maxLocalVideoWidth: Int32 = 640
 
-    private static let factory: RTCPeerConnectionFactory = {
+    /// Одна фабрика на приложение — её же использует видео рулетки (RouletteVideoEngine).
+    static let factory: RTCPeerConnectionFactory = {
         RTCInitializeSSL()
         // Аудиосессию активирует CallKit (provider(_:didActivate:)), а не WebRTC — иначе iOS прервёт звук звонка.
         RTCAudioSession.sharedInstance().useManualAudio = true

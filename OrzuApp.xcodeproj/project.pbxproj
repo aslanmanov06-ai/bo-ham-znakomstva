@@ -117,6 +117,12 @@
 		C08D2EF5836160F2D6A720DF /* ForwardPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E7CD73423455096BBB0114 /* ForwardPickerView.swift */; };
 		C3DFBCDF339368D0B1D183C0 /* ServiceScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FCBEF7B5FD7AD66E76CC77 /* ServiceScreens.swift */; };
 		C53111B4CC7A9051E758D04C /* Onest-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = ED8E3F3E3E4D9B7271951DAC /* Onest-Regular.ttf */; };
+		3A543E8766EDBF3557D9C08E /* RouletteVideoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 887848855890BE684E25DEA2 /* RouletteVideoEngine.swift */; };
+		70974B4F59B0A7597330127D /* RouletteVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 814694C0F4EE339CF55452C5 /* RouletteVideoView.swift */; };
+		AE484920820FCDDF15A2EC4C /* RouletteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74CF5C5A0FCBB133DC56A90 /* RouletteModels.swift */; };
+		26A2EA1D2CBFA7771FFC6A38 /* RouletteTextChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BDDFE6F99B605B5D70DD80 /* RouletteTextChatView.swift */; };
+		669ED824978CB69027DCAE94 /* RouletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E86D2A128E536813EEDD286 /* RouletteView.swift */; };
+		0ACD21A5C0F2957EFB64472D /* RouletteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDEF5619C78AA5E492664D73 /* RouletteViewModel.swift */; };
 		C5B2D778C8266A5576897973 /* LikedMeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E895270BA437674E21017ED /* LikedMeView.swift */; };
 		C733EC4CA01DBD6E1ECC8E06 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA914C8A547B1FCAC0A18042 /* ChatView.swift */; };
 		CA8D9B6173D46E10F1A2C1A8 /* Onest-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 14D6EC107274A214F838B145 /* Onest-Medium.ttf */; };
@@ -240,6 +246,12 @@
 		887975C0819D3EC0ED06005B /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		8C5B1C9E9E0CEC2FBC8E5432 /* LocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProvider.swift; sourceTree = "<group>"; };
 		8C5BB507C11AAFA4E30E4CEF /* AttachmentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentViews.swift; sourceTree = "<group>"; };
+		887848855890BE684E25DEA2 /* RouletteVideoEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteVideoEngine.swift; sourceTree = "<group>"; };
+		814694C0F4EE339CF55452C5 /* RouletteVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteVideoView.swift; sourceTree = "<group>"; };
+		B74CF5C5A0FCBB133DC56A90 /* RouletteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteModels.swift; sourceTree = "<group>"; };
+		98BDDFE6F99B605B5D70DD80 /* RouletteTextChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteTextChatView.swift; sourceTree = "<group>"; };
+		6E86D2A128E536813EEDD286 /* RouletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteView.swift; sourceTree = "<group>"; };
+		BDEF5619C78AA5E492664D73 /* RouletteViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteViewModel.swift; sourceTree = "<group>"; };
 		8E895270BA437674E21017ED /* LikedMeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LikedMeView.swift; sourceTree = "<group>"; };
 		91A9595DEB13CEBA0DB4AAA6 /* MediaMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaMessageTests.swift; sourceTree = "<group>"; };
 		942F5B87471E82A76BDD3705 /* Unbounded-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Unbounded-SemiBold.ttf"; sourceTree = "<group>"; };
@@ -349,6 +361,10 @@
 				55AE5FBC643A324D0BD01DF0 /* DatingUsernameSearchView.swift */,
 				D9EEFF894C76560B46D45386 /* DatingViewModel.swift */,
 				8E895270BA437674E21017ED /* LikedMeView.swift */,
+				BDEF5619C78AA5E492664D73 /* RouletteViewModel.swift */,
+				6E86D2A128E536813EEDD286 /* RouletteView.swift */,
+				98BDDFE6F99B605B5D70DD80 /* RouletteTextChatView.swift */,
+				B74CF5C5A0FCBB133DC56A90 /* RouletteModels.swift */,
 				1FB5C48BE50E1025F9490B8B /* LikedMeViewModel.swift */,
 				8C5B1C9E9E0CEC2FBC8E5432 /* LocationProvider.swift */,
 				4F2B996BAA0A17A0BCE5B19E /* MatchDetailView.swift */,
@@ -441,6 +457,8 @@
 			isa = PBXGroup;
 			children = (
 				1CEC0B0A15F84F37B7C2BD0B /* CallManager.swift */,
+				814694C0F4EE339CF55452C5 /* RouletteVideoView.swift */,
+				887848855890BE684E25DEA2 /* RouletteVideoEngine.swift */,
 				80DE5251EBE30A78FFC16F08 /* CallManager+CallKit.swift */,
 				20EDD3FF0860B67C102EBEC9 /* CallOverlayView.swift */,
 				80102AFA05181C0EEF0B35B3 /* RTCVideoRenderView.swift */,
@@ -766,6 +784,12 @@
 				978F13977647A4F059B132FE /* IceServer.swift in Sources */,
 				D77FA79D42191EDB5320A85A /* LegalDocumentView.swift in Sources */,
 				C5B2D778C8266A5576897973 /* LikedMeView.swift in Sources */,
+				0ACD21A5C0F2957EFB64472D /* RouletteViewModel.swift in Sources */,
+				669ED824978CB69027DCAE94 /* RouletteView.swift in Sources */,
+				26A2EA1D2CBFA7771FFC6A38 /* RouletteTextChatView.swift in Sources */,
+				AE484920820FCDDF15A2EC4C /* RouletteModels.swift in Sources */,
+				70974B4F59B0A7597330127D /* RouletteVideoView.swift in Sources */,
+				3A543E8766EDBF3557D9C08E /* RouletteVideoEngine.swift in Sources */,
 				E77D19FC4970A98134CC9D68 /* LikedMeViewModel.swift in Sources */,
 				9F5AB94184F674A9D18D9DB3 /* LocationProvider.swift in Sources */,
 				EDAB0374F479FC19403B20DE /* LoginView.swift in Sources */,
