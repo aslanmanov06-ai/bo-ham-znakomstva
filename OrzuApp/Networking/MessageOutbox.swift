@@ -55,6 +55,8 @@ struct OutgoingMessage: Codable, Identifiable, Hashable {
     var replyPreview: ReplyPreview?
     var attachment: Attachment?
     var upload: PendingUpload?
+    /// Сервер попросил подождать (429) — до этого времени сообщение и его чат ждут, остальные чаты отправляются.
+    var notBefore: Date?
 
     /// Пузырь в чате до ответа сервера.
     func message(senderId: String) -> Message {
@@ -95,6 +97,30 @@ struct RetryBackoff {
     }
 }
 
+/// Что отправлять следующим. Порядок внутри чата важнее скорости: если первое сообщение чата ждёт (notBefore),
+/// ждут и остальные сообщения этого чата, но не других чатов — лимит на одно сообщение не держит всю очередь.
+enum OutboxSchedule {
+    enum Step: Equatable {
+        case send(OutgoingMessage)
+        /// Всё оставшееся ждёт; nil — ждать нечего, очередь пуста.
+        case wait(until: Date?)
+    }
+
+    static func next(in items: [OutgoingMessage], skippingChats skipped: Set<String>, now: Date) -> Step {
+        var waiting = skipped
+        var wakeAt: Date?
+        for item in items where !waiting.contains(item.chatId) {
+            if let notBefore = item.notBefore, notBefore > now {
+                waiting.insert(item.chatId)
+                wakeAt = min(wakeAt ?? notBefore, notBefore)
+                continue
+            }
+            return .send(item)
+        }
+        return .wait(until: wakeAt)
+    }
+}
+
 /// Очередь исходящих сообщений. Переживает перезапуск приложения и отправляет всё по порядку, как только
 /// появится связь. Повтор безопасен: сервер узнаёт уже сохранённое сообщение по clientMessageId.
 @MainActor
@@ -102,6 +128,7 @@ final class MessageOutbox {
     static let shared = MessageOutbox()
 
     private static let queueKey = "queue"
+    private static let uploadInProgressDelay: TimeInterval = 5
 
     private(set) var items: [OutgoingMessage] = []
 
@@ -171,7 +198,17 @@ final class MessageOutbox {
             backgroundTime.end()
         }
 
-        while let item = items.first {
+        // Чаты, отложенные в этом проходе: при сбое повтор — у следующего прохода.
+        var postponedChats = Set<String>()
+        while true {
+            let item: OutgoingMessage
+            switch OutboxSchedule.next(in: items, skippingChats: postponedChats, now: Date()) {
+            case .send(let next):
+                item = next
+            case .wait(let wakeAt):
+                if let wakeAt { scheduleFlush(after: .milliseconds(Int(max(wakeAt.timeIntervalSinceNow, 0) * 1000))) }
+                return
+            }
             do {
                 let message = try await send(item)
                 retryBackoff.reset()
@@ -180,10 +217,14 @@ final class MessageOutbox {
             } catch let error as APIError where error.isTransient {
                 scheduleRetry()
                 return
+            } catch let error as APIError where error.code == ServerErrorCode.uploadInProgress {
+                // Сервер ещё обрабатывает файл после прошлой попытки — ответ будет, просто позже.
+                postpone(id: item.id, by: Self.uploadInProgressDelay)
+                postponedChats.insert(item.chatId)
             } catch APIError.rateLimited(let retryAfter, _, _) {
-                // Лимит отправки — не отказ по существу: сообщение ждёт столько, сколько попросил сервер.
-                scheduleRetry(notBefore: retryAfter)
-                return
+                // Лимит — не отказ по существу: сообщение ждёт столько, сколько попросил сервер, а другие чаты — нет.
+                postpone(id: item.id, by: retryAfter)
+                postponedChats.insert(item.chatId)
             } catch APIError.unauthorized {
                 // Сессия закончилась: AuthViewModel выведет на экран входа и очистит очередь.
                 return
@@ -233,13 +274,24 @@ final class MessageOutbox {
         )
     }
 
-    private func scheduleRetry(notBefore minimumDelay: TimeInterval = 0) {
-        let delay = max(retryBackoff.next(), .milliseconds(Int(minimumDelay * 1000)))
+    private func scheduleRetry() {
+        scheduleFlush(after: retryBackoff.next())
+    }
+
+    private func scheduleFlush(after delay: Duration) {
+        retryTask?.cancel()
         retryTask = Task { [weak self] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
             self?.flush()
         }
+    }
+
+    /// Берём сообщение из очереди заново: пока шла попытка, send уже сохранил в нём uploadId или вложение.
+    private func postpone(id: String, by delay: TimeInterval) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        items[index].notBefore = Date().addingTimeInterval(max(delay, 1))
+        saveQueue()
     }
 
     private func replace(_ item: OutgoingMessage) {

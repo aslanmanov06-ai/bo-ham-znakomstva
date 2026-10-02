@@ -76,4 +76,21 @@ final class MessageOutboxTests: XCTestCase {
     private func seconds(_ duration: Duration) -> Double {
         Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
     }
+
+    /// Лимит на одно сообщение не держит всю очередь: ждёт только его чат, порядок внутри чата сохраняется.
+    func testRateLimitedChatWaitsWithoutBlockingOtherChats() {
+        let now = Date(timeIntervalSince1970: 1_790_000_000)
+        func message(_ id: String, chat: String, notBefore: Date? = nil) -> OutgoingMessage {
+            var item = OutgoingMessage(id: id, chatId: chat, createdAt: now, text: id)
+            item.notBefore = notBefore
+            return item
+        }
+        let later = now.addingTimeInterval(3_600)
+        let queue = [message("a1", chat: "a", notBefore: later), message("a2", chat: "a"), message("b1", chat: "b")]
+
+        XCTAssertEqual(OutboxSchedule.next(in: queue, skippingChats: [], now: now), .send(queue[2]))
+        XCTAssertEqual(OutboxSchedule.next(in: queue, skippingChats: ["b"], now: now), .wait(until: later))
+        XCTAssertEqual(OutboxSchedule.next(in: queue, skippingChats: [], now: later), .send(queue[0]))
+        XCTAssertEqual(OutboxSchedule.next(in: [], skippingChats: [], now: now), .wait(until: nil))
+    }
 }

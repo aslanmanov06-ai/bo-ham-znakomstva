@@ -181,7 +181,7 @@ struct ChatView: View {
             }
             .sheet(item: $forwardSelection) { selection in
                 ForwardPickerView { chat in
-                    let forwarded = await viewModel.forward(selection.messages, toChatId: chat.id)
+                    let forwarded = await viewModel.forward(selection.messages, toChatId: chat.id, forwardId: selection.forwardId)
                     if forwarded { selectedIds = nil }
                     return forwarded
                 }
@@ -901,6 +901,8 @@ private struct SystemEventRow: View {
 private struct ForwardSelection: Identifiable {
     let id = UUID()
     let messages: [Message]
+    /// Ключ повтора на всё время экрана выбора: повторный тап после ошибки не перешлёт сообщения второй раз.
+    let forwardId = UUID().uuidString
 }
 
 private struct MessageBubble<MenuItems: View>: View {

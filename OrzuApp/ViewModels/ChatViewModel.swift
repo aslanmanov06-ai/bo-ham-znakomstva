@@ -283,14 +283,14 @@ final class ChatViewModel: ObservableObject {
 
     /// Пересылка в выбранный чат одним запросом — сервер сохранит исходный порядок сообщений.
     /// true — получилось (экран выбора можно закрыть).
-    func forward(_ selected: [Message], toChatId: String) async -> Bool {
+    func forward(_ selected: [Message], toChatId: String, forwardId: String) async -> Bool {
         let ids = selected.filter(canForward).map(\.id)
         guard !ids.isEmpty, ids.count <= Self.maxForwardBatch else {
             errorMessage = String(localized: "Переслать можно от 1 до \(Self.maxForwardBatch) сообщений за раз")
             return false
         }
         do {
-            let forwarded = try await APIClient.shared.forwardMessages(toChatId: toChatId, messageIds: ids)
+            let forwarded = try await APIClient.shared.forwardMessages(toChatId: toChatId, messageIds: ids, forwardId: forwardId)
             NotificationCenter.default.post(name: .ownMessagesSentViaREST, object: forwarded)
             // Переслали в этот же чат — сообщение придёт не событием (сервер не шлёт message.new отправителю), а ответом.
             if toChatId == chat.id {

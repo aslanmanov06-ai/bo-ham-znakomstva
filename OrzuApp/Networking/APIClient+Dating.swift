@@ -28,6 +28,8 @@ enum ServerErrorCode {
     static let videoTooLong = "videoTooLong"
     /// Файл больше лимита своего вида (видео — до 90 МБ).
     static let fileTooLarge = "fileTooLarge"
+    /// Сервер ещё превращает загруженный файл во вложение (повтор complete) — повторить чуть позже.
+    static let uploadInProgress = "uploadInProgress"
     /// Любой 429 без уточнения reason: слишком часто, повторить через APIError.retryAfter.
     static let rateLimited = "rateLimited"
 

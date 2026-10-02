@@ -212,8 +212,9 @@ actor APIClient {
     }
 
     /// Переслать сообщения (свои или чужие) в другой чат. Сервер создаёт по новому сообщению на каждое и возвращает их.
-    func forwardMessages(toChatId: String, messageIds: [String]) async throws -> [Message] {
-        let body = ForwardMessagesBody(messageIds: messageIds)
+    /// forwardId — один на попытку: повтор с ним после сбоя не создаёт дублей, а досылает недосланное.
+    func forwardMessages(toChatId: String, messageIds: [String], forwardId: String) async throws -> [Message] {
+        let body = ForwardMessagesBody(messageIds: messageIds, forwardId: forwardId)
         return try await request(path: "/chats/\(toChatId)/messages/forward", method: "POST", body: body, authorized: true)
     }
 
@@ -852,6 +853,7 @@ private struct SendMessageBody: Encodable {
 
 private struct ForwardMessagesBody: Encodable {
     let messageIds: [String]
+    let forwardId: String
 }
 
 private struct ClearHistoryBody: Encodable {
