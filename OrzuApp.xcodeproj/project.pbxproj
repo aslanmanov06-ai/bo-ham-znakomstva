@@ -1018,8 +1018,8 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				GOOGLE_IOS_CLIENT_ID = "957301832780-2mlfbpgrfgqqqpqs8ohslsa5g22mqd1n.apps.googleusercontent.com";
-				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.957301832780-2mlfbpgrfgqqqpqs8ohslsa5g22mqd1n";
+				GOOGLE_IOS_CLIENT_ID = "31212846367-44um91131fsrkau3cf43i5pj4lpge16k.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.31212846367-44um91131fsrkau3cf43i5pj4lpge16k";
 				INFOPLIST_FILE = OrzuApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Бо Хам";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты";
@@ -1054,8 +1054,8 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				GOOGLE_IOS_CLIENT_ID = "957301832780-2mlfbpgrfgqqqpqs8ohslsa5g22mqd1n.apps.googleusercontent.com";
-				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.957301832780-2mlfbpgrfgqqqpqs8ohslsa5g22mqd1n";
+				GOOGLE_IOS_CLIENT_ID = "31212846367-44um91131fsrkau3cf43i5pj4lpge16k.apps.googleusercontent.com";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.31212846367-44um91131fsrkau3cf43i5pj4lpge16k";
 				INFOPLIST_FILE = OrzuApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Бо Хам";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты";
