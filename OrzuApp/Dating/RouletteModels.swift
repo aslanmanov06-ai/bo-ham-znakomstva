@@ -85,7 +85,18 @@ struct RouletteStatus: Decodable, Hashable {
 
         /// «20:00–23:00».
         var range: String {
-            String(format: "%02d:00–%02d:00", from, to % 24)
+            "\(startTime)–\(endTime)"
+        }
+
+        var startTime: String { String(format: "%02d:00", from % 24) }
+        var endTime: String { String(format: "%02d:00", to % 24) }
+
+        /// Идёт ли вечер сейчас. Сервер считает часы по стране, приложение — по часовому поясу телефона:
+        /// рулетка сводит людей внутри одной страны, так что они совпадают. Вечер может переходить за полночь.
+        func isLive(at date: Date, calendar: Calendar = .current) -> Bool {
+            let hour = calendar.component(.hour, from: date)
+            let end = to > from ? to : to + 24
+            return (from..<end).contains(hour) || (from..<end).contains(hour + 24)
         }
     }
 

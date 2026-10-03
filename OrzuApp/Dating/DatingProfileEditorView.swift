@@ -897,6 +897,18 @@ enum RussianPlural {
         default: return String(localized: "\(count) новых сообщений")
         }
     }
+
+    /// «1 секунду», «3 секунды», «15 секунд» — после «через».
+    static func seconds(_ count: Int) -> String {
+        let lastTwo = count % 100
+        let last = count % 10
+        if (11...14).contains(lastTwo) { return String(localized: "\(count) секунд") }
+        switch last {
+        case 1: return String(localized: "\(count) секунду")
+        case 2...4: return String(localized: "\(count) секунды")
+        default: return String(localized: "\(count) секунд")
+        }
+    }
 }
 
 /// Редактируемая копия анкеты: форма правит её, а на сервер уходит одним запросом.

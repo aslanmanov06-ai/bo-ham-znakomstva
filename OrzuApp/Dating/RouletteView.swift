@@ -23,7 +23,9 @@ private struct RouletteScreen: View {
     var body: some View {
         content
             // Внутри NavigationStack: снаружи него панель вкладок этот модификатор не видит.
-            .toolbar(roulette.isInRoulette ? .hidden : .automatic, for: .navigationBar, .tabBar)
+            // У главной свой заголовок по макету, у остальных экранов рулетки его нет вовсе.
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbar(roulette.isInRoulette ? .hidden : .automatic, for: .tabBar)
             .animation(.easeInOut(duration: 0.25), value: roulette.phase)
             // Жалоба — над всем экраном: если собеседник уйдёт, пока её пишут, экран сменится, а жалоба останется.
             .sheet(item: $roulette.reportTarget, onDismiss: { roulette.resumeAutoSearch() }) { session in
@@ -81,50 +83,26 @@ struct RoulettePlaces {
 
 // MARK: - Выбор режима
 
+/// Главная рулетки (макеты «Рулетка — вариант А, доработка»): сначала режим, потом большая кнопка в кольцах.
+/// Точек на кольцах столько, сколько людей сейчас онлайн в выбранном режиме.
 private struct RouletteStartView: View {
     @ObservedObject var dating: DatingViewModel
     @ObservedObject var roulette: RouletteViewModel
     let places: RoulettePlaces
     let onEditSearch: () -> Void
 
-    @State private var showVideoLocked = false
+    @State private var showSettings = false
     @State private var showSelfie = false
-    @State private var showAgeSheet = false
+    /// «Изменить» в листе ведёт в «Кого ищу» профиля — переходим, когда лист уже закрылся.
+    @State private var editSearchAfterSettings = false
+    @Namespace private var modeNamespace
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Случайный собеседник. Имя и анкета откроются, только если симпатия взаимна.")
-                    .font(.app(.subheadline))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                videoCard
-                textCard
-                if let search = roulette.status?.search {
-                    searchRow(search)
-                }
-                if let evening = roulette.status?.evening {
-                    reminderRow(evening)
-                }
-                if let issue = blockingIssue {
-                    Label(issueText(issue), systemImage: "exclamationmark.circle")
-                        .font(.app(.footnote, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                Button {
-                    Task { await roulette.start(roulette.selectedMode) }
-                } label: {
-                    Label(roulette.selectedMode == .video ? String(localized: "Начать видео") : String(localized: "Начать переписку"), systemImage: "shuffle")
-                }
-                .buttonStyle(.appPrimary)
-                .disabled(roulette.status == nil || blockingIssue != nil)
-            }
-            .padding(.horizontal, AppMetrics.screenPadding)
-            .padding(.bottom, 24)
+        // Раз в минуту: «Вечер рулетки» начинается и заканчивается, пока экран открыт.
+        TimelineView(.everyMinute) { context in
+            content(eveningLive: roulette.status?.evening?.isLive(at: context.date) ?? false)
         }
         .background(AppBackground())
-        .refreshable { await roulette.loadStatus() }
         .task { await roulette.loadStatus() }
         .task {
             while !Task.isCancelled {
@@ -132,33 +110,73 @@ private struct RouletteStartView: View {
                 await roulette.refreshOnline()
             }
         }
-        .toolbar {
-            if let online = roulette.status?.online {
-                ToolbarItem(placement: .topBarTrailing) {
-                    RouletteOnlineBadge(count: online.total, label: String(localized: "сейчас здесь"))
+        .sheet(isPresented: $showSettings, onDismiss: {
+            guard editSearchAfterSettings else { return }
+            editSearchAfterSettings = false
+            onEditSearch()
+        }) {
+            if let search = roulette.status?.search {
+                RouletteSearchSettingsSheet(roulette: roulette, search: search, places: places) {
+                    editSearchAfterSettings = true
+                    showSettings = false
                 }
+                .presentationDetents([.height(600)])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color.appSurface)
             }
-        }
-        .sheet(isPresented: $showVideoLocked) {
-            RouletteVideoLockedSheet(
-                onSelfie: {
-                    showVideoLocked = false
-                    showSelfie = true
-                },
-                onText: {
-                    showVideoLocked = false
-                    Task { await roulette.start(.text) }
-                }
-            )
-            .presentationDetents([.medium])
-            .presentationBackground(Color.appSurface)
         }
         .sheet(isPresented: $showSelfie, onDismiss: { Task { await roulette.loadStatus() } }) {
             NavigationStack { SelfieVerificationView(dating: dating) }
         }
     }
 
-    /// Почему выбранный режим не запустить. Нет проверки селфи у видео — не здесь, а окном при выборе.
+    private func content(eveningLive: Bool) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                header(eveningLive: eveningLive)
+                modePicker
+                if showsLocked {
+                    RouletteStage(dots: onlineCount, glow: 0.10, goldEvery: 0) { lockedCenter }
+                        .padding(.top, 12)
+                    lockedCard
+                        .padding(.horizontal, 16)
+                        .padding(.top, -24)
+                } else {
+                    RouletteStage(dots: onlineCount, glow: eveningLive ? 0.30 : (isVideo ? 0.22 : 0.16), goldEvery: eveningLive ? 0 : 4) { startButton }
+                        .padding(.top, 12)
+                    if let online = roulette.status?.online {
+                        onlineLine(online.count(of: roulette.selectedMode))
+                            .padding(.top, 4)
+                    }
+                    note
+                        .padding(.horizontal, 36)
+                        .padding(.top, 10)
+                    if let search = roulette.status?.search {
+                        settingsCard(search: search, eveningLive: eveningLive)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 18)
+                    }
+                }
+            }
+            .padding(.bottom, 24)
+        }
+        .refreshable { await roulette.loadStatus() }
+    }
+
+    private var isVideo: Bool { roulette.selectedMode == .video }
+
+    private var videoLocked: Bool {
+        roulette.status?.modes.video.reason == .notVerified
+    }
+
+    /// Видео выбрано, но селфи не подтверждено: вместо кнопки — замок и предложение пройти проверку.
+    private var showsLocked: Bool { isVideo && videoLocked }
+
+    private var onlineCount: Int {
+        roulette.status?.online?.count(of: roulette.selectedMode) ?? 0
+    }
+
+    /// Почему выбранный режим не запустить (кроме проверки селфи у видео — у неё свой экран).
     private var blockingIssue: RouletteIssue? {
         guard let availability = roulette.status?.availability(of: roulette.selectedMode), !availability.available else { return nil }
         return availability.reason ?? .unknown
@@ -169,118 +187,218 @@ private struct RouletteStartView: View {
         return String(localized: "Рулетка закрыта для вас из-за жалоб до \(until.formatted(date: .long, time: .shortened))")
     }
 
-    private var videoLocked: Bool {
-        roulette.status?.modes.video.reason == .notVerified
+    private func header(eveningLive: Bool) -> some View {
+        HStack(spacing: 8) {
+            Text("Рулетка")
+                .font(.display(size: 24))
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            if eveningLive {
+                Label("Вечер рулетки", systemImage: "sparkles")
+                    .font(.app(.footnote, weight: .semibold))
+                    .foregroundStyle(Color.champagne)
+                    .padding(.leading, 10)
+                    .padding(.trailing, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.champagne.opacity(0.12), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.champagne.opacity(0.35), lineWidth: 1))
+            }
+            Button {
+                showSettings = true
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .background(Color.appSurface, in: Circle())
+                    .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .disabled(roulette.status?.search == nil)
+            .accessibilityLabel("Настройки поиска")
+        }
+        .padding(.leading, 20)
+        .padding(.trailing, 16)
+        .padding(.top, 6)
+        .padding(.bottom, 16)
     }
 
-    private var videoCard: some View {
-        let selected = roulette.selectedMode == .video
+    // MARK: Режим
+
+    private var modePicker: some View {
+        HStack(spacing: 4) {
+            modeButton(.video)
+            modeButton(.text)
+        }
+        .padding(4)
+        .background(Color.appSurface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.appLine, lineWidth: 1))
+        .padding(.horizontal, 16)
+    }
+
+    private func modeButton(_ mode: RouletteMode) -> some View {
+        let selected = roulette.selectedMode == mode
         return Button {
-            if videoLocked {
-                showVideoLocked = true
-            } else {
-                roulette.selectedMode = .video
-            }
+            withAnimation(DatingStyle.spring) { roulette.selectedMode = mode }
         } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                Image(systemName: "video.fill")
-                    .font(.system(size: 24, weight: .semibold))
-                    .frame(width: 52, height: 52)
-                    .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                Spacer(minLength: 16)
-                Text("Видео")
-                    .font(.display(size: 24))
-                Group {
-                    if let online = roulette.status?.online {
-                        Text("Живой разговор лицом к лицу · ") + Text("\(online.video) онлайн").bold()
-                    } else {
-                        Text("Живой разговор лицом к лицу")
-                    }
+            HStack(spacing: 8) {
+                Image(systemName: mode == .video ? "video" : "bubble.left")
+                    .font(.system(size: 16, weight: .semibold))
+                Text(mode == .video ? String(localized: "Видео") : String(localized: "Переписка"))
+                    .font(.app(.callout, weight: .semibold))
+                if mode == .video && videoLocked {
+                    Image(systemName: "lock")
+                        .font(.system(size: 12, weight: .bold))
+                        .accessibilityLabel("Нужна проверка селфи")
+                } else if let online = roulette.status?.online {
+                    Text("\(online.count(of: mode))")
+                        .font(.app(.caption, weight: .bold))
+                        .monospacedDigit()
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(selected ? Color.black.opacity(0.22) : Color.appElevated, in: Capsule())
+                        .accessibilityLabel("\(online.count(of: mode)) онлайн")
                 }
-                .font(.app(.subheadline))
-                .opacity(0.9)
-                .padding(.top, 6)
-                Group {
-                    if videoLocked {
-                        Label("Нужна проверка селфи", systemImage: "lock.fill")
-                    } else {
-                        Label { Text("Только проверенные анкеты") } icon: { VerifiedBadge() }
-                    }
+            }
+            .foregroundStyle(selected ? Color.white : Color.secondary)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background {
+                if selected {
+                    Capsule()
+                        .fill(.brandFill)
+                        .shadow(color: Color.brand.opacity(0.3), radius: 9, y: 8)
+                        .matchedGeometryEffect(id: "mode", in: modeNamespace)
                 }
-                .font(.app(.footnote, weight: .semibold))
-                .foregroundStyle(Color.champagne)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.25), in: Capsule())
-                .padding(.top, 10)
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    // MARK: Кнопка и подписи
+
+    private var startButton: some View {
+        Button {
+            Task { await roulette.start(roulette.selectedMode) }
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: isVideo ? "video" : "bubble.left")
+                    .font(.system(size: 30, weight: .semibold))
+                Text("Начать")
+                    .font(.app(size: 18, weight: .bold))
+                    .padding(.top, 4)
+                Text(isVideo ? String(localized: "видео") : String(localized: "переписку"))
+                    .font(.app(size: 14, weight: .medium))
+                    .opacity(0.85)
             }
             .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, minHeight: 206, alignment: .leading)
-            .padding(20)
-            .background {
-                RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.brandFill)
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(RadialGradient(colors: [Color.champagne.opacity(0.18), .clear], center: .topTrailing, startRadius: 0, endRadius: 200))
-            }
-            .overlay(alignment: .topTrailing) { if selected { SelectedMark().padding(16) } }
-            .overlay {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .strokeBorder(selected ? Color.champagne : .clear, lineWidth: 2)
-            }
-            .shadow(color: Color.brand.opacity(0.28), radius: 17, y: 14)
-            .opacity(videoLocked ? 0.92 : 1)
+            .frame(width: 152, height: 152)
+            .background(.brandFill, in: Circle())
+            .background(Circle().fill(Color.brand.opacity(0.14)).padding(-10))
+            .shadow(color: Color.brand.opacity(0.42), radius: 22, y: 20)
         }
         .buttonStyle(PressableButtonStyle())
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .disabled(roulette.status == nil || blockingIssue != nil)
+        .opacity(roulette.status == nil || blockingIssue != nil ? 0.5 : 1)
+        .accessibilityLabel(isVideo ? String(localized: "Начать видео") : String(localized: "Начать переписку"))
     }
 
-    private var textCard: some View {
-        let selected = roulette.selectedMode == .text
-        return Button {
-            roulette.selectedMode = .text
-        } label: {
-            HStack(spacing: 16) {
-                Image(systemName: "bubble.left.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color.brand)
-                    .frame(width: 52, height: 52)
-                    .background(Color.appElevated, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Переписка")
-                        .font(.display(size: 20))
-                        .foregroundStyle(.primary)
-                    Text(textCardSubtitle)
-                        .font(.app(.subheadline))
+    private func onlineLine(_ count: Int) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color.rouletteOnline)
+                .frame(width: 8, height: 8)
+                .background(Circle().fill(Color.rouletteOnline.opacity(0.25)).frame(width: 14, height: 14))
+            Text(isVideo
+                ? String(localized: "\(LikedMeChip.peopleCount(count)) сейчас в видео")
+                : String(localized: "\(LikedMeChip.peopleCount(count)) сейчас в переписке"))
+                .font(.app(.subheadline, weight: .semibold))
+                .foregroundStyle(Color.rouletteOnlineText)
+                .monospacedDigit()
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Одна строка под кнопкой: что за режим и когда откроется анкета, или почему начать нельзя.
+    private var note: some View {
+        Group {
+            if let issue = blockingIssue {
+                Text(Image(systemName: "exclamationmark.circle")) + Text(" ") + Text(issueText(issue))
+            } else if isVideo {
+                Text(Image(systemName: "checkmark.seal.fill")).foregroundStyle(Color.champagne)
+                    + Text(" ") + Text("Только проверенные анкеты.").fontWeight(.semibold).foregroundStyle(Color.champagne)
+                    + Text(" ") + Text("Имя и анкета откроются, только если симпатия взаимна.")
+            } else {
+                Text("Без фото и ссылок — только слова. Имя и анкета откроются, только если симпатия взаимна.")
+            }
+        }
+        .font(.app(.footnote))
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .lineSpacing(2)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // MARK: «Ищем» и «Вечер рулетки»
+
+    private func settingsCard(search: RouletteStatus.Search, eveningLive: Bool) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                showSettings = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 17, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: 22)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ищем")
+                            .font(.app(.caption))
+                            .foregroundStyle(.secondary)
+                        Text(searchLine(search))
+                            .font(.app(.subheadline, weight: .semibold))
+                            .foregroundStyle(.primary)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.secondary)
                 }
-                Spacer(minLength: 0)
+                .padding(.leading, 16)
+                .padding(.trailing, 14)
+                .frame(minHeight: 58)
+                .contentShape(Rectangle())
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, minHeight: 148)
-            .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay(alignment: .topTrailing) { if selected { SelectedMark().padding(16) } }
-            .overlay {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .strokeBorder(selected ? Color.champagne : Color.appLine, lineWidth: selected ? 2 : 1)
+            .buttonStyle(.plain)
+            if let evening = roulette.status?.evening {
+                Divider()
+                    .overlay(Color.appLine)
+                    .padding(.leading, 50)
+                if eveningLive {
+                    eveningLiveRow(evening)
+                } else {
+                    reminderRow(evening)
+                }
             }
         }
-        .buttonStyle(PressableButtonStyle())
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
     }
 
-    private var textCardSubtitle: String {
-        guard let online = roulette.status?.online else { return String(localized: "Анонимный текстовый чат. Без фото и ссылок — только слова.") }
-        return String(localized: "Анонимный чат, только слова · \(online.text) онлайн")
+    /// «Девушки · 21–31 год · Душанбе».
+    private func searchLine(_ search: RouletteStatus.Search) -> String {
+        let who = search.lookingFor == "FEMALE" ? String(localized: "Девушки") : String(localized: "Парни")
+        return "\(who) · \(search.ageMin)–\(RussianPlural.years(search.ageMax)) · \(places.city(search.cityCode))"
     }
 
-    /// «Вечер рулетки · 20:00–23:00» с переключателем напоминания (макет «Онлайн и вечер рулетки»).
     private func reminderRow(_ evening: RouletteStatus.Evening) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "bell")
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(Color.champagne)
+                .frame(width: 22)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Вечер рулетки · \(evening.range)")
                     .font(.app(.subheadline, weight: .semibold))
@@ -298,187 +416,424 @@ private struct RouletteStartView: View {
         }
         .padding(.leading, 16)
         .padding(.trailing, 14)
-        .frame(minHeight: 64)
-        .background(Color.champagne.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.champagne.opacity(0.28), lineWidth: 1))
+        .frame(minHeight: 58)
         .accessibilityElement(children: .combine)
     }
 
-    /// «Кого ищу» (пол и город — из настроек знакомств) и отдельно возраст собеседника — только для рулетки.
-    private func searchRow(_ search: RouletteStatus.Search) -> some View {
-        VStack(spacing: 0) {
-            Button(action: onEditSearch) {
-                HStack(spacing: 12) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Кого ищу")
-                            .font(.app(.caption))
-                            .foregroundStyle(.secondary)
-                        Text("\(search.lookingFor == "FEMALE" ? String(localized: "Девушки") : String(localized: "Парни")) · \(String(localized: "сначала")) \(places.city(search.cityCode))")
-                            .font(.app(.subheadline, weight: .semibold))
-                            .foregroundStyle(.primary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 16)
-                .frame(minHeight: 58)
-                .contentShape(Rectangle())
+    private func eveningLiveRow(_ evening: RouletteStatus.Evening) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(Color.champagne)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Сейчас вечер рулетки")
+                    .font(.app(.subheadline, weight: .semibold))
+                    .foregroundStyle(Color.champagne)
+                Text("До \(evening.endTime) людей больше всего — самое время")
+                    .font(.app(.caption))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, minHeight: 58)
+        .background(Color.champagne.opacity(0.1))
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Видео без проверки селфи
+
+    private var lockedCenter: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "lock")
+                .font(.system(size: 30, weight: .semibold))
+            Text("Видео — после\nпроверки")
+                .font(.app(size: 15, weight: .semibold))
+                .multilineTextAlignment(.center)
+        }
+        .foregroundStyle(.secondary)
+        .frame(width: 152, height: 152)
+        .background(Color.appElevated, in: Circle())
+        .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var lockedCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Label { Text("Видео — только для проверенных") } icon: { VerifiedBadge() }
+                .font(.app(.callout, weight: .bold))
+            Text("Так в видео не попадают фейки. Сделайте селфи — модератор проверит его в течение 24 часов.")
+                .font(.app(.subheadline))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
+            Button {
+                showSelfie = true
+            } label: {
+                Label("Пройти проверку селфи", systemImage: "camera")
+            }
+            .buttonStyle(.appPrimary)
+            Button {
+                withAnimation(DatingStyle.spring) { roulette.selectedMode = .text }
+            } label: {
+                Text(textInsteadTitle)
+                    .font(.app(.subheadline, weight: .semibold))
+                    .foregroundStyle(Color.brand)
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.plain)
-            Divider()
-                .overlay(Color.appLine)
-                .padding(.leading, 48)
-            Button {
-                showAgeSheet = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "calendar")
-                        .foregroundStyle(Color.brand)
-                    VStack(alignment: .leading, spacing: 2) {
+            .padding(.top, 4)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 16)
+        .padding(.bottom, 8)
+        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Color.champagne.opacity(0.3), lineWidth: 1))
+    }
+
+    private var textInsteadTitle: String {
+        guard let online = roulette.status?.online else { return String(localized: "Пока начать переписку") }
+        return String(localized: "Пока начать переписку · \(online.text) онлайн")
+    }
+}
+
+/// Места точек на кольцах как на макете: радиус кольца, угол в градусах, размер.
+private let rouletteDotSpots: [(radius: CGFloat, degrees: Double, size: CGFloat)] = [
+    (150, 205, 10), (150, 250, 9), (150, 300, 12), (150, 340, 8), (150, 25, 10), (115, 120, 9),
+    (115, 175, 8), (115, 265, 10), (150, 150, 8), (115, 40, 9), (150, 95, 8), (115, 320, 8),
+    (150, 125, 7), (115, 80, 7), (150, 60, 9), (115, 220, 7), (150, 175, 7), (115, 0, 8),
+]
+
+/// Кольца и точки вокруг главной кнопки. Точка — условный человек онлайн, без лица: в рулетке до симпатии
+/// никого не видно. На поиске точки медленно кружат.
+private struct RouletteStage<Center: View>: View {
+    let dots: Int
+    var glow: Double = 0.22
+    /// Каждая goldEvery-я точка — золотая; 0 — все фирменного цвета.
+    var goldEvery = 4
+    var spinning = false
+    @ViewBuilder let center: Center
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+    @State private var turned = false
+
+
+    var body: some View {
+        ZStack {
+            RadialGradient(colors: [Color.brand.opacity(glow), .clear], center: .center, startRadius: 0, endRadius: 200)
+                .frame(width: 400, height: 400)
+            ring(radius: 150, opacity: 0.16)
+                .scaleEffect(pulse ? 1.04 : 1)
+                .opacity(pulse ? 0.6 : 1)
+            ring(radius: 115, opacity: 0.26)
+            ring(radius: 82, opacity: 0.38)
+            ZStack {
+                ForEach(0..<min(dots, rouletteDotSpots.count), id: \.self) { index in
+                    dot(index)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .rotationEffect(.degrees(turned ? 360 : 0))
+            .accessibilityHidden(true)
+            center
+        }
+        .frame(width: 330, height: 330)
+        .frame(maxWidth: .infinity)
+        .animation(.easeInOut(duration: 0.35), value: dots)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: true)) { pulse = true }
+            if spinning {
+                withAnimation(.linear(duration: 14).repeatForever(autoreverses: false)) { turned = true }
+            }
+        }
+    }
+
+    private func ring(radius: CGFloat, opacity: Double) -> some View {
+        Circle()
+            .strokeBorder(Color.brand.opacity(opacity), lineWidth: 1)
+            .frame(width: radius * 2, height: radius * 2)
+            .accessibilityHidden(true)
+    }
+
+    private func dot(_ index: Int) -> some View {
+        let spot = rouletteDotSpots[index]
+        let color = goldEvery > 0 && index % goldEvery == goldEvery - 1 ? Color.champagne : Color.brand
+        let angle = spot.degrees * .pi / 180
+        return Circle()
+            .fill(color)
+            .frame(width: spot.size, height: spot.size)
+            .shadow(color: color, radius: 6)
+            .offset(x: spot.radius * cos(angle), y: spot.radius * sin(angle))
+    }
+}
+
+/// Кнопка «Начать» на поиске становится таймером: «0:12 ищем», вокруг бежит дуга.
+private struct RouletteSearchTimer: View {
+    let mode: RouletteMode
+    let elapsed: TimeInterval
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var turned = false
+
+    var body: some View {
+        let seconds = max(0, Int(elapsed))
+        VStack(spacing: 4) {
+            Image(systemName: mode == .video ? "video" : "bubble.left")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(Color.brand)
+            Text(String(format: "%d:%02d", seconds / 60, seconds % 60))
+                .font(.display(size: 26))
+                .monospacedDigit()
+                .padding(.top, 2)
+            Text("ищем")
+                .font(.app(.footnote))
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 152, height: 152)
+        .background(Color.appSurface, in: Circle())
+        .overlay(Circle().strokeBorder(Color.appLine, lineWidth: 1))
+        .background(Circle().fill(Color.brand.opacity(0.1)).padding(-10))
+        .overlay {
+            ZStack {
+                Circle().trim(from: 0, to: 0.25).stroke(Color.brand, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                Circle().trim(from: 0.25, to: 0.5).stroke(Color.brand.opacity(0.4), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            }
+            .padding(-6)
+            .rotationEffect(.degrees(turned ? 360 : 0))
+            .accessibilityHidden(true)
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.linear(duration: 1.4).repeatForever(autoreverses: false)) { turned = true }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "Ищем уже \(String(format: "%d:%02d", seconds / 60, seconds % 60))"))
+    }
+}
+
+/// «Кого ищем в рулетке» (макет «Лист „Кого ищем в рулетке“»): пол — из «Кого ищу», возраст — только для рулетки.
+private struct RouletteSearchSettingsSheet: View {
+    @ObservedObject var roulette: RouletteViewModel
+    let search: RouletteStatus.Search
+    let places: RoulettePlaces
+    let onEditLookingFor: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var ages: ClosedRange<Int>
+
+    init(roulette: RouletteViewModel, search: RouletteStatus.Search, places: RoulettePlaces, onEditLookingFor: @escaping () -> Void) {
+        self.roulette = roulette
+        self.search = search
+        self.places = places
+        self.onEditLookingFor = onEditLookingFor
+        _ages = State(initialValue: search.ageMin...search.ageMax)
+    }
+
+    /// Как на макете — 18–60; если возраст уже задан шире, шкала дотягивается до него.
+    private var bounds: ClosedRange<Int> {
+        DatingLimits.minAge...max(Self.sliderMaxAge, search.ageMax)
+    }
+
+    private static let sliderMaxAge = 60
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Кого ищем в рулетке")
+                    .font(.display(size: 20))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .background(Color.appElevated, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Закрыть")
+            }
+            .padding(.bottom, 4)
+
+            row(
+                systemImage: "person", label: String(localized: "Собеседники"),
+                value: search.lookingFor == "FEMALE" ? String(localized: "Девушки") : String(localized: "Парни"),
+                note: String(localized: "Как в вашем «Кого ищу». Меняется там же.")
+            ) {
+                Button("Изменить", action: onEditLookingFor)
+                    .font(.app(.footnote, weight: .semibold))
+                    .foregroundStyle(Color.brand)
+                    .padding(.top, 16)
+            }
+            divider
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 12) {
+                    icon("calendar")
+                    VStack(alignment: .leading, spacing: 3) {
                         Text("Возраст собеседника")
                             .font(.app(.caption))
                             .foregroundStyle(.secondary)
-                        Text("\(search.ageMin)–\(RussianPlural.years(search.ageMax))")
-                            .font(.app(.subheadline, weight: .semibold))
-                            .foregroundStyle(.primary)
+                        Text("\(ages.lowerBound)–\(RussianPlural.years(ages.upperBound))")
+                            .font(.app(.callout, weight: .semibold))
+                            .monospacedDigit()
                     }
-                    Spacer()
-                    Text("Изменить")
-                        .font(.app(.caption, weight: .semibold))
-                        .foregroundStyle(Color.brand)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background(Color.brandSoft, in: Capsule())
                 }
-                .padding(.horizontal, 16)
-                .frame(minHeight: 57)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .background(Color.appSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.appLine, lineWidth: 1))
-        .sheet(isPresented: $showAgeSheet) {
-            RouletteAgeSheet(ageMin: search.ageMin, ageMax: search.ageMax) { min, max in
-                showAgeSheet = false
-                Task { await roulette.setAges(min: min, max: max) }
-            }
-            .presentationDetents([.height(520)])
-            .presentationBackground(Color.appSurface)
-        }
-    }
-}
-
-/// Золотая галочка выбранного режима.
-private struct SelectedMark: View {
-    var body: some View {
-        Image(systemName: "checkmark")
-            .font(.system(size: 13, weight: .heavy))
-            .foregroundStyle(Color.appBackground)
-            .frame(width: 26, height: 26)
-            .background(Color.champagne, in: Circle())
-            .accessibilityHidden(true)
-    }
-}
-
-/// Возраст собеседника — два барабана «От» и «До» (макет «Выбор возраста для рулетки»).
-private struct RouletteAgeSheet: View {
-    @State private var ageMin: Int
-    @State private var ageMax: Int
-    let onDone: (Int, Int) -> Void
-
-    init(ageMin: Int, ageMax: Int, onDone: @escaping (Int, Int) -> Void) {
-        _ageMin = State(initialValue: ageMin)
-        _ageMax = State(initialValue: ageMax)
-        self.onDone = onDone
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Возраст собеседника")
-                    .font(.display(size: 20))
-                Text("Только для рулетки — в ленте и анкетах всё останется как было.")
-                    .font(.app(.subheadline))
+                RouletteAgeRangeSlider(range: $ages, bounds: bounds)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
+                Text("Только для рулетки — в ленте и «Поиске» всё останется как было.")
+                    .font(.app(.footnote))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            HStack(alignment: .bottom, spacing: 12) {
-                wheel(String(localized: "От"), selection: $ageMin)
-                Text("—")
-                    .font(.system(size: 22))
-                    .foregroundStyle(.tertiary)
-                    .frame(height: 160)
-                wheel(String(localized: "До"), selection: $ageMax)
-            }
-            Label("Подходящих людей может быть меньше. Если поиск затянется, предложим на время расширить диапазон.", systemImage: "info.circle")
-                .font(.app(.footnote))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Готово") { onDone(ageMin, ageMax) }
-                .buttonStyle(.appPrimary)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 28)
-        // «От» не больше «До»: второй барабан подтягивается за первым.
-        .onChange(of: ageMin) { if ageMin > ageMax { ageMax = ageMin } }
-        .onChange(of: ageMax) { if ageMax < ageMin { ageMin = ageMax } }
-    }
-
-    private func wheel(_ title: String, selection: Binding<Int>) -> some View {
-        VStack(spacing: 8) {
-            Text(title)
-                .font(.app(.footnote, weight: .semibold))
-                .foregroundStyle(.secondary)
-            Picker(title, selection: selection) {
-                ForEach(DatingLimits.minAge...DatingLimits.maxAge, id: \.self) { age in
-                    Text("\(age)").tag(age)
+            .padding(.vertical, 14)
+            divider
+            row(
+                systemImage: "mappin.and.ellipse", label: String(localized: "Где ищем"),
+                value: String(localized: "Сначала \(places.city(search.cityCode))"),
+                note: String(localized: "Если рядом никого, через \(RussianPlural.seconds(roulette.cityWaitSeconds)) — весь \(places.country).")
+            ) { EmptyView() }
+            if let evening = roulette.status?.evening {
+                divider
+                row(
+                    systemImage: "bell", label: String(localized: "Вечер рулетки"),
+                    value: String(localized: "Напоминать в \(evening.startTime)"),
+                    note: String(localized: "Больше всего людей с \(evening.startTime) до \(evening.endTime).")
+                ) {
+                    Toggle("Напоминать", isOn: Binding(
+                        get: { roulette.status?.reminder ?? false },
+                        set: { roulette.setReminder($0) }
+                    ))
+                    .labelsHidden()
+                    .tint(Color.brand)
+                    .padding(.top, 12)
                 }
             }
-            .pickerStyle(.wheel)
-            .frame(height: 160)
-            .clipped()
-            .background(Color.appBackground, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-private struct RouletteVideoLockedSheet: View {
-    let onSelfie: () -> Void
-    let onText: () -> Void
-
-    var body: some View {
-        VStack(spacing: 14) {
-            VerifiedBadge()
-                .font(.system(size: 38))
-                .frame(width: 72, height: 72)
-                .background(Color.champagneSoft, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Color.champagne.opacity(0.35), lineWidth: 1))
-            Text("Видео — только для проверенных")
-                .font(.display(size: 20))
-                .multilineTextAlignment(.center)
-            Text("Так в видео не попадают фейки и случайные люди. Сделайте селфи с камеры — модератор проверит его в течение 24 часов.")
-                .font(.app(.subheadline))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            Button(action: onSelfie) {
-                Label("Пройти проверку селфи", systemImage: "camera.fill")
+            Spacer(minLength: 16)
+            Button("Готово") {
+                if ages != search.ageMin...search.ageMax {
+                    Task { await roulette.setAges(min: ages.lowerBound, max: ages.upperBound) }
+                }
+                dismiss()
             }
             .buttonStyle(.appPrimary)
-            .padding(.top, 8)
-            Button(action: onText) {
-                Label("Пока начать переписку", systemImage: "bubble.left.fill")
-            }
-            .buttonStyle(.appSecondary)
         }
         .padding(.horizontal, 20)
         .padding(.top, 24)
+        .padding(.bottom, 12)
+    }
+
+    private var divider: some View {
+        Divider().overlay(Color.appLine)
+    }
+
+    private func icon(_ systemImage: String) -> some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 17, weight: .medium))
+            .foregroundStyle(.secondary)
+            .frame(width: 22)
+            .padding(.top, 2)
+    }
+
+    private func row<Trailing: View>(systemImage: String, label: String, value: String, note: String, @ViewBuilder trailing: () -> Trailing) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            icon(systemImage)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(label)
+                    .font(.app(.caption))
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.app(.callout, weight: .semibold))
+                Text(note)
+                    .font(.app(.footnote))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            trailing()
+        }
+        .padding(.vertical, 14)
+    }
+}
+
+/// Двойной ползунок возраста: «от» не уходит правее «до». Каждый бегунок VoiceOver меняет жестом вверх-вниз.
+private struct RouletteAgeRangeSlider: View {
+    @Binding var range: ClosedRange<Int>
+    let bounds: ClosedRange<Int>
+
+    private enum End { case lower, upper }
+    private let knob: CGFloat = 28
+    /// Область касания бегунка больше его самого — 44 pt, как у любой кнопки.
+    private let hitSize: CGFloat = 44
+
+    var body: some View {
+        GeometryReader { geometry in
+            let track = geometry.size.width - knob
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.appElevated)
+                    .frame(height: 4)
+                    .padding(.horizontal, knob / 2)
+                Capsule()
+                    .fill(Color.brand)
+                    .frame(width: position(range.upperBound, track) - position(range.lowerBound, track), height: 4)
+                    .offset(x: position(range.lowerBound, track) + knob / 2)
+                thumb(.lower, track: track)
+                thumb(.upper, track: track)
+            }
+            .frame(height: hitSize)
+            .coordinateSpace(name: Self.space)
+        }
+        .frame(height: hitSize)
+    }
+
+    private static let space = "rouletteAgeSlider"
+
+    private func position(_ value: Int, _ track: CGFloat) -> CGFloat {
+        CGFloat(value - bounds.lowerBound) / CGFloat(bounds.upperBound - bounds.lowerBound) * track
+    }
+
+    private func value(at x: CGFloat, _ track: CGFloat) -> Int {
+        let fraction = min(max((x - knob / 2) / track, 0), 1)
+        return bounds.lowerBound + Int((fraction * CGFloat(bounds.upperBound - bounds.lowerBound)).rounded())
+    }
+
+    private func set(_ end: End, to value: Int) {
+        switch end {
+        case .lower: range = min(max(value, bounds.lowerBound), range.upperBound)...range.upperBound
+        case .upper: range = range.lowerBound...max(min(value, bounds.upperBound), range.lowerBound)
+        }
+    }
+
+    private func thumb(_ end: End, track: CGFloat) -> some View {
+        let current = end == .lower ? range.lowerBound : range.upperBound
+        return Circle()
+            .fill(.white)
+            .frame(width: knob, height: knob)
+            .shadow(color: .black.opacity(0.4), radius: 4, y: 2)
+            .frame(width: hitSize, height: hitSize)
+            .contentShape(Rectangle())
+            .offset(x: position(current, track) - (hitSize - knob) / 2)
+            .gesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.space))
+                    .onChanged { set(end, to: value(at: $0.location.x, track)) }
+            )
+            .accessibilityElement()
+            .accessibilityLabel(end == .lower ? String(localized: "Возраст от") : String(localized: "Возраст до"))
+            .accessibilityValue("\(current)")
+            .accessibilityAdjustableAction { direction in
+                switch direction {
+                case .increment: set(end, to: current + 1)
+                case .decrement: set(end, to: current - 1)
+                @unknown default: break
+                }
+            }
     }
 }
 
@@ -491,43 +846,30 @@ private struct RouletteSearchView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Label(mode == .video ? String(localized: "Видео") : String(localized: "Переписка"), systemImage: mode == .video ? "video.fill" : "bubble.left.fill")
-                    .font(.app(.subheadline, weight: .semibold))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(Color.appSurface, in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.appLine, lineWidth: 1))
-                if let online = roulette.status?.online {
-                    RouletteOnlineBadge(
-                        count: online.count(of: mode),
-                        label: mode == .video ? String(localized: "в видео") : String(localized: "в переписке")
-                    )
+            modeChip
+                .padding(.top, 22)
+
+            Spacer(minLength: 12)
+            RouletteStage(dots: roulette.status?.online?.count(of: mode) ?? 0, glow: 0.28, spinning: true) {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    RouletteSearchTimer(mode: mode, elapsed: context.date.timeIntervalSince(roulette.searchStartedAt))
                 }
             }
-            .padding(.top, 22)
-
-            Spacer(minLength: 24)
-            ZStack {
-                PulseRings()
-                    .frame(width: 140, height: 140)
-                Image(systemName: "shuffle")
-                    .font(.system(size: 52, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 140, height: 140)
-                    .background(.brandFill, in: Circle())
-                    .shadow(color: Color.brand.opacity(0.35), radius: 20, y: 18)
-            }
-            .frame(height: 240)
             Text(title)
-                .font(.display(size: 22))
-                .padding(.top, 16)
+                .font(.display(size: 21))
+                .padding(.top, 4)
+            if let whom {
+                Text(String(localized: "\(whom) · по «Кого ищу»"))
+                    .font(.app(.footnote))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+            }
 
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 details(now: context.date)
             }
-            .padding(.top, 8)
-            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.horizontal, 16)
 
             if let notice = roulette.notice {
                 Text(notice)
@@ -539,27 +881,13 @@ private struct RouletteSearchView: View {
             }
             Spacer(minLength: 24)
 
-            if let evening = roulette.status?.evening {
-                Text("Больше всего людей в рулетке с \(evening.range.replacingOccurrences(of: "–", with: " до "))")
-                    .font(.app(.caption))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
-                    .padding(.bottom, 16)
-            }
             Button("Отменить") { roulette.stop() }
                 .buttonStyle(.appSecondary)
                 .frame(width: 200)
                 .padding(.bottom, 24)
         }
         .frame(maxWidth: .infinity)
-        .background {
-            ZStack {
-                AppBackground()
-                RadialGradient(colors: [Color.brand.opacity(0.28), .clear], center: UnitPoint(x: 0.5, y: 0.34), startRadius: 0, endRadius: 260)
-                    .ignoresSafeArea()
-            }
-        }
+        .background(AppBackground())
         .task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(RouletteViewModel.onlineRefreshInterval))
@@ -568,46 +896,48 @@ private struct RouletteSearchView: View {
         }
     }
 
+    /// «Видео · 9 онлайн».
+    private var modeChip: some View {
+        let name = mode == .video ? String(localized: "Видео") : String(localized: "Переписка")
+        let text = roulette.status?.online.map { String(localized: "\(name) · \($0.count(of: mode)) онлайн") } ?? name
+        return Label {
+            Text(text).monospacedDigit()
+        } icon: {
+            Image(systemName: mode == .video ? "video" : "bubble.left")
+                .foregroundStyle(Color.brand)
+        }
+        .font(.app(.subheadline, weight: .semibold))
+        .padding(.leading, 10)
+        .padding(.trailing, 14)
+        .padding(.vertical, 7)
+        .background(Color.appSurface, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.appLine, lineWidth: 1))
+    }
+
     private var lookingForFemale: Bool { roulette.status?.search?.lookingFor == "FEMALE" }
 
     private var title: String {
         lookingForFemale ? String(localized: "Ищем собеседницу…") : String(localized: "Ищем собеседника…")
     }
 
-    /// «девушки 21–31» — по кому сервер ищет сейчас (после «Расширить» — шире).
+    /// «Девушки 21–31 год» — по кому сервер ищет сейчас (после «Расширить» — шире).
     private var whom: String? {
         guard let ages = roulette.searchAges else { return nil }
-        let who = lookingForFemale ? String(localized: "девушки") : String(localized: "парни")
-        return "\(who) \(ages.lowerBound)–\(ages.upperBound)"
+        let who = lookingForFemale ? String(localized: "Девушки") : String(localized: "Парни")
+        return "\(who) \(ages.lowerBound)–\(RussianPlural.years(ages.upperBound))"
     }
 
     /// Первые секунды — шаги «свой город → вся страна»; долго никого — предложение расширить; расширили — итог.
     @ViewBuilder
     private func details(now: Date) -> some View {
         let elapsed = now.timeIntervalSince(roulette.searchStartedAt)
-        VStack(spacing: 16) {
-            Text(summary(elapsed: elapsed))
-                .font(.app(.footnote))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .monospacedDigit()
-            if roulette.searchExpanded {
-                expandedNote
-            } else if elapsed >= RouletteViewModel.expandOfferAfter, let ages = roulette.expandedAges {
-                expandCard(ages: ages)
-            } else {
-                steps(now: now)
-            }
+        if roulette.searchExpanded {
+            expandedNote
+        } else if elapsed >= RouletteViewModel.expandOfferAfter, let ages = roulette.expandedAges {
+            expandCard(ages: ages)
+        } else {
+            steps(now: now)
         }
-    }
-
-    private func summary(elapsed: TimeInterval) -> String {
-        let seconds = Int(elapsed)
-        let time = String(format: "%d:%02d", seconds / 60, seconds % 60)
-        var parts = [String(localized: "Ищем уже \(time)")]
-        if let whom { parts.append(whom) }
-        if roulette.searchExpanded || seconds >= roulette.cityWaitSeconds { parts.append(String(localized: "весь \(places.country)")) }
-        return parts.joined(separator: " · ")
     }
 
     /// Макет «Долгий поиск — расширить возраст».
@@ -1079,33 +1409,6 @@ private struct RouletteMatchView: View {
 }
 
 /// Зелёная плашка «● 14 сейчас здесь» — сколько людей в рулетке.
-struct RouletteOnlineBadge: View {
-    let count: Int
-    let label: String
-
-    var body: some View {
-        HStack(spacing: 7) {
-            Circle()
-                .fill(Color.rouletteOnline)
-                .frame(width: 8, height: 8)
-                .background(Circle().fill(Color.rouletteOnline.opacity(0.25)).frame(width: 14, height: 14))
-            Text("\(count)")
-                .font(.app(.footnote, weight: .semibold))
-                .foregroundStyle(Color.rouletteOnlineText)
-                .monospacedDigit()
-            Text(label)
-                .font(.app(.footnote, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
-        .padding(.leading, 10)
-        .padding(.trailing, 12)
-        .padding(.vertical, 6)
-        .background(Color.rouletteOnline.opacity(0.14), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.rouletteOnline.opacity(0.32), lineWidth: 1))
-        .accessibilityElement(children: .combine)
-    }
-}
-
 private extension Color {
     /// Зелёный «в сети» из макета рулетки.
     static let rouletteOnline = Color(light: 0x2E9A5E, dark: 0x4CAF78)

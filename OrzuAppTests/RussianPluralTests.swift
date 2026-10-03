@@ -23,4 +23,13 @@ final class RussianPluralTests: XCTestCase {
         XCTAssertEqual(RussianPlural.years(101), "101 год")
         XCTAssertEqual(RussianPlural.years(104), "104 года")
     }
+
+    /// «Через 15 секунд — весь Таджикистан» в настройках рулетки.
+    func testSeconds() {
+        XCTAssertEqual(RussianPlural.seconds(1), "1 секунду")
+        XCTAssertEqual(RussianPlural.seconds(3), "3 секунды")
+        XCTAssertEqual(RussianPlural.seconds(15), "15 секунд")
+        XCTAssertEqual(RussianPlural.seconds(21), "21 секунду")
+        XCTAssertEqual(RussianPlural.seconds(112), "112 секунд")
+    }
 }
