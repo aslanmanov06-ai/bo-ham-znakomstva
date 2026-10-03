@@ -14,6 +14,9 @@ final class DatingFeedViewModel: ObservableObject {
     /// Последняя оценённая карточка, если из неё не вышло пары: её можно вернуть кнопкой «Отменить».
     @Published private(set) var lastRated: DatingFeedCard?
     @Published private(set) var isUndoing = false
+    /// Для пустой ленты: сколько людей подходит вообще и сколько сейчас в рулетке. nil — неизвестно, цифры не показываем.
+    @Published private(set) var matchingCount: Int?
+    @Published private(set) var rouletteOnline: Int?
 
     /// Кнопка видна, только если сервер умеет отмену (прислал undoLeft) и лимит на сегодня не кончился.
     var canUndo: Bool {
@@ -28,6 +31,7 @@ final class DatingFeedViewModel: ObservableObject {
             let feed = try await APIClient.shared.fetchDatingFeed()
             cards = feed.cards
             limits = feed.limits
+            matchingCount = feed.matchingCount
             blockedMessage = nil
         } catch let error as APIError where error.code == ServerErrorCode.inCouple {
             cards = []
@@ -35,6 +39,13 @@ final class DatingFeedViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Пустая лента показывает, сколько людей подходит и сколько сейчас в рулетке. Если ленту опустошили свайпами,
+    /// числа подходящих ещё нет — его отдаёт только запрос пустой ленты. Сбой не мешает: цифры просто не видны.
+    func loadEmptyFeedStats() async {
+        if matchingCount == nil { await load() }
+        rouletteOnline = (try? await APIClient.shared.fetchRouletteStatus())?.online?.total
     }
 
     func like(_ card: DatingFeedCard) async {

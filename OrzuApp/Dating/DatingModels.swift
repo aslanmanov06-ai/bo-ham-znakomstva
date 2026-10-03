@@ -291,6 +291,8 @@ struct ProfileCompleteness: Decodable, Hashable {
 struct MyDatingProfile: Decodable {
     let profile: DatingProfileMine?
     let completeness: ProfileCompleteness?
+    /// Сколько человек оценили анкету в ленте с местной полуночи. nil — сервер старее приложения.
+    let viewsToday: Int?
 }
 
 /// Частичное обновление анкеты. Пол задаётся только при создании; дату рождения потом меняют в «Моих данных» раз в 90 дней.
@@ -411,6 +413,8 @@ struct DatingFeedCard: Decodable, Identifiable, Hashable {
 struct DatingFeed: Decodable {
     let cards: [DatingFeedCard]
     let limits: DailyLimits
+    /// Только у пустой ленты: сколько людей подходит вообще, включая уже оценённых. nil — сервер старее приложения.
+    let matchingCount: Int?
 }
 
 struct DatingUsernameSearch: Decodable {

@@ -62,6 +62,13 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertTrue(card.isNew)
         XCTAssertFalse(card.expanded)
         XCTAssertEqual(feed.limits.likesLeft, 6)
+        // Старый сервер не присылает matchingCount — цифр на пустой ленте просто нет.
+        XCTAssertNil(feed.matchingCount)
+    }
+
+    func testDecodesEmptyFeedMatchingCount() throws {
+        let json = Data(#"{"cards":[],"matchingCount":24,"limits":{"likesPerDay":7,"likesLeft":7,"introsPerDay":5,"introsLeft":5,"resetsAt":"2026-09-20T19:00:00.000Z"}}"#.utf8)
+        XCTAssertEqual(try decoder().decode(DatingFeed.self, from: json).matchingCount, 24)
     }
 
     /// Анкета партнёра и отправителя первого сообщения приходит с расстоянием, своя — без этого поля.
@@ -252,6 +259,10 @@ final class DatingModelsTests: XCTestCase {
         XCTAssertEqual(LikedMeChip.peopleCount(5), "5 человек")
         XCTAssertEqual(LikedMeChip.peopleCount(12), "12 человек")
         XCTAssertEqual(LikedMeChip.peopleCount(22), "22 человека")
+    }
+
+    func testSingularVerbAfterCount() {
+        XCTAssertEqual([1, 2, 5, 11, 21, 101, 111].map(LikedMeChip.takesSingularVerb), [true, false, false, false, true, true, false])
     }
 
     func testIntrosLeftDeclension() {

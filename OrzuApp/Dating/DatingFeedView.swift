@@ -238,6 +238,8 @@ struct DatingFeedView: View {
             } else {
                 EmptyFeedView(
                     criteriaLine: criteriaLine,
+                    matchingCount: feed.matchingCount,
+                    rouletteOnline: feed.rouletteOnline,
                     canUndo: feed.canUndo,
                     onExpandCriteria: { showCriteria = true },
                     onOpenSearch: onOpenSearch,
@@ -245,6 +247,7 @@ struct DatingFeedView: View {
                     onUndo: { Task { await feed.undo() } },
                     onRefresh: { Task { await feed.load() } }
                 )
+                .task { await feed.loadEmptyFeedStats() }
             }
         } else {
             cardStack
@@ -767,6 +770,8 @@ private struct SkeletonCard: View {
 /// Анкеты на сегодня закончились: вместо тупика — что можно сделать дальше.
 private struct EmptyFeedView: View {
     let criteriaLine: String?
+    let matchingCount: Int?
+    let rouletteOnline: Int?
     let canUndo: Bool
     let onExpandCriteria: () -> Void
     let onOpenSearch: () -> Void
@@ -788,7 +793,7 @@ private struct EmptyFeedView: View {
                 Text("Вы посмотрели всех на сегодня")
                     .font(.display(size: 26, weight: .bold))
                     .multilineTextAlignment(.center)
-                Text("Новые анкеты появляются каждый день. А пока можно расширить поиск или познакомиться по-другому.")
+                Text(summary)
                     .font(.app(.subheadline))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -810,7 +815,7 @@ private struct EmptyFeedView: View {
                 row(
                     systemImage: "shuffle", tint: .brand,
                     title: String(localized: "Попробовать рулетку"),
-                    subtitle: String(localized: "Случайный собеседник прямо сейчас"),
+                    subtitle: rouletteSubtitle,
                     action: onOpenRoulette
                 )
 
@@ -831,6 +836,22 @@ private struct EmptyFeedView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var summary: String {
+        guard let matchingCount, matchingCount > 0 else {
+            return String(localized: "Новые анкеты появляются каждый день. А пока можно расширить поиск или познакомиться по-другому.")
+        }
+        let people = LikedMeChip.peopleCount(matchingCount)
+        return LikedMeChip.takesSingularVerb(matchingCount)
+            ? String(localized: "Сейчас вам подходит \(people), и вы его уже видели. Новые анкеты появляются каждый день.")
+            : String(localized: "Сейчас вам подходят \(people), и всех вы уже видели. Новые анкеты появляются каждый день.")
+    }
+
+    /// Пустая рулетка не зовёт: цифру показываем, только когда там кто-то есть.
+    private var rouletteSubtitle: String {
+        guard let rouletteOnline, rouletteOnline > 0 else { return String(localized: "Случайный собеседник прямо сейчас") }
+        return String(localized: "Сейчас онлайн \(LikedMeChip.peopleCount(rouletteOnline))")
     }
 
     private func row(systemImage: String, tint: Color, title: String, subtitle: String, action: @escaping () -> Void) -> some View {

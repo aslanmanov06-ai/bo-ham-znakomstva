@@ -40,8 +40,15 @@ struct MyProfileView: View {
         .appScreenBackground()
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
-        // Вкладку знакомств могли ещё не открывать — анкета нужна и здесь.
-        .task { if dating.stage == .loading { await dating.load() } }
+        // Вкладку знакомств могли ещё не открывать — анкета нужна и здесь. Уже загруженную перечитываем:
+        // «Сегодня её посмотрели N человек» за день меняется.
+        .task {
+            if dating.stage == .loading {
+                await dating.load()
+            } else if dating.stage == .ready {
+                await dating.reloadProfile()
+            }
+        }
         // «Кого ищу» появляется, когда анкета готова: сразу или после того, как её заполнили.
         .task(id: dating.stage) {
             guard dating.stage == .ready, dating.lookingFor == nil || dating.criteria == nil else { return }
@@ -173,15 +180,21 @@ struct MyProfileView: View {
         case .ready:
             if let profile = dating.profile {
                 if profile.visibleToOthers {
-                    infoCard(
-                        systemImage: "eye", title: String(localized: "Вашу анкету видят"),
-                        text: String(localized: "Её показывают тем, кому вы подходите.")
-                    )
+                    infoCard(systemImage: "eye", title: String(localized: "Вашу анкету видят"), text: viewsLine)
                 } else {
                     hiddenCard(profile)
                 }
             }
         }
+    }
+
+    /// «Сегодня её посмотрели 14 человек»; пока никто не смотрел (или сервер старый) — как анкету показывают.
+    private var viewsLine: String {
+        guard let views = dating.viewsToday, views > 0 else { return String(localized: "Её показывают тем, кому вы подходите.") }
+        let people = LikedMeChip.peopleCount(views)
+        return LikedMeChip.takesSingularVerb(views)
+            ? String(localized: "Сегодня её посмотрел \(people)")
+            : String(localized: "Сегодня её посмотрели \(people)")
     }
 
     private func infoCard(systemImage: String, title: String, text: String) -> some View {

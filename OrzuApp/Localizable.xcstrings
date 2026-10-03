@@ -11625,6 +11625,38 @@
         }
       }
     },
+    "Сегодня её посмотрел %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viewed by %@ today"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз онро %@ дид"
+          }
+        }
+      }
+    },
+    "Сегодня её посмотрели %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Viewed by %@ today"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз онро %@ диданд"
+          }
+        }
+      }
+    },
     "Сегодня можно написать ещё %lld раз. Новые — в полночь." : {
       "localizations" : {
         "en" : {
@@ -11685,6 +11717,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ҳозир · %@"
+          }
+        }
+      }
+    },
+    "Сейчас вам подходит %@, и вы его уже видели. Новые анкеты появляются каждый день." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ matches you right now, and you've already seen them. New profiles appear every day."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло ба шумо %@ мувофиқ аст ва шумо ӯро аллакай дидаед. Анкетаҳои нав ҳар рӯз пайдо мешаванд."
+          }
+        }
+      }
+    },
+    "Сейчас вам подходят %@, и всех вы уже видели. Новые анкеты появляются каждый день." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ match you right now, and you've already seen them all. New profiles appear every day."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло ба шумо %@ мувофиқанд ва шумо ҳамаро аллакай дидаед. Анкетаҳои нав ҳар рӯз пайдо мешаванд."
+          }
+        }
+      }
+    },
+    "Сейчас онлайн %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ online now"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло онлайн: %@"
           }
         }
       }

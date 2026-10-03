@@ -25,6 +25,7 @@ final class DatingViewModel: ObservableObject {
     @Published private(set) var catalog: DatingCatalog?
     @Published private(set) var profile: DatingProfileMine?
     @Published private(set) var completeness: ProfileCompleteness?
+    @Published private(set) var viewsToday: Int?
     @Published private(set) var verification: VerificationStatus?
     /// Кого ищет человек (код пола). По нему подбирается лента и заполняется сетка анкет.
     @Published private(set) var lookingFor: String?
@@ -108,6 +109,8 @@ final class DatingViewModel: ObservableObject {
     func apply(_ response: MyDatingProfile) {
         profile = response.profile
         completeness = response.completeness
+        // Не каждый ответ с анкетой несёт просмотры — прежнее число не стираем.
+        if let views = response.viewsToday { viewsToday = views }
         stage = response.profile == nil ? .noProfile : .ready
     }
 
