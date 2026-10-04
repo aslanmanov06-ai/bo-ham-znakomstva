@@ -114,7 +114,7 @@ struct SearchCriteriaView: View {
             .padding(.top, 8)
             .padding(.bottom, 4)
         } else {
-            Text("Это видно в вашей анкете. В «Знакомствах» — только те, кто подходит вам и кому подходите вы. На фильтры в «Анкетах» не влияет.")
+            Text("Это видно в вашей анкете. В «Знакомствах» — только те, кто подходит вам и кому подходите вы. На фильтры в «Поиске» не влияет.")
                 .font(.app(.footnote))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

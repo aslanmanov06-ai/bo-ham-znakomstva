@@ -16760,6 +16760,1750 @@
           }
         }
       }
+    },
+    "Аккаунт отключён — включите его в настройках" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account is deactivated — turn it on in Settings"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аккаунт хомӯш аст — онро дар танзимот фаъол кунед"
+          }
+        }
+      }
+    },
+    "Анкета ограничена модератором — рулетка недоступна" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your profile is restricted by a moderator — roulette is unavailable"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаро модератор маҳдуд кардааст — рулетка дастрас нест"
+          }
+        }
+      }
+    },
+    "Анонимная переписка. Имя и фото откроются, если вы оба нажмёте «Нравится». Фото и ссылки здесь не отправить." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anonymous chat. Names and photos are revealed if you both tap “Like”. Photos and links can't be sent here."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мукотибаи беном. Ном ва акс кушода мешаванд, агар ҳардуятон «Писанд»-ро пахш кунед. Акс ва истинодҳоро дар ин ҷо фиристодан мумкин нест."
+          }
+        }
+      }
+    },
+    "В разводе" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Divorced"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷудошуда"
+          }
+        }
+      }
+    },
+    "Ваша камера" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your camera"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Камераи шумо"
+          }
+        }
+      }
+    },
+    "Вдова" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widow"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бева"
+          }
+        }
+      }
+    },
+    "Вдовец" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widower"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бевамард"
+          }
+        }
+      }
+    },
+    "Видео не соединилось — ищем следующего" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video didn't connect — finding the next person"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видео пайваст нашуд — навбатиро меҷӯем"
+          }
+        }
+      }
+    },
+    "Видео проясняется через пару секунд — можно сразу нажать «Далее»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The video clears up in a couple of seconds — you can tap “Next” right away"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видео пас аз чанд сония равшан мешавад — метавонед фавран «Идома»-ро пахш кунед"
+          }
+        }
+      }
+    },
+    "Видео — только для анкет с подтверждённым селфи" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video is only for profiles with a verified selfie"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Видео — танҳо барои анкетаҳои бо селфи тасдиқшуда"
+          }
+        }
+      }
+    },
+    "Вставить в поле сообщения" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert into message field"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ба майдони паём гузоштан"
+          }
+        }
+      }
+    },
+    "Вставить в сообщение" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insert into message"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ба паём гузоштан"
+          }
+        }
+      }
+    },
+    "Вы не подходите" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't match"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо мувофиқ нестед"
+          }
+        }
+      }
+    },
+    "Вы не подходите по возрасту" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't match by age"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо аз рӯи синну сол мувофиқ нестед"
+          }
+        }
+      }
+    },
+    "Вы не подходите по городу" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't match by city"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо аз рӯи шаҳр мувофиқ нестед"
+          }
+        }
+      }
+    },
+    "Вы не подходите: дети" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't match: children"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо мувофиқ нестед: фарзандон"
+          }
+        }
+      }
+    },
+    "Вы не подходите: семейное положение" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't match: marital status"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо мувофиқ нестед: вазъи оилавӣ"
+          }
+        }
+      }
+    },
+    "Вы отметили, что нашли пару, — рулетка закрыта" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You marked that you found a match — roulette is closed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо қайд кардед, ки ҷуфт ёфтед, — рулетка баста аст"
+          }
+        }
+      }
+    },
+    "Вы пара!" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It's a match!"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо ҷуфт ҳастед!"
+          }
+        }
+      }
+    },
+    "Вы подходите" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You match"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо мувофиқед"
+          }
+        }
+      }
+    },
+    "Вы:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You:"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо:"
+          }
+        }
+      }
+    },
+    "Горы или море?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mountains or sea?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кӯҳ ё баҳр?"
+          }
+        }
+      }
+    },
+    "Для входа и восстановления пароля" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For signing in and password recovery"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Барои воридшавӣ ва барқарорсозии парол"
+          }
+        }
+      }
+    },
+    "Другой вопрос" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another question"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саволи дигар"
+          }
+        }
+      }
+    },
+    "Если бы завтра был выходной без дел — как бы вы его провели?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If tomorrow were a free day off — how would you spend it?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Агар фардо рӯзи истироҳати бекорӣ мебуд — онро чӣ тавр мегузарондед?"
+          }
+        }
+      }
+    },
+    "Ещё…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More…"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Боз…"
+          }
+        }
+      }
+    },
+    "Ждём его ответа" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for his reply"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавоби ӯро интизорем"
+          }
+        }
+      }
+    },
+    "Ждём её ответа" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for her reply"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавоби ӯро интизорем"
+          }
+        }
+      }
+    },
+    "Ждём ответа" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for a reply"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷавобро интизорем"
+          }
+        }
+      }
+    },
+    "Загружаем ранние сообщения" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading earlier messages"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паёмҳои пешинаро бор мекунем"
+          }
+        }
+      }
+    },
+    "Изменить — через поддержку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change via support"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тағйир — тавассути дастгирӣ"
+          }
+        }
+      }
+    },
+    "Имя видно в анкете и в чатах." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your name is shown on your profile and in chats."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ном дар анкета ва чатҳо намоён аст."
+          }
+        }
+      }
+    },
+    "Использовать фото" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use photo"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Истифодаи акс"
+          }
+        }
+      }
+    },
+    "Ищет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Меҷӯяд"
+          }
+        }
+      }
+    },
+    "Ищу" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Меҷӯям"
+          }
+        }
+      }
+    },
+    "Какая песня сейчас у вас в голове?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What song is in your head right now?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳоло кадом суруд дар сари шумост?"
+          }
+        }
+      }
+    },
+    "Какое блюдо вы готовите лучше всего?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What dish do you cook best?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кадом таомро аз ҳама беҳтар мепазед?"
+          }
+        }
+      }
+    },
+    "Какое место в Таджикистане вы советуете увидеть каждому?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which place in Tajikistan would you recommend everyone to see?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кадом ҷойро дар Тоҷикистон ба ҳама тавсия медиҳед?"
+          }
+        }
+      }
+    },
+    "Какой была бы ваша суперсила?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would your superpower be?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Қудрати фавқулоддаи шумо чӣ мебуд?"
+          }
+        }
+      }
+    },
+    "Какой праздник в году вы ждёте больше всего?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which holiday of the year do you look forward to most?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кадом ҷашни солро бештар аз ҳама интизоред?"
+          }
+        }
+      }
+    },
+    "Какой совет из детства вы помните до сих пор?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What advice from childhood do you still remember?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кадом маслиҳати кӯдакӣ то ҳол дар ёдатон аст?"
+          }
+        }
+      }
+    },
+    "Какую книгу или фильм вы пересматривали больше одного раза?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which book or film have you revisited more than once?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кадом китоб ё филмро зиёда аз як бор дидаед?"
+          }
+        }
+      }
+    },
+    "Камера недоступна — закройте и попробуйте ещё раз" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera unavailable — close and try again"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Камера дастрас нест — пӯшед ва бори дигар кӯшиш кунед"
+          }
+        }
+      }
+    },
+    "Кого вы ищете" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Who you're looking for"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо киро меҷӯед"
+          }
+        }
+      }
+    },
+    "Кого ищет" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Киро меҷӯяд"
+          }
+        }
+      }
+    },
+    "Любое" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳар кадом"
+          }
+        }
+      }
+    },
+    "Менять можно раз в 90 дней" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can be changed once every 90 days"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар 90 рӯз як бор иваз кардан мумкин аст"
+          }
+        }
+      }
+    },
+    "Можно выбрать несколько. Ничего не выбрано — не важно." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can pick several. Nothing selected means it doesn't matter."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Метавонед якчандторо интихоб кунед. Ҳеҷ чиз интихоб нашуда бошад — фарқ надорад."
+          }
+        }
+      }
+    },
+    "Мои данные" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My details"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Маълумоти ман"
+          }
+        }
+      }
+    },
+    "Не был женат" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never married"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зан нагирифтааст"
+          }
+        }
+      }
+    },
+    "Не была замужем" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never married"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шавҳар накардааст"
+          }
+        }
+      }
+    },
+    "Не курит" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doesn't smoke"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тамоку намекашад"
+          }
+        }
+      }
+    },
+    "Не меняется" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't be changed"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Иваз намешавад"
+          }
+        }
+      }
+    },
+    "Не пьёт" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doesn't drink"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наменӯшад"
+          }
+        }
+      }
+    },
+    "Не указан" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not set"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нишон дода нашудааст"
+          }
+        }
+      }
+    },
+    "Не указана" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not set"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нишон дода нашудааст"
+          }
+        }
+      }
+    },
+    "Непристойное поведение" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indecent behavior"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рафтори ношоям"
+          }
+        }
+      }
+    },
+    "Никому не показывается" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not shown to anyone"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ба касе нишон дода намешавад"
+          }
+        }
+      }
+    },
+    "Ничего не выбрано — любой город." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing selected — any city."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳеҷ чиз интихоб нашудааст — ҳар шаҳр."
+          }
+        }
+      }
+    },
+    "Номер никому не показывается." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your number isn't shown to anyone."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рақам ба касе нишон дода намешавад."
+          }
+        }
+      }
+    },
+    "Номер — в международном формате, например +992901234567." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use international format, e.g. +992901234567."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рақам — дар формати байналмилалӣ, масалан +992901234567."
+          }
+        }
+      }
+    },
+    "Нужна геопозиция — без неё фильтр не сработает." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location is needed — the filter won't work without it."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҷойгиршавӣ лозим аст — бе он филтр кор намекунад."
+          }
+        }
+      }
+    },
+    "О каком путешествии вы мечтаете?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What trip do you dream about?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар бораи кадом сафар орзу доред?"
+          }
+        }
+      }
+    },
+    "Оскорбления или угрозы" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insults or threats"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Таҳқир ё таҳдид"
+          }
+        }
+      }
+    },
+    "Отменить загрузку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel upload"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бекор кардани боркунӣ"
+          }
+        }
+      }
+    },
+    "Парня" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A man"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бача"
+          }
+        }
+      }
+    },
+    "Переснять" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retake"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аз нав гирифтан"
+          }
+        }
+      }
+    },
+    "Плов дома или в чайхане — и почему?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plov at home or at a teahouse — and why?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оши палав дар хона ё дар чойхона — ва чаро?"
+          }
+        }
+      }
+    },
+    "Похоже на несовершеннолетнего" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looks underage"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ба ноболиғ монанд аст"
+          }
+        }
+      }
+    },
+    "Прочитать" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Хондан"
+          }
+        }
+      }
+    },
+    "Расстояние" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distance"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Масофа"
+          }
+        }
+      }
+    },
+    "Рулетка временно недоступна" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roulette is temporarily unavailable"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рулетка муваққатан дастрас нест"
+          }
+        }
+      }
+    },
+    "Рулетка закрыта для вас из-за жалоб" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roulette is closed for you due to reports"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рулетка барои шумо аз сабаби шикоятҳо баста аст"
+          }
+        }
+      }
+    },
+    "Рулетка сейчас недоступна" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roulette is unavailable right now"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рулетка ҳоло дастрас нест"
+          }
+        }
+      }
+    },
+    "С чего начать" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to start"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аз чӣ оғоз кардан"
+          }
+        }
+      }
+    },
+    "СЛУЧАЙНЫЙ ВОПРОС" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RANDOM QUESTION"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "САВОЛИ ТАСОДУФӢ"
+          }
+        }
+      }
+    },
+    "Сделать снимок" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take photo"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Акс гирифтан"
+          }
+        }
+      }
+    },
+    "Сегодня" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Имрӯз"
+          }
+        }
+      }
+    },
+    "Симпатия из прошлого разговора взаимна — пара уже в «Чатах»" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The like from your last chat is mutual — the match is already in “Chats”"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Писанди сӯҳбати гузашта ҳамдигарӣ аст — ҷуфт аллакай дар «Чатҳо»"
+          }
+        }
+      }
+    },
+    "Следующий раз изменить её можно будет через 90 дней." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll be able to change it again in 90 days."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дафъаи оянда онро пас аз 90 рӯз иваз кардан мумкин мешавад."
+          }
+        }
+      }
+    },
+    "Случайный вопрос" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Random question"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Саволи тасодуфӣ"
+          }
+        }
+      }
+    },
+    "Сменить камеру" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch camera"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Иваз кардани камера"
+          }
+        }
+      }
+    },
+    "Сначала заполните анкету: пол, дату рождения, город и фото" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fill in your profile first: gender, date of birth, city and photo"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аввал анкетаро пур кунед: ҷинс, санаи таваллуд, шаҳр ва акс"
+          }
+        }
+      }
+    },
+    "Со звуком" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unmute"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бо садо"
+          }
+        }
+      }
+    },
+    "Собеседник нашёлся" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We found someone"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамсуҳбат ёфт шуд"
+          }
+        }
+      }
+    },
+    "Собеседница нашлась" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We found someone"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ҳамсуҳбат ёфт шуд"
+          }
+        }
+      }
+    },
+    "Соединение прервалось — начните рулетку заново" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The connection dropped — start roulette again"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пайваст канда шуд — рулеткаро аз нав оғоз кунед"
+          }
+        }
+      }
+    },
+    "Соединяемся…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting…"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пайваст мешавем…"
+          }
+        }
+      }
+    },
+    "Сохранить новую дату рождения?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save the new date of birth?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Санаи нави таваллудро нигоҳ дорем?"
+          }
+        }
+      }
+    },
+    "Спам, реклама, мошенничество" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spam, ads, fraud"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Спам, реклама, қаллобӣ"
+          }
+        }
+      }
+    },
+    "Стоп" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бас"
+          }
+        }
+      }
+    },
+    "Утро или вечер — когда вы настоящий вы?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morning or evening — when are you most yourself?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Субҳ ё шом — кай шумо худи худатонед?"
+          }
+        }
+      }
+    },
+    "Фильтры только для этого списка — ваша анкета «Кого ищу» от них не меняется." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filters apply only to this list — your “Looking for” stays the same."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Филтрҳо танҳо барои ин рӯйхат — «Киро меҷӯям»-и шумо аз онҳо тағйир намеёбад."
+          }
+        }
+      }
+    },
+    "Чай или кофе — и какой именно?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tea or coffee — and which kind?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чой ё қаҳва — ва кадомаш?"
+          }
+        }
+      }
+    },
+    "Чем вы гордитесь, но редко рассказываете?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What are you proud of but rarely talk about?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бо чӣ фахр мекунед, вале кам нақл мекунед?"
+          }
+        }
+      }
+    },
+    "Чем вы занимались бы, если бы деньги не были важны?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would you do if money didn't matter?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Агар пул муҳим намебуд, бо чӣ машғул мешудед?"
+          }
+        }
+      }
+    },
+    "Чему вы научились за последний год?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What have you learned in the past year?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар соли охир чӣ омӯхтед?"
+          }
+        }
+      }
+    },
+    "Черновик: " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Draft: "
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сиёҳнавис: "
+          }
+        }
+      }
+    },
+    "Что в людях вам нравится с первой минуты?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What do you like in people from the very first minute?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар одамон аз дақиқаи аввал чӣ ба шумо писанд меояд?"
+          }
+        }
+      }
+    },
+    "Что вас вдохновляет в вашей работе или учёбе?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What inspires you in your work or studies?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар кор ё таҳсилатон чӣ шуморо илҳом мебахшад?"
+          }
+        }
+      }
+    },
+    "Что вас может рассмешить даже в плохой день?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What can make you laugh even on a bad day?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чӣ шуморо ҳатто дар рӯзи бад механдонад?"
+          }
+        }
+      }
+    },
+    "Что для вас идеальная первая встреча?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What's your ideal first date?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вохӯрии аввали беҳтарин барои шумо чӣ гуна аст?"
+          }
+        }
+      }
+    },
+    "Шаг 2 из 2" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step 2 of 2"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Қадами 2 аз 2"
+          }
+        }
+      }
+    },
+    "Это увидят в вашей анкете. В «Знакомствах» покажем тех, кто подходит вам и кому подходите вы." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will be shown on your profile. In “Dating” we'll show people who suit you and whom you suit."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Инро дар анкетаи шумо мебинанд. Дар «Шиносоӣ» онҳоеро нишон медиҳем, ки ба шумо мувофиқанд ва шумо ба онҳо."
+          }
+        }
+      }
+    },
+    "анонимно" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "anonymous"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "беном"
+          }
+        }
+      }
+    },
+    "не подходит" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "doesn't match"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "мувофиқ нест"
+          }
+        }
+      }
+    },
+    "печатает" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "typing"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "менависад"
+          }
+        }
+      }
+    },
+    "подходит" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "matches"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "мувофиқ аст"
+          }
+        }
+      }
+    },
+    "Это видно в вашей анкете. В «Знакомствах» — только те, кто подходит вам и кому подходите вы. На фильтры в «Поиске» не влияет." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is shown on your profile. “Dating” only shows people who suit you and whom you suit. It doesn't affect the filters in “Search”."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ин дар анкетаи шумо намоён аст. Дар «Шиносоӣ» — танҳо онҳое, ки ба шумо мувофиқанд ва шумо ба онҳо. Ба филтрҳои «Ҷустуҷӯ» таъсир намерасонад."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
