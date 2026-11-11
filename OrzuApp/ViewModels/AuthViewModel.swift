@@ -236,14 +236,17 @@ final class AuthViewModel: ObservableObject {
     }
 
     /// Сессии гасятся на сервере везде; push на это устройство тоже больше не придут (сервер удаляет его токены).
-    func logoutEverywhere() async {
+    /// Бросает ошибку, чтобы её показал экран сеансов: человек остаётся в аккаунте, и всё, что отключили перед
+    /// запросом (сокет, VoIP-токен), включается обратно — иначе сообщения и звонки молча перестали бы приходить.
+    func logoutEverywhere() async throws {
         await CallManager.shared.userWillLogOut()
         WebSocketClient.shared.disconnect(endingSession: true)
         do {
             try await APIClient.shared.logoutEverywhere()
         } catch {
-            errorMessage = error.localizedDescription
-            return
+            WebSocketClient.shared.connect()
+            CallManager.shared.userDidLogIn()
+            throw error
         }
         currentUser = nil
     }

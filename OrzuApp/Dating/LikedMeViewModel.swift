@@ -27,6 +27,11 @@ final class LikedMeViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+        NotificationCenter.default.publisher(for: .datingUserBlocked)
+            .compactMap { $0.object as? String }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] userId in self?.cards.removeAll { $0.card.profile.userId == userId } }
+            .store(in: &cancellables)
     }
 
     /// Ошибку показывает только экран «Вас лайкнули»: полоса в ленте без сети просто не появится.

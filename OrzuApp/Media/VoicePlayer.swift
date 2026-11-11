@@ -63,6 +63,8 @@ final class VoicePlayer: NSObject, ObservableObject {
     }
 
     func stop() {
+        // Голосовое ещё скачивается — после выхода из чата оно не должно заиграть само.
+        loadingId = nil
         player?.stop()
         player = nil
         activeId = nil

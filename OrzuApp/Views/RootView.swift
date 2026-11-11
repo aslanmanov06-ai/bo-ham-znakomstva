@@ -21,8 +21,18 @@ struct RootView: View {
         // Служебные экраны накрывают приложение, не пересоздавая его: после обслуживания всё на своих местах.
         .overlay { appWideScreen }
         .overlay {
-            if authViewModel.isAuthenticated && (appLock.isLocked || (appLock.isEnabled && scenePhase != .active)) {
+            if shouldShowLock {
                 AppLockView(appLock: appLock)
+            }
+        }
+        // Overlay корневого вида оказывается под листами (sheet/fullScreenCover рисуются в своём слое выше):
+        // открытая «Безопасность» или поиск по чату были бы видны и работали без Face ID. Поэтому экран
+        // блокировки ещё и в отдельном окне поверх всего — оно же закрывает снимок в переключателе приложений.
+        .onChange(of: shouldShowLock, initial: true) { _, locked in
+            if locked {
+                LockWindow.shared.show(AppLockView(appLock: appLock).preferredColorScheme(appearance.theme.colorScheme))
+            } else {
+                LockWindow.shared.hide()
             }
         }
         .onChange(of: scenePhase) { _, phase in
@@ -37,6 +47,10 @@ struct RootView: View {
             CallOverlayView()
         }
         .preferredColorScheme(appearance.theme.colorScheme)
+    }
+
+    private var shouldShowLock: Bool {
+        authViewModel.isAuthenticated && (appLock.isLocked || (appLock.isEnabled && scenePhase != .active))
     }
 
     /// Обновление важнее блокировки (старая версия может не понять новых ответов сервера), блокировка — обслуживания.
@@ -376,5 +390,32 @@ private struct ProfileOnboardingView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 4)
         }
+    }
+}
+
+/// Окно экрана блокировки над всеми окнами приложения, включая модальные листы и алерты.
+@MainActor
+final class LockWindow {
+    static let shared = LockWindow()
+
+    private var window: UIWindow?
+
+    func show(_ content: some View) {
+        guard window == nil else { return }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first else { return }
+        // Клавиатура живёт в своём окне выше нашего — убираем её, иначе набранное осталось бы видно.
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        let window = UIWindow(windowScene: scene)
+        window.windowLevel = .alert + 1
+        let host = UIHostingController(rootView: AnyView(content))
+        window.rootViewController = host
+        window.isHidden = false
+        self.window = window
+    }
+
+    func hide() {
+        window?.isHidden = true
+        window = nil
     }
 }

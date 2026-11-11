@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// Сетка всех анкет нужного пола: фильтры, постраничная догрузка и лайк без ленты.
@@ -18,10 +19,16 @@ final class DatingBrowseViewModel: ObservableObject {
     /// Номер загрузки: ответ устаревшего запроса (фильтры успели поменять) не должен затереть свежий.
     private var generation = 0
     private let defaults: UserDefaults
+    private var cancellables = Set<AnyCancellable>()
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         filters = Self.loadFilters(from: defaults)
+        NotificationCenter.default.publisher(for: .datingUserBlocked)
+            .compactMap { $0.object as? String }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] userId in self?.cards.removeAll { $0.card.profile.userId == userId } }
+            .store(in: &cancellables)
     }
 
     var hasMore: Bool {

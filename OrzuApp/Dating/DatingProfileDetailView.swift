@@ -315,12 +315,19 @@ struct DatingProfileDetailView: View {
         Task {
             do {
                 try await APIClient.shared.blockUser(id: profile.userId)
+                // Лента, сетка и «Вас лайкнули» убирают его карточку — иначе заблокированный остался бы перед глазами.
+                NotificationCenter.default.post(name: .datingUserBlocked, object: profile.userId)
                 dismiss()
             } catch {
                 blockError = error.localizedDescription
             }
         }
     }
+}
+
+extension Notification.Name {
+    /// Человека заблокировали из анкеты; object — его userId.
+    static let datingUserBlocked = Notification.Name("datingUserBlocked")
 }
 
 /// Одна строка анкеты: «Рост — 180 см».

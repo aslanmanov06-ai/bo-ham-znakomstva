@@ -62,7 +62,15 @@ struct SessionsView: View {
             Button("Завершить", role: .destructive) { Task { await revoke(session) } }
         }
         .confirmationDialog("Выйти на всех устройствах?", isPresented: $confirmLogoutEverywhere, titleVisibility: .visible) {
-            Button("Выйти везде", role: .destructive) { Task { await authViewModel.logoutEverywhere() } }
+            Button("Выйти везде", role: .destructive) {
+                Task {
+                    do {
+                        try await authViewModel.logoutEverywhere()
+                    } catch {
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
         }
     }
 

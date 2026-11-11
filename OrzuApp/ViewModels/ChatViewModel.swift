@@ -354,17 +354,21 @@ final class ChatViewModel: ObservableObject {
         return message.deliveryStatus(isPending: pendingIds.contains(message.id), deliveredAt: deliveredAt, readAt: readAt)
     }
 
-    func edit(_ message: Message, text: String) async {
+    /// false — правка не сохранилась (ошибка уже в errorMessage): экран вернёт набранный текст в поле.
+    @discardableResult
+    func edit(_ message: Message, text: String) async -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard canEdit(message), trimmed != message.text, !trimmed.isEmpty || message.attachment != nil else { return }
+        guard canEdit(message), trimmed != message.text, !trimmed.isEmpty || message.attachment != nil else { return true }
         do {
             let encrypted = isSecret ? try encrypt(trimmed) : nil
             let updated = try await APIClient.shared.editMessage(
                 chatId: chat.id, messageId: message.id, text: isSecret ? "" : trimmed, encrypted: encrypted
             )
             upsert(updated)
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 

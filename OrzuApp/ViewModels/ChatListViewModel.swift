@@ -256,8 +256,12 @@ final class ChatListViewModel: ObservableObject {
         switch event {
         case .newMessage(let message):
             stopTyping(chatId: message.chatId)
+            // После возврата из фона список с сервера и докачка /sync идут параллельно: если сообщение уже
+            // есть в списке (или там есть новее), сервер его уже посчитал — второй раз не прибавляем.
+            let alreadyCounted = chats.first(where: { $0.id == message.chatId })?.lastMessage
+                .map { $0.id == message.id || $0.createdAt > message.createdAt } ?? false
             applyIncoming(message: message)
-            if message.chatId != activeChatId, message.systemEvent == nil,
+            if message.chatId != activeChatId, message.systemEvent == nil, !alreadyCounted,
                let index = chats.firstIndex(where: { $0.id == message.chatId }) {
                 chats[index].unreadCount = (chats[index].unreadCount ?? 0) + 1
             }

@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// Лента знакомств: карточки, дневные лимиты и оценка анкет.
@@ -19,6 +20,20 @@ final class DatingFeedViewModel: ObservableObject {
     @Published private(set) var rouletteOnline: Int?
 
     /// Кнопка видна, только если сервер умеет отмену (прислал undoLeft) и лимит на сегодня не кончился.
+    private var cancellables = Set<AnyCancellable>()
+
+    init() {
+        NotificationCenter.default.publisher(for: .datingUserBlocked)
+            .compactMap { $0.object as? String }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] userId in
+                guard let self else { return }
+                cards.removeAll { $0.profile.userId == userId }
+                if lastRated?.profile.userId == userId { lastRated = nil }
+            }
+            .store(in: &cancellables)
+    }
+
     var canUndo: Bool {
         lastRated != nil && (limits?.undoLeft ?? 0) > 0
     }

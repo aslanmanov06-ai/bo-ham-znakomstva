@@ -109,12 +109,15 @@ enum OutboxSchedule {
     static func next(in items: [OutgoingMessage], skippingChats skipped: Set<String>, now: Date) -> Step {
         var waiting = skipped
         var wakeAt: Date?
-        for item in items where !waiting.contains(item.chatId) {
+        for item in items {
+            // Время пробуждения — и по чатам, отложенным в этом проходе: иначе после лимита (429) повтор
+            // не запланировался бы вовсе, и сообщение висело бы до следующего события.
             if let notBefore = item.notBefore, notBefore > now {
-                waiting.insert(item.chatId)
                 wakeAt = min(wakeAt ?? notBefore, notBefore)
+                waiting.insert(item.chatId)
                 continue
             }
+            if waiting.contains(item.chatId) { continue }
             return .send(item)
         }
         return .wait(until: wakeAt)

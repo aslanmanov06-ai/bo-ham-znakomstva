@@ -137,10 +137,11 @@ final class CallManager: NSObject, ObservableObject {
 
         Task {
             do {
-                try await prepareMedia(video: video)
+                // Отменили, пока ждали TURN, — ни камеры, ни приглашения собеседнику.
+                guard try await prepareMedia(callId: call.id, video: video) else { return }
                 WebSocketClient.shared.sendCall(["type": "call.invite", "callId": call.id, "chatId": chat.id, "video": video])
             } catch {
-                endCall(reason: "ice-servers-failed")
+                if activeCall?.id == call.id { endCall(reason: "ice-servers-failed") }
             }
         }
     }
@@ -246,10 +247,12 @@ final class CallManager: NSObject, ObservableObject {
         activeCall = call
         state = .connecting(title: call.title, isVideo: call.isVideo)
         do {
-            try await prepareMedia(video: call.isVideo)
+            // Звонящий положил трубку, пока ждали TURN, — камеру не включаем и call.accept не шлём.
+            guard try await prepareMedia(callId: call.id, video: call.isVideo) else { return false }
             WebSocketClient.shared.sendCall(["type": "call.accept", "callId": call.id])
             return true
         } catch {
+            guard activeCall?.id == call.id else { return false }
             WebSocketClient.shared.sendCall(["type": "call.end", "callId": call.id, "reason": "ice-servers-failed"])
             finishLocally(reason: "ice-servers-failed")
             return false
@@ -401,12 +404,18 @@ final class CallManager: NSObject, ObservableObject {
 
     // MARK: - Media
 
-    private func prepareMedia(video: Bool) async throws {
+    /// false — пока ждали TURN, звонок уже завершили: ничего не включаем, иначе камера осталась бы снимать,
+    /// а остановить её было бы некому (finishLocally уже отработал).
+    private func prepareMedia(callId: String, video: Bool) async throws -> Bool {
         let servers = try await APIClient.shared.fetchIceServers()
+        guard activeCall?.id == callId else { return false }
         iceServers = servers.map { RTCIceServer(urlStrings: $0.urls, username: $0.username, credential: $0.credential) }
 
         let audioSource = Self.factory.audioSource(with: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil))
-        localAudioTrack = Self.factory.audioTrack(with: audioSource, trackId: "audio0")
+        let audioTrack = Self.factory.audioTrack(with: audioSource, trackId: "audio0")
+        // «Выключить микрофон» могли нажать, пока трека ещё не было.
+        audioTrack.isEnabled = !isMuted
+        localAudioTrack = audioTrack
 
         if video {
             let videoSource = Self.factory.videoSource()
@@ -414,10 +423,13 @@ final class CallManager: NSObject, ObservableObject {
             videoMirroring = mirroring
             let capturer = RTCCameraVideoCapturer(delegate: mirroring)
             videoCapturer = capturer
-            localVideoTrack = Self.factory.videoTrack(with: videoSource, trackId: "video0")
+            let videoTrack = Self.factory.videoTrack(with: videoSource, trackId: "video0")
+            videoTrack.isEnabled = !isCameraOff
+            localVideoTrack = videoTrack
             startCapturingLocalVideo(capturer: capturer)
         }
         configureAudioSession(video: video)
+        return true
     }
 
     /// Только категория и режим: активирует сессию CallKit, иначе системный звонок и наш звук конфликтуют.

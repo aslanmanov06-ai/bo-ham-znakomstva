@@ -78,12 +78,19 @@ struct ChatView: View {
             .onChange(of: draft) { _, text in
                 guard editingMessage == nil else { return }
                 viewModel.draftChanged(text)
+                // Секретный чат: открытый текст не пишем на диск (UserDefaults попадают в резервную копию).
+                guard !viewModel.isSecret else { return }
                 ChatDraftStore.shared.setDraft(text, chatId: viewModel.chat.id)
             }
             .onAppear {
                 // Недописанное с прошлого раза возвращается в поле.
                 guard !didRestoreDraft else { return }
                 didRestoreDraft = true
+                if viewModel.isSecret {
+                    // Черновик, сохранённый старой версией, — стираем с диска.
+                    ChatDraftStore.shared.setDraft("", chatId: viewModel.chat.id)
+                    return
+                }
                 draft = ChatDraftStore.shared.draft(chatId: viewModel.chat.id)
             }
             .sheet(isPresented: $showSafetyNumber) {
@@ -955,10 +962,18 @@ struct ChatView: View {
     private func submit() {
         if let editingMessage {
             let text = draft
-            Task { await viewModel.edit(editingMessage, text: text) }
             self.editingMessage = nil
             // После правки в поле возвращается недописанное до неё.
-            draft = ChatDraftStore.shared.draft(chatId: viewModel.chat.id)
+            let restoredDraft = ChatDraftStore.shared.draft(chatId: viewModel.chat.id)
+            draft = restoredDraft
+            Task {
+                // Не сохранилась (нет сети, отказ) — правка не пропадает: снова режим правки с набранным текстом,
+                // если человек тем временем не начал другое.
+                let saved = await viewModel.edit(editingMessage, text: text)
+                guard !saved, self.editingMessage == nil, draft == restoredDraft else { return }
+                self.editingMessage = editingMessage
+                draft = text
+            }
             return
         }
         viewModel.send(text: draft)

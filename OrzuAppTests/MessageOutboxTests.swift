@@ -92,5 +92,7 @@ final class MessageOutboxTests: XCTestCase {
         XCTAssertEqual(OutboxSchedule.next(in: queue, skippingChats: ["b"], now: now), .wait(until: later))
         XCTAssertEqual(OutboxSchedule.next(in: queue, skippingChats: [], now: later), .send(queue[0]))
         XCTAssertEqual(OutboxSchedule.next(in: [], skippingChats: [], now: now), .wait(until: nil))
+        // Чат отложили в этом же проходе (429) — повтор всё равно назначается, а не теряется.
+        XCTAssertEqual(OutboxSchedule.next(in: [queue[0]], skippingChats: ["a"], now: now), .wait(until: later))
     }
 }

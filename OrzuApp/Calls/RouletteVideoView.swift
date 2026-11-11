@@ -137,6 +137,12 @@ struct RouletteVideoView: View {
     private func reveal() async {
         isRevealed = false
         countdown = Int(RouletteViewModel.videoRevealDelay)
+        // Отсчёт — с появления видео собеседника: через TURN соединение бывает дольше этих секунд,
+        // и пришедшее позже видео иначе показалось бы сразу без размытия.
+        while engine.remoteTrack == nil {
+            try? await Task.sleep(for: .milliseconds(200))
+            guard !Task.isCancelled else { return }
+        }
         while countdown > 0 {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }

@@ -118,15 +118,28 @@ final class RouletteViewModel: ObservableObject {
         }
     }
 
+    /// Камера включается (запрос TURN по медленной сети может идти секунды): «Начать» неактивна.
+    @Published private(set) var isStarting = false
+    /// Пока включалась камера, ушли с вкладки или нажали «Стоп» — в очередь не встаём, камеру гасим.
+    private var startCancelled = false
+
     func start(_ mode: RouletteMode) async {
+        guard !isStarting else { return }
         notice = nil
         selectedMode = mode
         cancelAutoSearch()
         if mode == .video {
+            isStarting = true
+            startCancelled = false
+            defer { isStarting = false }
             do {
                 try await video.start()
             } catch {
                 errorMessage = error.localizedDescription
+                return
+            }
+            if startCancelled {
+                video.stop()
                 return
             }
         } else {
@@ -205,6 +218,7 @@ final class RouletteViewModel: ObservableObject {
 
     /// «Стоп» / «Выйти из рулетки».
     func stop() {
+        if isStarting { startCancelled = true }
         guard isInRoulette else { return }
         WebSocketClient.shared.sendRoulette(["type": "roulette.leave"])
         finish()
@@ -362,6 +376,13 @@ final class RouletteViewModel: ObservableObject {
             // Сообщение не прошло (контакты, стоп-слово, лимит) — убираем его и объясняем почему.
             messages.removeAll { $0.id == clientId }
             notice = message
+            return
+        }
+        // Лимит входа в поиск: сервер в очередь не поставил — «Ищем…» крутился бы вечно. Назад к выбору режима.
+        if code == "RATE_LIMITED", case .searching = phase {
+            finish()
+            errorMessage = message
+            Task { await loadStatus() }
             return
         }
         if code == "RATE_LIMITED" {
