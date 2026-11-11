@@ -128,6 +128,7 @@
 		669ED824978CB69027DCAE94 /* RouletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E86D2A128E536813EEDD286 /* RouletteView.swift */; };
 		0ACD21A5C0F2957EFB64472D /* RouletteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDEF5619C78AA5E492664D73 /* RouletteViewModel.swift */; };
 		1CF80278CF1B398D71738620 /* VideoQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EE6F8D5CED178FA9C242628 /* VideoQuality.swift */; };
+		8E4D2A6C1B3F5E7D9A0C2B41 /* MirroredCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E4D2A6C1B3F5E7D9A0C2B40 /* MirroredCamera.swift */; };
 		7A1C5E3B9D2F4A6B8C0E1F21 /* RouletteSensitiveGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C5E3B9D2F4A6B8C0E1F20 /* RouletteSensitiveGuard.swift */; };
 		C5B2D778C8266A5576897973 /* LikedMeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E895270BA437674E21017ED /* LikedMeView.swift */; };
 		C733EC4CA01DBD6E1ECC8E06 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA914C8A547B1FCAC0A18042 /* ChatView.swift */; };
@@ -268,6 +269,7 @@
 		6E86D2A128E536813EEDD286 /* RouletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteView.swift; sourceTree = "<group>"; };
 		BDEF5619C78AA5E492664D73 /* RouletteViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteViewModel.swift; sourceTree = "<group>"; };
 		2EE6F8D5CED178FA9C242628 /* VideoQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoQuality.swift; sourceTree = "<group>"; };
+		8E4D2A6C1B3F5E7D9A0C2B40 /* MirroredCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirroredCamera.swift; sourceTree = "<group>"; };
 		7A1C5E3B9D2F4A6B8C0E1F20 /* RouletteSensitiveGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouletteSensitiveGuard.swift; sourceTree = "<group>"; };
 		8E895270BA437674E21017ED /* LikedMeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LikedMeView.swift; sourceTree = "<group>"; };
 		91A9595DEB13CEBA0DB4AAA6 /* MediaMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaMessageTests.swift; sourceTree = "<group>"; };
@@ -482,6 +484,7 @@
 			children = (
 				1CEC0B0A15F84F37B7C2BD0B /* CallManager.swift */,
 				2EE6F8D5CED178FA9C242628 /* VideoQuality.swift */,
+				8E4D2A6C1B3F5E7D9A0C2B40 /* MirroredCamera.swift */,
 				7A1C5E3B9D2F4A6B8C0E1F20 /* RouletteSensitiveGuard.swift */,
 				814694C0F4EE339CF55452C5 /* RouletteVideoView.swift */,
 				887848855890BE684E25DEA2 /* RouletteVideoEngine.swift */,
@@ -818,6 +821,7 @@
 				D77FA79D42191EDB5320A85A /* LegalDocumentView.swift in Sources */,
 				C5B2D778C8266A5576897973 /* LikedMeView.swift in Sources */,
 				1CF80278CF1B398D71738620 /* VideoQuality.swift in Sources */,
+				8E4D2A6C1B3F5E7D9A0C2B41 /* MirroredCamera.swift in Sources */,
 				7A1C5E3B9D2F4A6B8C0E1F21 /* RouletteSensitiveGuard.swift in Sources */,
 				0ACD21A5C0F2957EFB64472D /* RouletteViewModel.swift in Sources */,
 				669ED824978CB69027DCAE94 /* RouletteView.swift in Sources */,

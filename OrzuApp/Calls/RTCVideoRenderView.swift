@@ -2,11 +2,9 @@ import SwiftUI
 import WebRTC
 
 /// Мост track → view: RTCVideoTrack сам не View, поэтому подписываем/отписываем рендерер вручную.
+/// Своя фронтальная камера уже отражена в самой дорожке (MirroringCapturerDelegate) — здесь не отражаем.
 struct RTCVideoRenderView: UIViewRepresentable {
     let track: RTCVideoTrack?
-    /// Своя фронтальная камера — как в зеркале (так привычно и так делает FaceTime). Собеседнику кадр уходит
-    /// неотражённым: WebRTC зеркалит только здесь, при показе.
-    var mirrored = false
 
     func makeUIView(context: Context) -> RTCMTLVideoView {
         let view = RTCMTLVideoView(frame: .zero)
@@ -15,7 +13,6 @@ struct RTCVideoRenderView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: RTCMTLVideoView, context: Context) {
-        uiView.transform = mirrored ? CGAffineTransform(scaleX: -1, y: 1) : .identity
         if let previous = context.coordinator.currentTrack, previous !== track {
             previous.remove(uiView)
         }

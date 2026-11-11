@@ -26,8 +26,6 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     @Published private(set) var isConnected = false
     @Published private(set) var isMuted = false
     @Published private(set) var isCameraOff = false
-    /// Своё превью зеркалим только для фронтальной камеры: основную показываем как есть.
-    @Published private(set) var isFrontCamera = true
     /// iPhone счёл видео собеседника откровенным (RouletteSensitiveGuard) — показываем заглушку с выбором.
     @Published private(set) var isSensitiveHidden = false
     /// Соединение не установилось или оборвалось — разговор продолжать бессмысленно.
@@ -37,8 +35,10 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
     private var iceServers: [RTCIceServer] = []
     private var audioTrack: RTCAudioTrack?
     private var capturer: RTCCameraVideoCapturer?
+    /// Фронтальная — зеркально и в превью, и у собеседника; основная — как есть.
+    private var mirroring: MirroringCapturerDelegate?
     private var cameraPosition = AVCaptureDevice.Position.front {
-        didSet { isFrontCamera = cameraPosition == .front }
+        didSet { mirroring?.isMirrored = cameraPosition == .front }
     }
     private var connection: RTCPeerConnection?
     private var sessionId: String?
@@ -77,7 +77,10 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
         let factory = CallManager.factory
         audioTrack = factory.audioTrack(with: factory.audioSource(with: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)), trackId: "roulette-audio")
         let videoSource = factory.videoSource()
-        let capturer = RTCCameraVideoCapturer(delegate: videoSource)
+        let mirroring = MirroringCapturerDelegate(target: videoSource)
+        mirroring.isMirrored = cameraPosition == .front
+        self.mirroring = mirroring
+        let capturer = RTCCameraVideoCapturer(delegate: mirroring)
         self.capturer = capturer
         localTrack = factory.videoTrack(with: videoSource, trackId: "roulette-video")
         startCapture(position: cameraPosition)
@@ -89,6 +92,7 @@ final class RouletteVideoEngine: NSObject, ObservableObject {
         endSession()
         capturer?.stopCapture()
         capturer = nil
+        mirroring = nil
         localTrack = nil
         audioTrack = nil
         isMuted = false

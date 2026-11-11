@@ -90,6 +90,8 @@ final class CallManager: NSObject, ObservableObject {
     private var iceServers: [RTCIceServer] = []
     private var localAudioTrack: RTCAudioTrack?
     private var videoCapturer: RTCCameraVideoCapturer?
+    /// Своя камера в звонке — фронтальная, зеркально и в превью, и у собеседника. Капчер держит делегата слабо.
+    private var videoMirroring: MirroringCapturerDelegate?
     private var cancellables = Set<AnyCancellable>()
 
     private override init() {
@@ -408,7 +410,9 @@ final class CallManager: NSObject, ObservableObject {
 
         if video {
             let videoSource = Self.factory.videoSource()
-            let capturer = RTCCameraVideoCapturer(delegate: videoSource)
+            let mirroring = MirroringCapturerDelegate(target: videoSource)
+            videoMirroring = mirroring
+            let capturer = RTCCameraVideoCapturer(delegate: mirroring)
             videoCapturer = capturer
             localVideoTrack = Self.factory.videoTrack(with: videoSource, trackId: "video0")
             startCapturingLocalVideo(capturer: capturer)
@@ -534,6 +538,7 @@ final class CallManager: NSObject, ObservableObject {
 
         videoCapturer?.stopCapture()
         videoCapturer = nil
+        videoMirroring = nil
         for link in peers.values { link.connection.close() }
         peers.removeAll()
         participants.removeAll()
