@@ -272,6 +272,39 @@ extension APIClient {
         let _: EmptyResponse = try await request(path: "/dating/profile/me/share-links/\(id)", method: "DELETE", body: nil as String?, authorized: true)
     }
 
+    // MARK: - Скрытый альбом
+
+    func fetchPrivateAlbum() async throws -> PrivateAlbum {
+        try await request(path: "/dating/private-album", method: "GET", body: nil as String?, authorized: true)
+    }
+
+    /// Полный набор фото по порядку; пустой список очищает альбом вместе с запросами и доступами.
+    func setPrivateAlbumPhotos(attachmentIds: [String]) async throws -> PrivateAlbum {
+        try await request(path: "/dating/private-album/photos", method: "PUT", body: ["attachmentIds": attachmentIds], authorized: true)
+    }
+
+    /// Альбом собеседника для меня и мой — для него. Не собеседникам сервер отвечает ошибкой.
+    func fetchPartnerAlbum(userId: String) async throws -> PartnerAlbum {
+        try await request(path: "/dating/private-album/users/\(userId)", method: "GET", body: nil as String?, authorized: true)
+    }
+
+    func requestPartnerAlbum(userId: String) async throws -> AlbumAccessStatus {
+        let result: AlbumRequestResult = try await request(
+            path: "/dating/private-album/users/\(userId)/request", method: "POST", body: nil as String?, authorized: true
+        )
+        return result.status
+    }
+
+    /// Показать свой альбом этому человеку — в ответ на запрос или по своей инициативе.
+    func grantPrivateAlbum(userId: String) async throws {
+        let _: EmptyResponse = try await request(path: "/dating/private-album/access/\(userId)", method: "PUT", body: nil as String?, authorized: true)
+    }
+
+    /// Отклонить запрос или отозвать открытый доступ.
+    func revokePrivateAlbum(userId: String) async throws {
+        let _: EmptyResponse = try await request(path: "/dating/private-album/access/\(userId)", method: "DELETE", body: nil as String?, authorized: true)
+    }
+
     // MARK: - «Путь к браку»
 
     func fetchJourney(matchId: String) async throws -> JourneyView {

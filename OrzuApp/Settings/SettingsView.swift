@@ -147,6 +147,9 @@ struct SettingsView: View {
             Button { showPreview = true } label: {
                 SettingsLabel(String(localized: "Как меня видят"), systemImage: "eye.fill", color: .brand)
             }
+            NavigationLink { PrivateAlbumView() } label: {
+                SettingsLabel(String(localized: "Скрытый альбом"), systemImage: "lock.fill", color: .brand)
+            }
             NavigationLink { FamilyShareView() } label: {
                 SettingsLabel(String(localized: "Показать анкету семье"), systemImage: "person.2.fill", color: .champagne)
             }

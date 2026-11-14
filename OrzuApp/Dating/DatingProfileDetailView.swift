@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 /// Анкета целиком: фото, видео, совместимость и всё, что человек о себе указал.
@@ -23,6 +24,8 @@ struct DatingProfileDetailView: View {
     @State private var confirmBlock = false
     @State private var photoIndex = 0
     @State private var showPhotos = false
+    /// Скрытые альбомы — мой и собеседника. В предпросмотре своей анкеты не загружаются.
+    @StateObject private var partnerAlbum = PartnerAlbumModel()
     @State private var playbackError: String?
 
     private let heroHeight: CGFloat = 520
@@ -63,6 +66,9 @@ struct DatingProfileDetailView: View {
                             .frame(height: 260)
                     }
                 }
+                if partnerAlbum.isVisible {
+                    PartnerAlbumCard(model: partnerAlbum, userId: profile.userId, displayName: profile.displayName)
+                }
                 factsCard
                 if let criteria = profile.searchCriteria {
                     SearchCriteriaCard(criteria: criteria, fits: profile.fitsCriteria, viewer: viewer, catalog: catalog)
@@ -76,6 +82,13 @@ struct DatingProfileDetailView: View {
         }
         .background(DatingBackdrop())
         .safeAreaInset(edge: .bottom) { actions }
+        .task(id: profile.userId) {
+            if showsModeration { await partnerAlbum.load(userId: profile.userId) }
+        }
+        .onReceive(WebSocketClient.shared.events.receive(on: DispatchQueue.main)) { event in
+            guard showsModeration, case .privateAlbumChanged(let userId) = event, userId == profile.userId else { return }
+            Task { await partnerAlbum.load(userId: profile.userId) }
+        }
         .navigationTitle(profile.displayName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

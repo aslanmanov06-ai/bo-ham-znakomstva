@@ -58,6 +58,8 @@ enum ServerEvent {
     case attachmentProcessed(attachmentId: String?)
     /// Модератор проверил селфи, фото или видео анкеты, попросил новое селфи или снял значок — статусы в анкете изменились.
     case datingModerated
+    /// Скрытый альбом: этот человек попросил показать мой или изменил мой доступ к своему.
+    case privateAlbumChanged(userId: String)
     /// Новый запрос на переписку или на мой запрос ответили: ящик «Запросы» и список чатов перечитываются.
     case chatRequestsChanged
     /// Тревога того, кто добавил вас в доверенные контакты (или обновление её геопозиции).
@@ -562,6 +564,14 @@ final class WebSocketClient: NSObject, ObservableObject {
         case "e2e.keyChanged":
             guard let userId = json["userId"] as? String else { return }
             events.send(.e2eKeyChanged(userId: userId))
+
+        case "dating.albumRequested":
+            guard let user = json["user"] as? [String: Any], let userId = user["id"] as? String else { return }
+            events.send(.privateAlbumChanged(userId: userId))
+
+        case "dating.albumAccess":
+            guard let userId = json["userId"] as? String else { return }
+            events.send(.privateAlbumChanged(userId: userId))
 
         case "chat.request", "chat.requestAccepted":
             events.send(.chatRequestsChanged)

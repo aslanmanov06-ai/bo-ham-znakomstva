@@ -161,6 +161,7 @@
 		F41DDB6AE0A2B326B073CA0A /* SafetyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */; };
 		7A1C3E5F9B2D4F6A8C0E1B33 /* ProfilePhotoViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5F9B2D4F6A8C0E1B32 /* ProfilePhotoViewer.swift */; };
 		7A1C3E5F9B2D4F6A8C0E1B31 /* FamilyShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5F9B2D4F6A8C0E1B30 /* FamilyShareView.swift */; };
+		7A1C3E5F9B2D4F6A8C0E1B35 /* PrivateAlbumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5F9B2D4F6A8C0E1B34 /* PrivateAlbumView.swift */; };
 		F47A69424CB61146A7E802F0 /* MyProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77530A50A68F3251CA0DC4A7 /* MyProfileView.swift */; };
 		ACF0359CFFF55ACA3BE1672D /* HowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A76D62A6CB1FC77ED831B3F0 /* HowItWorksView.swift */; };
 		F7F0B003AB53FC894FE6A32E /* DatingFormControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AB7B67F1877B6FEAD4A150 /* DatingFormControls.swift */; };
@@ -318,6 +319,7 @@
 		CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyView.swift; sourceTree = "<group>"; };
 		7A1C3E5F9B2D4F6A8C0E1B32 /* ProfilePhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePhotoViewer.swift; sourceTree = "<group>"; };
 		7A1C3E5F9B2D4F6A8C0E1B30 /* FamilyShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyShareView.swift; sourceTree = "<group>"; };
+		7A1C3E5F9B2D4F6A8C0E1B34 /* PrivateAlbumView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateAlbumView.swift; sourceTree = "<group>"; };
 		D1D8C10DB414FCAEF4E9E388 /* ChannelDirectoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelDirectoryView.swift; sourceTree = "<group>"; };
 		D511A8729A85655CFFB9A83C /* ResponseCachePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseCachePolicyTests.swift; sourceTree = "<group>"; };
 		D7761CAEB80E27D2D8435E6C /* AppStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatus.swift; sourceTree = "<group>"; };
@@ -404,6 +406,7 @@
 				CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */,
 				7A1C3E5F9B2D4F6A8C0E1B32 /* ProfilePhotoViewer.swift */,
 				7A1C3E5F9B2D4F6A8C0E1B30 /* FamilyShareView.swift */,
+				7A1C3E5F9B2D4F6A8C0E1B34 /* PrivateAlbumView.swift */,
 				56A8E52F3726C2AD0ADEC9C3 /* SelfieCamera.swift */,
 				C4DDF5F1B85DE81963ECF985 /* SelfieVerificationView.swift */,
 				EDFE0F801D1A7286093DA957 /* SosAlertView.swift */,
@@ -870,6 +873,7 @@
 				F41DDB6AE0A2B326B073CA0A /* SafetyView.swift in Sources */,
 				7A1C3E5F9B2D4F6A8C0E1B33 /* ProfilePhotoViewer.swift in Sources */,
 				7A1C3E5F9B2D4F6A8C0E1B31 /* FamilyShareView.swift in Sources */,
+				7A1C3E5F9B2D4F6A8C0E1B35 /* PrivateAlbumView.swift in Sources */,
 				76EB63882A77D037E058A894 /* SecretChatCrypto.swift in Sources */,
 				B2B1DFE9929A6A2D7813E8FD /* SelfieCamera.swift in Sources */,
 				928F5F8CFBBEBCFD1AD892D2 /* SelfieVerificationView.swift in Sources */,

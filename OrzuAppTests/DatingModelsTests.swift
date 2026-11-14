@@ -512,6 +512,36 @@ final class SearchCriteriaModelsTests: XCTestCase {
         XCTAssertEqual(ProfileShareDuration.allCases.map(\.rawValue), [1, 7, 30])
     }
 
+    // MARK: - Скрытый альбом
+
+    func testDecodesPrivateAlbum() throws {
+        let album = try decoder().decode(PrivateAlbum.self, from: Data("""
+        {"photoIds":["p1","p2"],"maxPhotos":10,
+         "requests":[{"user":{"id":"u2","username":"timur","displayName":"Тимур","avatarUrl":null},"at":"2026-11-14T12:00:00.000Z"}],
+         "viewers":[]}
+        """.utf8))
+        XCTAssertEqual(album.photoIds, ["p1", "p2"])
+        XCTAssertEqual(album.requests.first?.id, "u2")
+        XCTAssertTrue(album.viewers.isEmpty)
+    }
+
+    func testDecodesPartnerAlbumAndUnknownStatus() throws {
+        let granted = try decoder().decode(PartnerAlbum.self, from: Data("""
+        {"theirs":{"photoCount":2,"status":"GRANTED","photoIds":["p1","p2"]},"mine":{"photoCount":0,"status":"NONE"}}
+        """.utf8))
+        XCTAssertEqual(granted.theirs.status, .granted)
+        XCTAssertEqual(granted.theirs.photoIds.count, 2)
+        XCTAssertFalse(granted.isEmpty)
+
+        // Статус, которого приложение ещё не знает, читается как «доступа нет», а не роняет разбор.
+        let unknown = try decoder().decode(PartnerAlbum.self, from: Data("""
+        {"theirs":{"photoCount":0,"status":"SOMETHING_NEW","photoIds":[]},"mine":{"photoCount":0,"status":"PENDING"}}
+        """.utf8))
+        XCTAssertEqual(unknown.theirs.status, AlbumAccessStatus.none)
+        XCTAssertEqual(unknown.mine.status, .pending)
+        XCTAssertTrue(unknown.isEmpty)
+    }
+
     // MARK: - Просмотр фото анкеты
 
     func testZoomedPhotoCannotBeDraggedPastItsEdge() {

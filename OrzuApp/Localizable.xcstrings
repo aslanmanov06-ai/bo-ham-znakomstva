@@ -18792,6 +18792,310 @@
           }
         }
       }
+    },
+    "Скрытый альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Албоми пинҳонӣ"
+          }
+        }
+      }
+    },
+    "Просят показать" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asking to see it"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Хоҳиши дидан доранд"
+          }
+        }
+      }
+    },
+    "Альбом открыт" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Album is open to"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Албом кушода аст"
+          }
+        }
+      }
+    },
+    "После отзыва человек сразу перестаёт видеть альбом. Он сможет попросить доступ снова." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once revoked, the person stops seeing the album right away. They can ask for access again."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пас аз бекор кардан шахс фавран албомро дида наметавонад. Ӯ метавонад дубора дастрасӣ пурсад."
+          }
+        }
+      }
+    },
+    "Закрыть альбом для %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close the album for %@?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Албомро барои %@ мебандед?"
+          }
+        }
+      }
+    },
+    "Отозвать доступ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoke access"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бекор кардани дастрасӣ"
+          }
+        }
+      }
+    },
+    "Фото · %lld из %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos · %1$lld of %2$lld"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Суратҳо · %1$lld аз %2$lld"
+          }
+        }
+      }
+    },
+    "Этих фото нет в анкете и ленте. Их видят только собеседники, которым вы сами открыли альбом. Правила сообщества действуют и здесь: на фото можно пожаловаться." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These photos are not in your profile or the feed. Only people you chat with and have opened the album to can see them. Community rules apply here too: photos can be reported."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ин суратҳо дар анкета ва лента нестанд. Онҳоро танҳо ҳамсуҳбатоне мебинанд, ки шумо худатон албомро барояшон кушодаед. Қоидаҳои ҷомеа дар ин ҷо низ амал мекунанд: аз сурат шикоят кардан мумкин аст."
+          }
+        }
+      }
+    },
+    "Убрать фото из альбома" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo from the album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Суратро аз албом гирифтан"
+          }
+        }
+      }
+    },
+    "открыт %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "opened %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ кушода шуд"
+          }
+        }
+      }
+    },
+    "Фото из скрытого альбома" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo from the hidden album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сурат аз албоми пинҳонӣ"
+          }
+        }
+      }
+    },
+    "Запрос отправлен. Фото появятся, когда %@ откроет альбом." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request sent. The photos will appear when %@ opens the album."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дархост фиристода шуд. Суратҳо вақте пайдо мешаванд, ки %@ албомро кушояд."
+          }
+        }
+      }
+    },
+    "Запрос отклонён. Повторить можно через сутки." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The request was declined. You can try again in 24 hours."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дархост рад шуд. Пас аз як шабонарӯз такрор кардан мумкин аст."
+          }
+        }
+      }
+    },
+    "В альбоме %lld фото. Их видно только с разрешения владельца." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The album has %lld photos. They are visible only with the owner's permission."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дар албом %lld сурат ҳаст. Онҳо танҳо бо иҷозати соҳибаш дида мешаванд."
+          }
+        }
+      }
+    },
+    "Попросить показать" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask to see it"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Хоҳиш кардан"
+          }
+        }
+      }
+    },
+    "Ваш альбом открыт для %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your album is open to %@."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Албоми шумо барои %@ кушода аст."
+          }
+        }
+      }
+    },
+    "%@ просит показать ваш альбом." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ asks to see your album."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ хоҳиш мекунад албоми шуморо бинад."
+          }
+        }
+      }
+    },
+    "Ваш скрытый альбом для %@ закрыт." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your hidden album is closed to %@."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Албоми пинҳонии шумо барои %@ пӯшида аст."
+          }
+        }
+      }
+    },
+    "Показать мой альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show my album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нишон додани албоми ман"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

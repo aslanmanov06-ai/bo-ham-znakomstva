@@ -914,3 +914,58 @@ struct CreatedProfileShareLink: Decodable, Identifiable, Hashable {
     let url: URL
     let expiresAt: Date
 }
+
+// MARK: - Скрытый альбом
+
+/// Доступ собеседника к скрытому альбому. Незнакомое значение с нового сервера читается как «доступа нет».
+enum AlbumAccessStatus: String, Decodable {
+    case none = "NONE"
+    case pending = "PENDING"
+    case granted = "GRANTED"
+    case declined = "DECLINED"
+
+    init(from decoder: Decoder) throws {
+        self = AlbumAccessStatus(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .none
+    }
+}
+
+/// Человек в списках своего альбома: просит доступ или уже видит альбом. at — когда попросил или когда ему открыли.
+struct PrivateAlbumPerson: Decodable, Identifiable, Hashable {
+    let user: User
+    let at: Date
+
+    var id: String { user.id }
+}
+
+/// Свой скрытый альбом: фото по порядку, ждущие ответа запросы и те, кому он открыт.
+struct PrivateAlbum: Decodable {
+    var photoIds: [String]
+    let maxPhotos: Int
+    var requests: [PrivateAlbumPerson]
+    var viewers: [PrivateAlbumPerson]
+}
+
+/// Альбомы двоих собеседников друг для друга: его альбом для меня и мой — для него.
+struct PartnerAlbum: Decodable {
+    struct Theirs: Decodable {
+        let photoCount: Int
+        var status: AlbumAccessStatus
+        /// Пусто, пока доступ не открыт.
+        let photoIds: [String]
+    }
+
+    struct Mine: Decodable {
+        let photoCount: Int
+        var status: AlbumAccessStatus
+    }
+
+    var theirs: Theirs
+    var mine: Mine
+
+    /// Альбома нет ни у кого из двоих — показывать нечего.
+    var isEmpty: Bool { theirs.photoCount == 0 && mine.photoCount == 0 }
+}
+
+struct AlbumRequestResult: Decodable {
+    let status: AlbumAccessStatus
+}
