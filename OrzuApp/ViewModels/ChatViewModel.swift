@@ -887,14 +887,16 @@ final class ChatViewModel: ObservableObject {
         typingUserIds.remove(userId)
     }
 
-    /// Экран чата открыт — значит, последнее входящее прочитано. В канале квитанций нет.
+    /// Экран чата открыт — значит, последнее входящее прочитано. В канале отметка нужна самому подписчику:
+    /// без неё сервер при следующем обновлении списка вернул бы счётчик непрочитанных постов.
     private func markReadIfNeeded() {
         guard
-            chat.type != .channel,
             let last = messages.last(where: { !isMine($0) }),
             last.id != lastMarkedReadId
         else { return }
         lastMarkedReadId = last.id
+        // Push мог прийти, пока чат грузился, — прочитанное в Центре уведомлений не держим.
+        PushManager.shared.clearDelivered(chatId: chat.id)
         Task {
             do {
                 try await APIClient.shared.markRead(chatId: chat.id, messageId: last.id)

@@ -91,6 +91,24 @@
         }
       }
     },
+    "NSPhotoLibraryAddUsageDescription" : {
+      "comment" : "Info.plist",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permission is needed to save photos from chats to your gallery"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Иҷозат барои нигоҳ доштани суратҳо аз чат дар галереяи шумо лозим аст"
+          }
+        }
+      }
+    },
     "NSPhotoLibraryUsageDescription" : {
       "comment" : "Info.plist",
       "extractionState" : "manual",

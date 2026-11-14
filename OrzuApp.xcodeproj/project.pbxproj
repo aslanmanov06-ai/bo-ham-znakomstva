@@ -159,6 +159,8 @@
 		F0B80AD7A373AA35C2B65C9D /* GroupInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F7FBEB9C981A570F5B6EB7 /* GroupInfoView.swift */; };
 		F28C1AACE23CFAABE1AB7105 /* Presence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744A61C49A8BDDB112999B42 /* Presence.swift */; };
 		F41DDB6AE0A2B326B073CA0A /* SafetyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */; };
+		7A1C3E5F9B2D4F6A8C0E1B33 /* ProfilePhotoViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5F9B2D4F6A8C0E1B32 /* ProfilePhotoViewer.swift */; };
+		7A1C3E5F9B2D4F6A8C0E1B31 /* FamilyShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C3E5F9B2D4F6A8C0E1B30 /* FamilyShareView.swift */; };
 		F47A69424CB61146A7E802F0 /* MyProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77530A50A68F3251CA0DC4A7 /* MyProfileView.swift */; };
 		ACF0359CFFF55ACA3BE1672D /* HowItWorksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A76D62A6CB1FC77ED831B3F0 /* HowItWorksView.swift */; };
 		F7F0B003AB53FC894FE6A32E /* DatingFormControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AB7B67F1877B6FEAD4A150 /* DatingFormControls.swift */; };
@@ -314,6 +316,8 @@
 		C983D9BF59DF1C013F938B47 /* Unbounded-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Unbounded-Medium.ttf"; sourceTree = "<group>"; };
 		CA82EDC67E21BC93D70A3633 /* APIClient+Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "APIClient+Account.swift"; sourceTree = "<group>"; };
 		CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyView.swift; sourceTree = "<group>"; };
+		7A1C3E5F9B2D4F6A8C0E1B32 /* ProfilePhotoViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePhotoViewer.swift; sourceTree = "<group>"; };
+		7A1C3E5F9B2D4F6A8C0E1B30 /* FamilyShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyShareView.swift; sourceTree = "<group>"; };
 		D1D8C10DB414FCAEF4E9E388 /* ChannelDirectoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelDirectoryView.swift; sourceTree = "<group>"; };
 		D511A8729A85655CFFB9A83C /* ResponseCachePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseCachePolicyTests.swift; sourceTree = "<group>"; };
 		D7761CAEB80E27D2D8435E6C /* AppStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStatus.swift; sourceTree = "<group>"; };
@@ -398,6 +402,8 @@
 				569949D173E594CC9D908030 /* ReportUserView.swift */,
 				4F7D819029003B5F21BCFE3C /* SafetyAlertsViewModel.swift */,
 				CEEE87B1A097C88BB0D75D56 /* SafetyView.swift */,
+				7A1C3E5F9B2D4F6A8C0E1B32 /* ProfilePhotoViewer.swift */,
+				7A1C3E5F9B2D4F6A8C0E1B30 /* FamilyShareView.swift */,
 				56A8E52F3726C2AD0ADEC9C3 /* SelfieCamera.swift */,
 				C4DDF5F1B85DE81963ECF985 /* SelfieVerificationView.swift */,
 				EDFE0F801D1A7286093DA957 /* SosAlertView.swift */,
@@ -862,6 +868,8 @@
 				D95A5513E3EB649FCBF4A510 /* RootView.swift in Sources */,
 				3D09436F41023926AF42317A /* SafetyAlertsViewModel.swift in Sources */,
 				F41DDB6AE0A2B326B073CA0A /* SafetyView.swift in Sources */,
+				7A1C3E5F9B2D4F6A8C0E1B33 /* ProfilePhotoViewer.swift in Sources */,
+				7A1C3E5F9B2D4F6A8C0E1B31 /* FamilyShareView.swift in Sources */,
 				76EB63882A77D037E058A894 /* SecretChatCrypto.swift in Sources */,
 				B2B1DFE9929A6A2D7813E8FD /* SelfieCamera.swift in Sources */,
 				928F5F8CFBBEBCFD1AD892D2 /* SelfieVerificationView.swift in Sources */,
@@ -1030,6 +1038,7 @@
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID нужен, чтобы открывать заблокированное приложение";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Нужен доступ к микрофону для звонков, голосовых и видеосообщений";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Разрешение нужно, чтобы сохранять фото из чата в вашу галерею";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Доступ к фото нужен, чтобы добавить фото и видео в анкету и отправить их в чат";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1066,6 +1075,7 @@
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID нужен, чтобы открывать заблокированное приложение";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Нужен доступ к микрофону для звонков, голосовых и видеосообщений";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Разрешение нужно, чтобы сохранять фото из чата в вашу галерею";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Доступ к фото нужен, чтобы добавить фото и видео в анкету и отправить их в чат";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -34,6 +34,17 @@ enum SharedE2EStore {
         set { defaults.set(newValue, forKey: currentUserKey) }
     }
 
+    // MARK: - Число на иконке
+
+    private static let badgeCountKey = "push.badgeCount"
+
+    /// Непрочитанное на иконке приложения: приложение записывает точное число, расширение прибавляет по одному
+    /// на каждое уведомление о сообщении, пришедшее без него.
+    static var badgeCount: Int {
+        get { defaults.integer(forKey: badgeCountKey) }
+        set { defaults.set(max(newValue, 0), forKey: badgeCountKey) }
+    }
+
     // MARK: - Запомненные ключи собеседников (trust on first use)
 
     static var pinnedKeys: [String: String] {

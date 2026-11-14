@@ -141,6 +141,7 @@ final class ChatListViewModel: ObservableObject {
         setUnread(0, chatId: chat.id)
         do {
             try await APIClient.shared.markRead(chatId: chat.id, messageId: last.id)
+            PushManager.shared.clearDelivered(chatId: chat.id)
         } catch {
             if let previous { setUnread(previous, chatId: chat.id) }
             errorMessage = error.localizedDescription

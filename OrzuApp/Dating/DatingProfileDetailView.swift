@@ -22,6 +22,7 @@ struct DatingProfileDetailView: View {
     @State private var blockError: String?
     @State private var confirmBlock = false
     @State private var photoIndex = 0
+    @State private var showPhotos = false
     @State private var playbackError: String?
 
     private let heroHeight: CGFloat = 520
@@ -90,6 +91,9 @@ struct DatingProfileDetailView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showPhotos) {
+            ProfilePhotoViewer(photoIds: profile.photoIds, index: $photoIndex)
+        }
         .sheet(isPresented: $showReport) {
             NavigationStack {
                 ReportUserView(userId: profile.userId, displayName: profile.displayName)
@@ -135,6 +139,9 @@ struct DatingProfileDetailView: View {
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .frame(height: heroHeight)
+        // В рамке фото обрезано — по нажатию оно открывается целиком, с увеличением.
+        .onTapGesture { showPhotos = !profile.photoIds.isEmpty }
+        .accessibilityHint("Нажмите, чтобы открыть фото на весь экран")
         .overlay(alignment: .top) { photoPager }
         .overlay(alignment: .bottom) { heroCaption }
         .clipShape(RoundedRectangle(cornerRadius: DatingStyle.cardCornerRadius, style: .continuous))

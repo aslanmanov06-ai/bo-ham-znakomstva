@@ -208,6 +208,7 @@ private struct MainTabView: View {
                 .tag(AppTab.profile)
         }
         .tabBarMinimizesOnScroll()
+        .onChange(of: chats.badgeCount, initial: true) { _, count in PushManager.shared.updateBadge(count) }
         .task {
             await chats.load()
             await chats.loadRequestsCount()
@@ -222,6 +223,8 @@ private struct MainTabView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { roulette.stop() }
+            // Пока чат был открыт, расширение уведомлений могло прибавить к числу на иконке уже прочитанное.
+            if phase != .inactive { PushManager.shared.updateBadge(chats.badgeCount) }
         }
         // Нажали на push о сообщении — чат откроет ChatListView, но вкладка должна быть видна.
         .onChange(of: push.pendingChatId) { _, chatId in

@@ -489,4 +489,37 @@ final class SearchCriteriaModelsTests: XCTestCase {
         XCTAssertFalse(overMidnight.isLive(at: try at(3), calendar: calendar))
         XCTAssertEqual(overMidnight.endTime, "02:00")
     }
+
+    // MARK: - «Показать анкету семье»
+
+    func testDecodesProfileShareLinks() throws {
+        let created = try decoder().decode(CreatedProfileShareLink.self, from: Data("""
+        {"id":"5b1e7a52-0c4f-4a53-9d0c-1b7f6f0f2a11","url":"https://adm.orzu.pro/s/Zk3vQ2pXh8mN4bT7yR1cW6dJ0aLfUeSg",
+         "expiresAt":"2026-11-21T10:00:00.000Z"}
+        """.utf8))
+        XCTAssertEqual(created.url.path, "/s/Zk3vQ2pXh8mN4bT7yR1cW6dJ0aLfUeSg")
+
+        let links = try decoder().decode([ProfileShareLink].self, from: Data("""
+        [{"id":"5b1e7a52-0c4f-4a53-9d0c-1b7f6f0f2a11","createdAt":"2026-11-14T10:00:00.000Z","expiresAt":"2026-11-21T10:00:00.000Z"}]
+        """.utf8))
+        XCTAssertEqual(links.first?.id, created.id)
+        XCTAssertEqual(links.first?.expiresAt, created.expiresAt)
+        XCTAssertTrue(try decoder().decode([ProfileShareLink].self, from: Data("[]".utf8)).isEmpty)
+    }
+
+    /// Сервер принимает срок ссылки от 1 до 30 дней — варианты в приложении не должны выйти за эти пределы.
+    func testShareDurationsFitServerLimits() {
+        XCTAssertEqual(ProfileShareDuration.allCases.map(\.rawValue), [1, 7, 30])
+    }
+
+    // MARK: - Просмотр фото анкеты
+
+    func testZoomedPhotoCannotBeDraggedPastItsEdge() {
+        let screen = CGSize(width: 400, height: 800)
+        // Без увеличения сдвигать нечего.
+        XCTAssertEqual(PhotoZoom.clamped(CGSize(width: 50, height: -70), scale: 1, in: screen), .zero)
+        // При ×2 «лишняя» половина — по 200 и 400 точек в каждую сторону.
+        XCTAssertEqual(PhotoZoom.clamped(CGSize(width: 150, height: -300), scale: 2, in: screen), CGSize(width: 150, height: -300))
+        XCTAssertEqual(PhotoZoom.clamped(CGSize(width: 900, height: -900), scale: 2, in: screen), CGSize(width: 200, height: -400))
+    }
 }

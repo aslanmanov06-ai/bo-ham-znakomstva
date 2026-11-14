@@ -257,6 +257,21 @@ extension APIClient {
         }
     }
 
+    // MARK: - «Показать анкету семье»
+
+    /// Ссылка, по которой анкету видно без приложения и входа. Адрес приходит только в этом ответе.
+    func createProfileShareLink(days: Int) async throws -> CreatedProfileShareLink {
+        try await request(path: "/dating/profile/me/share-links", method: "POST", body: ["days": days], authorized: true)
+    }
+
+    func fetchProfileShareLinks() async throws -> [ProfileShareLink] {
+        try await request(path: "/dating/profile/me/share-links", method: "GET", body: nil as String?, authorized: true)
+    }
+
+    func revokeProfileShareLink(id: String) async throws {
+        let _: EmptyResponse = try await request(path: "/dating/profile/me/share-links/\(id)", method: "DELETE", body: nil as String?, authorized: true)
+    }
+
     // MARK: - «Путь к браку»
 
     func fetchJourney(matchId: String) async throws -> JourneyView {

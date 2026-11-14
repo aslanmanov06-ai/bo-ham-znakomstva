@@ -132,6 +132,7 @@ final class AuthViewModel: ObservableObject {
         ChatDraftStore.shared.removeAll()
         OwnSosAlertStore.alertId = nil
         AppLock.shared.reset()
+        PushManager.shared.clearForSignedOut()
         Task { await AttachmentLoader.shared.removeAll() }
     }
 

@@ -881,3 +881,36 @@ enum DatingLimits {
     static let maxPromptAnswerLength = 200
     static let maxVoiceIntroSec = 30
 }
+
+// MARK: - «Показать анкету семье»
+
+/// Срок жизни ссылки на анкету: сервер принимает от 1 до 30 дней.
+enum ProfileShareDuration: Int, CaseIterable, Identifiable {
+    case day = 1
+    case week = 7
+    case month = 30
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .day: return String(localized: "1 день")
+        case .week: return String(localized: "7 дней")
+        case .month: return String(localized: "30 дней")
+        }
+    }
+}
+
+/// Действующая ссылка на анкету. Самого адреса в списке нет: сервер показывает его один раз, при создании.
+struct ProfileShareLink: Decodable, Identifiable, Hashable {
+    let id: String
+    let createdAt: Date
+    let expiresAt: Date
+}
+
+/// Только что созданная ссылка — единственный момент, когда виден её адрес.
+struct CreatedProfileShareLink: Decodable, Identifiable, Hashable {
+    let id: String
+    let url: URL
+    let expiresAt: Date
+}

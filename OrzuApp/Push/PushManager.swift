@@ -101,6 +101,12 @@ final class PushManager: NSObject, ObservableObject {
         }
     }
 
+    /// Уведомления и число на иконке принадлежат вышедшему: на экране входа их быть не должно.
+    func clearForSignedOut() {
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        updateBadge(0)
+    }
+
     /// Аккаунт удалён — его токены сервер уже стёр, отвязывать устройство некому.
     func accountWasDeleted() {
         isLoggedIn = false
@@ -116,6 +122,28 @@ final class PushManager: NSObject, ObservableObject {
             } catch {
                 logger.error("Не удалось зарегистрировать устройство: \(error.localizedDescription, privacy: .public)")
             }
+        }
+    }
+
+    // MARK: - Центр уведомлений и число на иконке
+
+    /// Чат прочитан — его уведомления в Центре уведомлений больше не нужны.
+    func clearDelivered(chatId: String) {
+        UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
+            let identifiers = notifications
+                .filter { $0.request.content.threadIdentifier == chatId || $0.request.content.userInfo["chatId"] as? String == chatId }
+                .map(\.request.identifier)
+            guard !identifiers.isEmpty else { return }
+            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: identifiers)
+        }
+    }
+
+    /// Число на иконке — то же, что на вкладке «Чаты». Пока приложение закрыто, его увеличивает расширение
+    /// уведомлений (сервер числа не присылает), поэтому счёт хранится в общей с расширением группе.
+    func updateBadge(_ count: Int) {
+        SharedE2EStore.badgeCount = count
+        UNUserNotificationCenter.current().setBadgeCount(count) { [logger] error in
+            if let error { logger.error("Не удалось обновить число на иконке: \(error.localizedDescription, privacy: .public)") }
         }
     }
 

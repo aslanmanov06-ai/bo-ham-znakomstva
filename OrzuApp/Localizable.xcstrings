@@ -18504,6 +18504,294 @@
           }
         }
       }
+    },
+    "Срок действия" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valid for"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мӯҳлати амал"
+          }
+        }
+      }
+    },
+    "Создать ссылку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create link"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сохтани пайванд"
+          }
+        }
+      }
+    },
+    "По ссылке анкету можно посмотреть без приложения: имя, возраст, город, одобренные фото, рассказ о себе и интересы. Логин, контакты и переписка не показываются." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The link opens your profile without the app: name, age, city, approved photos, your bio and interests. Your username, contacts and chats are not shown."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бо пайванд анкетаро бе барнома дидан мумкин аст: ном, синну сол, шаҳр, суратҳои тасдиқшуда, маълумот дар бораи худ ва шавқҳо. Логин, тамосҳо ва мукотиба нишон дода намешаванд."
+          }
+        }
+      }
+    },
+    "Действующие ссылки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active links"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пайвандҳои амалкунанда"
+          }
+        }
+      }
+    },
+    "Отозванная ссылка перестаёт открываться сразу. Адрес показывается только при создании — если он потерян, отзовите ссылку и создайте новую." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A revoked link stops opening right away. The address is shown only when the link is created — if you lose it, revoke the link and create a new one."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пайванди бекоршуда фавран кушода намешавад. Суроға танҳо ҳангоми сохтан нишон дода мешавад — агар гум шуда бошад, пайвандро бекор карда, навашро созед."
+          }
+        }
+      }
+    },
+    "Показать анкету семье" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show profile to family"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Анкетаро ба оила нишон додан"
+          }
+        }
+      }
+    },
+    "Отозвать ссылку?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoke the link?"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пайвандро бекор мекунед?"
+          }
+        }
+      }
+    },
+    "Отозвать" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoke"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бекор кардан"
+          }
+        }
+      }
+    },
+    "Те, у кого она есть, больше не смогут открыть анкету." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People who have it will no longer be able to open your profile."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Онҳое, ки ин пайвандро доранд, дигар анкетаро кушода наметавонанд."
+          }
+        }
+      }
+    },
+    "Скопировать ссылку" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy link"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нусхабардории пайванд"
+          }
+        }
+      }
+    },
+    "Новая ссылка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New link"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пайванди нав"
+          }
+        }
+      }
+    },
+    "Действует до %@. Сохраните или отправьте её сейчас: позже адрес не показать." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valid until %@. Save or send it now: the address can't be shown later."
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "То %@ амал мекунад. Онро ҳозир нигоҳ доред ё фиристед: баъдтар суроға нишон дода намешавад."
+          }
+        }
+      }
+    },
+    "До %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Until %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "То %@"
+          }
+        }
+      }
+    },
+    "создана %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "created %@"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ сохта шуд"
+          }
+        }
+      }
+    },
+    "1 день" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 day"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 рӯз"
+          }
+        }
+      }
+    },
+    "7 дней" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 days"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "7 рӯз"
+          }
+        }
+      }
+    },
+    "30 дней" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 days"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 рӯз"
+          }
+        }
+      }
+    },
+    "Нажмите, чтобы открыть фото на весь экран" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap to open the photo full screen"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Барои кушодани сурат дар тамоми экран пахш кунед"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

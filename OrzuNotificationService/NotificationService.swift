@@ -5,7 +5,8 @@ import UserNotifications
 /// - секретный чат: сервер знает только шифротекст и шлёт «Новое сообщение» — расшифровываем текст здесь,
 ///   на устройстве, если ключ собеседника совпадает с тем, что приложение уже запомнило;
 /// - фото: скачиваем миниатюру по подписанной ссылке и прикрепляем к уведомлению;
-/// - уведомления одного чата собираются в стопку (thread-id), даже если сервер его не поставил.
+/// - уведомления одного чата собираются в стопку (thread-id), даже если сервер его не поставил;
+/// - сообщение прибавляет единицу к числу на иконке приложения.
 /// На всё у расширения около 30 секунд; не успели — показываем то, что прислал сервер.
 final class NotificationService: UNNotificationServiceExtension {
     private var contentHandler: ((UNNotificationContent) -> Void)?
@@ -25,6 +26,13 @@ final class NotificationService: UNNotificationServiceExtension {
         }
         if content.threadIdentifier.isEmpty, let chatId = info["chatId"] as? String, !chatId.isEmpty {
             content.threadIdentifier = chatId
+        }
+
+        // Сервер числа для иконки не присылает: считаем сами, приложение при открытии поставит точное.
+        if info["type"] as? String == "message.new" {
+            let count = SharedE2EStore.badgeCount + 1
+            SharedE2EStore.badgeCount = count
+            content.badge = NSNumber(value: count)
         }
 
         guard let imageURL = Self.imageURL(info) else {
