@@ -613,6 +613,16 @@ final class ChatViewModel: ObservableObject {
     /// Текст служебной строки; nil — обычное сообщение.
     func systemText(for message: Message) -> String? {
         guard let event = message.systemEvent else { return nil }
+        if event == Message.albumRequestEvent {
+            return isMine(message)
+                ? String(localized: "Вы попросили показать скрытый альбом")
+                : String(localized: "\(displayName(of: message.senderId)) просит показать скрытый альбом")
+        }
+        if event == Message.albumGrantedEvent {
+            return isMine(message)
+                ? String(localized: "Вы открыли скрытый альбом")
+                : String(localized: "\(displayName(of: message.senderId)) открыл(а) вам скрытый альбом")
+        }
         guard event == Message.screenshotEvent else { return String(localized: "Служебное сообщение") }
         let aboutTimedPhoto = message.replyTo != nil
         if isMine(message) {
@@ -620,6 +630,20 @@ final class ChatViewModel: ObservableObject {
         }
         let name = displayName(of: message.senderId)
         return aboutTimedPhoto ? String(localized: "\(name) сделал(а) снимок экрана с фото с таймером") : String(localized: "\(name) сделал(а) снимок экрана")
+    }
+
+    /// Последняя запись о скрытом альбоме в ленте — по ней чат узнаёт, что пора перечитать состояние альбомов.
+    var lastAlbumEventId: String? { messages.last(where: \.isAlbumEvent)?.id }
+
+    /// Какие кнопки показать под записью о скрытом альбоме. Они есть только у последней записи собеседника этого
+    /// вида и только пока на неё есть чем ответить: запрос ждёт ответа или открытый альбом ещё не отозван.
+    func albumEventAction(for message: Message, album: PartnerAlbum?) -> AlbumEventAction? {
+        guard let album, message.isAlbumEvent, !isMine(message),
+              messages.last(where: { $0.systemEvent == message.systemEvent && !isMine($0) })?.id == message.id else { return nil }
+        if message.systemEvent == Message.albumRequestEvent {
+            return album.mine.status == .pending ? .answerRequest : nil
+        }
+        return album.theirs.status == .granted && !album.theirs.photoIds.isEmpty ? .viewAlbum : nil
     }
 
     func timedPhotoState(of message: Message) -> TimedPhotoState? {

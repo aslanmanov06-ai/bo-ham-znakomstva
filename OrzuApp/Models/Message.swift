@@ -30,6 +30,12 @@ struct Message: Codable, Identifiable, Hashable {
 
     /// Совпадает с SCREENSHOT_EVENT на backend. replyTo такого сообщения — снятое фото с таймером, если оно было.
     static let screenshotEvent = "screenshot"
+    /// Совпадают с ALBUM_REQUEST_EVENT и ALBUM_GRANTED_EVENT на backend: отправитель попросил показать скрытый альбом
+    /// собеседника или открыл ему свой.
+    static let albumRequestEvent = "albumRequest"
+    static let albumGrantedEvent = "albumGranted"
+
+    var isAlbumEvent: Bool { systemEvent == Self.albumRequestEvent || systemEvent == Self.albumGrantedEvent }
 
     /// Совпадает с VIEW_TIMER_OPTIONS на backend.
     static let viewTimerOptions = [10, 15, 30, 60]
@@ -42,6 +48,8 @@ struct Message: Codable, Identifiable, Hashable {
 
     var previewText: String {
         if systemEvent == Self.screenshotEvent { return String(localized: "📸 Снимок экрана") }
+        if systemEvent == Self.albumRequestEvent { return String(localized: "🔒 Запрос скрытого альбома") }
+        if systemEvent == Self.albumGrantedEvent { return String(localized: "🔒 Скрытый альбом открыт") }
         if !text.isEmpty { return text }
         if ciphertext != nil { return String(localized: "🔒 Зашифрованное сообщение") }
         switch attachment?.kind {

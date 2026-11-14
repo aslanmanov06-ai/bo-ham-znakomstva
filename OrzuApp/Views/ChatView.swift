@@ -48,6 +48,11 @@ struct ChatView: View {
     /// Над этим пузырём сейчас разлетается сердце двойного касания.
     @State private var heartBurstRowId: String?
     @State private var didRestoreDraft = false
+    /// Скрытые альбомы — мой и собеседника: по ним у записей об альбоме в ленте появляются кнопки. Загружаются,
+    /// только когда такая запись в ленте есть.
+    @StateObject private var partnerAlbum = PartnerAlbumModel()
+    @State private var showAlbumViewer = false
+    @State private var albumViewerIndex = 0
     private static let bottomAnchorId = "chat-bottom"
 
     // body разбит на части: одним выражением компилятор не успевал вывести типы
@@ -127,6 +132,15 @@ struct ChatView: View {
             }
             .fullScreenCover(item: $timedPhoto) { presentation in
                 TimedPhotoViewer(presentation: presentation)
+            }
+            .fullScreenCover(isPresented: $showAlbumViewer) {
+                ProfilePhotoViewer(photoIds: partnerAlbum.album?.theirs.photoIds ?? [], index: $albumViewerIndex)
+            }
+            .task(id: viewModel.lastAlbumEventId) { await loadPartnerAlbum() }
+            .onReceive(WebSocketClient.shared.events.receive(on: DispatchQueue.main)) { event in
+                // Отказ и отзыв доступа записи в чате не оставляют — кнопки убирает само событие.
+                guard case .privateAlbumChanged(let userId) = event, userId == viewModel.chat.peer?.id else { return }
+                Task { await loadPartnerAlbum() }
             }
             .onDisappear {
                 VoicePlayer.shared.stop()
@@ -323,6 +337,12 @@ struct ChatView: View {
         }
     }
 
+    /// Состояние альбомов нужно, только если в ленте есть запись о скрытом альбоме.
+    private func loadPartnerAlbum() async {
+        guard viewModel.lastAlbumEventId != nil, let peerId = viewModel.chat.peer?.id else { return }
+        await partnerAlbum.load(userId: peerId)
+    }
+
     /// Дата над первым сообщением дня, разделитель «Новые сообщения» и сама строка — с зазором 2 pt внутри группы и 8 между группами.
     @ViewBuilder
     private func feedRow(for message: Message, layout: ChatRowLayout) -> some View {
@@ -334,7 +354,22 @@ struct ChatView: View {
                 UnreadDivider(count: viewModel.unreadCountAtOpen).padding(.vertical, 6)
             }
             if let systemText = viewModel.systemText(for: message) {
-                SystemEventRow(text: systemText)
+                if message.isAlbumEvent, let peerId = viewModel.chat.peer?.id {
+                    AlbumEventRow(
+                        text: systemText,
+                        action: viewModel.albumEventAction(for: message, album: partnerAlbum.album),
+                        isBusy: partnerAlbum.isBusy,
+                        errorMessage: partnerAlbum.errorMessage,
+                        onGrant: { partnerAlbum.grant(userId: peerId) },
+                        onDecline: { partnerAlbum.revoke(userId: peerId) },
+                        onView: {
+                            albumViewerIndex = 0
+                            showAlbumViewer = true
+                        }
+                    )
+                } else {
+                    SystemEventRow(text: systemText)
+                }
             } else {
                 messageRow(for: message, continuesGroup: layout.continuesGroup)
             }

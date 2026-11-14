@@ -397,3 +397,56 @@ struct PartnerAlbumCard: View {
         .disabled(model.isBusy)
     }
 }
+
+/// Запись о скрытом альбоме в переписке: кто попросил или открыл альбом, а под ней — ответ на запрос или «Посмотреть».
+struct AlbumEventRow: View {
+    let text: String
+    let action: AlbumEventAction?
+    let isBusy: Bool
+    let errorMessage: String?
+    let onGrant: () -> Void
+    let onDecline: () -> Void
+    let onView: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Label(text, systemImage: "lock.fill")
+                .font(.app(.caption, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            switch action {
+            case .answerRequest:
+                HStack(spacing: 10) {
+                    button(String(localized: "Показать"), prominent: true, action: onGrant)
+                    button(String(localized: "Отклонить"), prominent: false, action: onDecline)
+                }
+            case .viewAlbum:
+                button(String(localized: "Посмотреть"), prominent: true, action: onView)
+            case nil:
+                EmptyView()
+            }
+            if action != nil, let errorMessage {
+                Text(errorMessage).font(.app(.caption)).foregroundStyle(.red).multilineTextAlignment(.center)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, action == nil ? 6 : 12)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: action == nil ? 16 : 18, style: .continuous))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
+    }
+
+    private func button(_ title: String, prominent: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.app(.subheadline, weight: .semibold))
+                .foregroundStyle(prominent ? Color.white : Color.brand)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 9)
+                .background(prominent ? AnyShapeStyle(DatingStyle.brandGradient) : AnyShapeStyle(Color.brandSoft), in: Capsule())
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(isBusy)
+    }
+}

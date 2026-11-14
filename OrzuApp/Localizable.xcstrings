@@ -19096,6 +19096,118 @@
           }
         }
       }
+    },
+    "🔒 Запрос скрытого альбома" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔒 Hidden album request"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔒 Дархости албоми пинҳон"
+          }
+        }
+      }
+    },
+    "🔒 Скрытый альбом открыт" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔒 Hidden album opened"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔒 Албоми пинҳон кушода шуд"
+          }
+        }
+      }
+    },
+    "Вы попросили показать скрытый альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You asked to see the hidden album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо хоҳиш кардед, ки албоми пинҳон нишон дода шавад"
+          }
+        }
+      }
+    },
+    "%@ просит показать скрытый альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ asks to see your hidden album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ хоҳиш мекунад албоми пинҳони шуморо бинад"
+          }
+        }
+      }
+    },
+    "Вы открыли скрытый альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You opened your hidden album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шумо албоми пинҳонро кушодед"
+          }
+        }
+      }
+    },
+    "%@ открыл(а) вам скрытый альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ opened their hidden album for you"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ албоми пинҳонро ба шумо кушод"
+          }
+        }
+      }
+    },
+    "Посмотреть" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дидан"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

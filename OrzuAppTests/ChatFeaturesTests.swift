@@ -196,6 +196,19 @@ final class ScreenshotMessageTests: XCTestCase {
         XCTAssertEqual(message.previewText, "📸 Снимок экрана")
     }
 
+    /// Запрос скрытого альбома и его открытие приходят в чат служебными записями.
+    func testDecodesAlbumSystemMessages() throws {
+        let request = #"{"id":"m3","chatId":"c1","senderId":"u2","text":"","createdAt":"2026-11-14T12:00:00.000Z","systemEvent":"albumRequest"}"#
+        let granted = #"{"id":"m4","chatId":"c1","senderId":"u1","text":"","createdAt":"2026-11-14T12:01:00.000Z","systemEvent":"albumGranted"}"#
+        let decoder = ISO8601Coding.makeDecoder()
+        let first = try decoder.decode(Message.self, from: Data(request.utf8))
+        let second = try decoder.decode(Message.self, from: Data(granted.utf8))
+        XCTAssertTrue(first.isAlbumEvent)
+        XCTAssertTrue(second.isAlbumEvent)
+        XCTAssertEqual(first.previewText, "🔒 Запрос скрытого альбома")
+        XCTAssertEqual(second.previewText, "🔒 Скрытый альбом открыт")
+    }
+
     func testRegularMessageHasNoSystemEvent() throws {
         let json = #"{"id":"m2","chatId":"c1","senderId":"u2","text":"Салом","createdAt":"2026-09-28T12:00:00.000Z"}"#
         let message = try ISO8601Coding.makeDecoder().decode(Message.self, from: Data(json.utf8))

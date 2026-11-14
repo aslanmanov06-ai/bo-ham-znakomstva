@@ -969,3 +969,11 @@ struct PartnerAlbum: Decodable {
 struct AlbumRequestResult: Decodable {
     let status: AlbumAccessStatus
 }
+
+/// Что можно сделать с записью о скрытом альбоме прямо в переписке.
+enum AlbumEventAction: Equatable {
+    /// Собеседник просит показать мой альбом: «Показать» и «Отклонить».
+    case answerRequest
+    /// Собеседник открыл мне свой альбом: «Посмотреть».
+    case viewAlbum
+}
