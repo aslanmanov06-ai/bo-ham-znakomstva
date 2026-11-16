@@ -2,9 +2,9 @@ import Combine
 import PhotosUI
 import SwiftUI
 
-/// Скрытый альбом: фото, которых нет в анкете и ленте. Их видят только собеседники, которым владелец сам открыл
-/// доступ — в ответ на запрос или по своей инициативе; доступ можно отозвать в любой момент.
-struct PrivateAlbumView: View {
+/// Скрытый альбом в редакторе анкеты, сразу после фото: свои фото (до 10), кто просит показать и кому альбом открыт.
+/// Этих фото нет в анкете и ленте — их видят только собеседники, которым владелец сам открыл доступ.
+struct PrivateAlbumSection: View {
     @State private var album: PrivateAlbum?
     @State private var isLoading = true
     @State private var isUploading = false
@@ -14,47 +14,59 @@ struct PrivateAlbumView: View {
     @State private var showViewer = false
     @State private var personPendingRevoke: PrivateAlbumPerson?
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
     private let maxPhotoDimension: CGFloat = 2048
 
     var body: some View {
-        Form {
-            if let album {
-                photosSection(album)
-                if !album.requests.isEmpty {
-                    Section("Просят показать") {
-                        ForEach(album.requests) { person in
-                            requestRow(person)
+        DatingSectionCard(
+            title: String(localized: "Скрытый альбом"),
+            systemImage: "lock.fill",
+            subtitle: String(localized: "Этих фото нет в анкете и ленте. Их видят только собеседники, которым вы сами открыли альбом. Правила сообщества действуют и здесь: на фото можно пожаловаться.")
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                if let album {
+                    LazyVGrid(columns: columns, spacing: 10) {
+                        ForEach(Array(album.photoIds.enumerated()), id: \.element) { index, photoId in
+                            photoCell(photoId, index: index)
+                        }
+                        if album.photoIds.count < album.maxPhotos {
+                            addCell(remaining: album.maxPhotos - album.photoIds.count)
                         }
                     }
-                }
-                if !album.viewers.isEmpty {
-                    Section {
-                        ForEach(album.viewers) { person in
-                            viewerRow(person)
+                    Text("Фото · \(album.photoIds.count) из \(album.maxPhotos)")
+                        .font(.app(.footnote))
+                        .foregroundStyle(.secondary)
+                    if !album.requests.isEmpty {
+                        group(String(localized: "Просят показать")) {
+                            ForEach(album.requests) { person in
+                                requestRow(person)
+                            }
                         }
-                    } header: {
-                        Text("Альбом открыт")
-                    } footer: {
-                        Text("После отзыва человек сразу перестаёт видеть альбом. Он сможет попросить доступ снова.")
                     }
+                    if !album.viewers.isEmpty {
+                        group(String(localized: "Альбом открыт")) {
+                            ForEach(album.viewers) { person in
+                                viewerRow(person)
+                            }
+                            Text("После отзыва человек сразу перестаёт видеть альбом. Он сможет попросить доступ снова.")
+                                .font(.app(.footnote))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                } else if isLoading {
+                    ProgressView().frame(maxWidth: .infinity).padding(.vertical, 12)
                 }
-            } else if isLoading {
-                ProgressView().frame(maxWidth: .infinity)
-            }
-            if let errorMessage {
-                Text(errorMessage).foregroundStyle(.red)
+                if let errorMessage {
+                    Text(errorMessage).font(.app(.footnote)).foregroundStyle(.red)
+                }
             }
         }
-        .appScreenBackground()
-        .navigationTitle("Скрытый альбом")
-        .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
-        .refreshable { await load() }
         .onChange(of: photoItems) { _, items in
             if !items.isEmpty { addPhotos(items) }
         }
-        // Новый запрос пришёл, пока экран открыт, — список обновляется сам.
+        // Новый запрос пришёл, пока анкета открыта, — списки обновляются сами.
         .onReceive(WebSocketClient.shared.events.receive(on: DispatchQueue.main)) { event in
             guard case .privateAlbumChanged = event else { return }
             Task { await load() }
@@ -72,21 +84,13 @@ struct PrivateAlbumView: View {
         }
     }
 
-    private func photosSection(_ album: PrivateAlbum) -> some View {
-        Section {
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(Array(album.photoIds.enumerated()), id: \.element) { index, photoId in
-                    photoCell(photoId, index: index)
-                }
-                if album.photoIds.count < album.maxPhotos {
-                    addCell(remaining: album.maxPhotos - album.photoIds.count)
-                }
-            }
-            .padding(.vertical, 4)
-        } header: {
-            Text("Фото · \(album.photoIds.count) из \(album.maxPhotos)")
-        } footer: {
-            Text("Этих фото нет в анкете и ленте. Их видят только собеседники, которым вы сами открыли альбом. Правила сообщества действуют и здесь: на фото можно пожаловаться.")
+    private func group<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Divider().padding(.bottom, 8)
+            Text(title.uppercased())
+                .font(.app(.footnote, weight: .semibold))
+                .foregroundStyle(.secondary)
+            content()
         }
     }
 
@@ -137,7 +141,7 @@ struct PrivateAlbumView: View {
                     }
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Добавить фото")
+            .accessibilityLabel("Добавить фото в скрытый альбом")
         }
     }
 

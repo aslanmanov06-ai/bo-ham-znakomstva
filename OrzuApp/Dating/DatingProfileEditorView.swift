@@ -93,6 +93,7 @@ struct DatingProfileEditorView: View {
                     CompletenessCard(completeness: completeness)
                 }
                 DatingPhotosSection(dating: dating)
+                PrivateAlbumSection()
                 verificationCard
                 shortcuts
                 DatingSectionCard(title: String(localized: "О себе"), systemImage: "quote.opening") {

@@ -3929,6 +3929,22 @@
         }
       }
     },
+    "Добавить фото в скрытый альбом" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photo to private album"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Илова кардани акс ба албоми пинҳон"
+          }
+        }
+      }
+    },
     "Добавьте до %lld человек, которым уйдёт ваша геопозиция по SOS." : {
       "localizations" : {
         "en" : {
