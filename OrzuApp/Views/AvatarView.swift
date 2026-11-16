@@ -10,21 +10,24 @@ struct AvatarView: View {
     @State private var image: UIImage?
 
     var body: some View {
-        Group {
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill()
-            } else {
-                Circle()
-                    .fill(placeholderGradient)
-                    .overlay(
-                        Text(String(name.prefix(1)).uppercased())
-                            .font(.display(size: size * 0.36, weight: .semibold))
-                            .foregroundStyle(.white)
-                    )
+        // Размер задаёт круг, а фото «заполняет» его поверх: иначе scaledToFill у вытянутого фото раздувает
+        // раскладку — аватар съезжал вверх от строки, точка «в сети» уходила вниз, обводка в профиле становилась овалом.
+        Circle()
+            .fill(placeholderGradient)
+            .overlay {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Text(String(name.prefix(1)).uppercased())
+                        .font(.display(size: size * 0.36, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
             }
-        }
-        .frame(width: size, height: size)
-        .clipShape(Circle())
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+            .contentShape(Circle())
         .task(id: avatarUrl) {
             guard let avatarUrl else {
                 image = nil
