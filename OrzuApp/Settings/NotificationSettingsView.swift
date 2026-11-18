@@ -39,11 +39,11 @@ struct NotificationSettingsView: View {
                     toggle(String(localized: "Первые сообщения"), subtitle: String(localized: "И запросы на переписку"), systemImage: "sparkles", color: .champagne, keyPath: \.intros, in: notifications)
                     toggle(String(localized: "Встречи"), subtitle: String(localized: "Приглашения и напоминания"), systemImage: "calendar", color: .champagne, keyPath: \.meetings, in: notifications)
                 }
-                Section("От команды Бо Хам") {
+                Section("От команды Tramble") {
                     toggle(String(localized: "Новости приложения"), subtitle: String(localized: "Новые функции и важные объявления"), systemImage: "megaphone.fill", color: .champagne, keyPath: \.news, in: notifications)
                 }
                 Section {
-                    toggle(String(localized: "Показывать имя и текст"), subtitle: String(localized: "Иначе — только «Бо Хам · Новое сообщение»"), systemImage: nil, color: .brand, keyPath: \.preview, in: notifications)
+                    toggle(String(localized: "Показывать имя и текст"), subtitle: String(localized: "Иначе — только «Tramble · Новое сообщение»"), systemImage: nil, color: .brand, keyPath: \.preview, in: notifications)
                 } header: {
                     Text("Экран блокировки")
                 } footer: {

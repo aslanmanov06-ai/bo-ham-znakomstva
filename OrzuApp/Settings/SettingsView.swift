@@ -94,7 +94,7 @@ struct SettingsView: View {
                     }
                 }
             } footer: {
-                Text("Бо Хам · версия \(Self.appVersion)")
+                Text("Tramble · версия \(Self.appVersion)")
                     .frame(maxWidth: .infinity)
                     .padding(.top, 8)
             }

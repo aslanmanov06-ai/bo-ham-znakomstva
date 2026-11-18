@@ -1037,7 +1037,7 @@
 				GOOGLE_IOS_CLIENT_ID = "31212846367-44um91131fsrkau3cf43i5pj4lpge16k.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.31212846367-44um91131fsrkau3cf43i5pj4lpge16k";
 				INFOPLIST_FILE = OrzuApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Бо Хам";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tramble";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID нужен, чтобы открывать заблокированное приложение";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS";
@@ -1074,7 +1074,7 @@
 				GOOGLE_IOS_CLIENT_ID = "31212846367-44um91131fsrkau3cf43i5pj4lpge16k.apps.googleusercontent.com";
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.31212846367-44um91131fsrkau3cf43i5pj4lpge16k";
 				INFOPLIST_FILE = OrzuApp/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Бо Хам";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tramble";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нужен доступ к камере для видеозвонков, видеосообщений и селфи для проверки анкеты";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID нужен, чтобы открывать заблокированное приложение";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Геопозиция нужна, чтобы показывать расстояние до анкет и отправить её доверенным контактам по SOS";

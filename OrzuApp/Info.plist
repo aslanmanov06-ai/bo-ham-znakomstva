@@ -33,6 +33,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>tramble</string>
 				<string>boham</string>
 			</array>
 		</dict>

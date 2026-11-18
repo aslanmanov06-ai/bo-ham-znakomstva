@@ -38,7 +38,7 @@ private struct IncomingCallView: View {
             CallAvatar(name: peerName)
                 .padding(.bottom, 12)
             Text(peerName).font(.display(.title)).foregroundStyle(.white)
-            Text(isVideo ? "Входящий видеозвонок · Бо Хам" : "Входящий звонок · Бо Хам").font(.app(.subheadline)).foregroundStyle(.white.opacity(0.75))
+            Text(isVideo ? "Входящий видеозвонок · Tramble" : "Входящий звонок · Tramble").font(.app(.subheadline)).foregroundStyle(.white.opacity(0.75))
             Spacer()
             GlassGroup(spacing: 60) {
                 HStack(spacing: 96) {

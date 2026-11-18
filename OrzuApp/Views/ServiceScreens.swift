@@ -153,7 +153,7 @@ struct UpdateRequiredView: View {
         ServiceScreenLayout {
             HaloIcon(systemImage: "arrow.down.app")
             ServiceTitle(text: String(localized: "Обновите приложение"))
-            ServiceText(text: String(localized: "Эта версия Бо Хам больше не работает. Установите новую из App Store — переписки, пары и анкета сохранятся."))
+            ServiceText(text: String(localized: "Эта версия Tramble больше не работает. Установите новую из App Store — переписки, пары и анкета сохранятся."))
             HStack(spacing: 8) {
                 versionPill(String(localized: "У вас"), AppVersion.current, highlighted: false)
                 versionPill(String(localized: "Нужна"), minimumVersion, highlighted: true)

@@ -1481,50 +1481,50 @@
         }
       }
     },
-    "Бо Хам" : {
+    "Tramble" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bo Ham"
+            "value" : "Tramble"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Бо Хам"
+            "value" : "Tramble"
           }
         }
       }
     },
-    "Бо Хам · версия %@" : {
+    "Tramble · версия %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bo Ham · version %@"
+            "value" : "Tramble · version %@"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Бо Хам · версияи %@"
+            "value" : "Tramble · версияи %@"
           }
         }
       }
     },
-    "Бо Хам заблокирован" : {
+    "Tramble заблокирован" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bo Ham is locked"
+            "value" : "Tramble is locked"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Бо Хам қулф аст"
+            "value" : "Tramble қулф аст"
           }
         }
       }
@@ -2809,34 +2809,34 @@
         }
       }
     },
-    "Входящий видеозвонок · Бо Хам" : {
+    "Входящий видеозвонок · Tramble" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Incoming video call · Bo Ham"
+            "value" : "Incoming video call · Tramble"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Видеозанги воридотӣ · Бо Хам"
+            "value" : "Видеозанги воридотӣ · Tramble"
           }
         }
       }
     },
-    "Входящий звонок · Бо Хам" : {
+    "Входящий звонок · Tramble" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Incoming call · Bo Ham"
+            "value" : "Incoming call · Tramble"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Занги воридотӣ · Бо Хам"
+            "value" : "Занги воридотӣ · Tramble"
           }
         }
       }
@@ -5401,18 +5401,18 @@
         }
       }
     },
-    "Иначе — только «Бо Хам · Новое сообщение»" : {
+    "Иначе — только «Tramble · Новое сообщение»" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otherwise only “Bo Ham · New message”"
+            "value" : "Otherwise only “Tramble · New message”"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вагарна танҳо «Бо Хам · Паёми нав»"
+            "value" : "Вагарна танҳо «Tramble · Паёми нав»"
           }
         }
       }
@@ -8633,18 +8633,18 @@
         }
       }
     },
-    "Обновляем Бо Хам. Скоро вернёмся — спасибо, что подождёте." : {
+    "Обновляем Tramble. Скоро вернёмся — спасибо, что подождёте." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "We're updating Bo Ham. Back soon — thanks for waiting."
+            "value" : "We're updating Tramble. Back soon — thanks for waiting."
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Бо Хамро нав мекунем. Ба зудӣ бармегардем — ташаккур барои интизорӣ."
+            "value" : "Tramble-ро нав мекунем. Ба зудӣ бармегардем — ташаккур барои интизорӣ."
           }
         }
       }
@@ -8873,18 +8873,18 @@
         }
       }
     },
-    "От команды Бо Хам" : {
+    "От команды Tramble" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From the Bo Ham team"
+            "value" : "From the Tramble team"
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Аз дастаи Бо Хам"
+            "value" : "Аз дастаи Tramble"
           }
         }
       }
@@ -15641,18 +15641,18 @@
         }
       }
     },
-    "Эта версия Бо Хам больше не работает. Установите новую из App Store — переписки, пары и анкета сохранятся." : {
+    "Эта версия Tramble больше не работает. Установите новую из App Store — переписки, пары и анкета сохранятся." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This version of Bo Ham no longer works. Install the new one from the App Store — your chats, matches and profile will be kept."
+            "value" : "This version of Tramble no longer works. Install the new one from the App Store — your chats, matches and profile will be kept."
           }
         },
         "tg" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ин версияи Бо Хам дигар кор намекунад. Версияи навро аз App Store насб кунед — мукотиба, ҷуфтҳо ва анкета нигоҳ дошта мешаванд."
+            "value" : "Ин версияи Tramble дигар кор намекунад. Версияи навро аз App Store насб кунед — мукотиба, ҷуфтҳо ва анкета нигоҳ дошта мешаванд."
           }
         }
       }

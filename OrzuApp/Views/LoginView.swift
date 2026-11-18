@@ -55,7 +55,7 @@ struct LoginView: View {
                 .background(.brandFill, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
                 .shadow(color: Color.brand.opacity(0.4), radius: 24, y: 12)
                 .accessibilityHidden(true)
-            Text("Бо Хам")
+            Text("Tramble")
                 .font(.display(size: 34, weight: .bold))
                 .padding(.top, 8)
             Text("Знакомства для серьёзных отношений, переписка и звонки — в одном месте")

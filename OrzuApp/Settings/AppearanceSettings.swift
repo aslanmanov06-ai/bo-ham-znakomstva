@@ -362,7 +362,7 @@ struct AppLockView: View {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 40, weight: .semibold))
                     .foregroundStyle(Color.brand)
-                Text("Бо Хам заблокирован")
+                Text("Tramble заблокирован")
                     .font(.display(.title3))
                 if appLock.isLocked {
                     Button("Разблокировать") {

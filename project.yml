@@ -46,7 +46,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "Бо Хам"
+        INFOPLIST_KEY_CFBundleDisplayName: "Tramble"
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         # На iPad система требует все ориентации (многозадачность), иначе — предупреждение сборки.
@@ -80,10 +80,10 @@ targets:
           - Onest-SemiBold.ttf
           - Onest-Bold.ttf
         GIDClientID: $(GOOGLE_IOS_CLIENT_ID)
-        # Второй — ссылки boham://u/<username> и boham://c/<username> (то же, что Universal Links, без сайта).
+        # Второй — ссылки tramble://u/<username> и tramble://c/<username> (то же, что Universal Links, без сайта); boham:// — до ребрендинга.
         CFBundleURLTypes:
           - CFBundleURLSchemes: [$(GOOGLE_REVERSED_CLIENT_ID)]
-          - CFBundleURLSchemes: [boham]
+          - CFBundleURLSchemes: [tramble, boham]
         # Префикс команды для общей группы Keychain (см. SharedE2EStore): его знает только сборка.
         AppIdentifierPrefix: $(AppIdentifierPrefix)
     # Push на реальном устройстве требует платный Apple Developer-аккаунт; для Симулятора подпись не проверяется.
@@ -93,8 +93,8 @@ targets:
         aps-environment: development
         # «Войти через Apple»: обязателен, раз есть вход через Google (App Store Review Guideline 4.8).
         com.apple.developer.applesignin: [Default]
-        # Universal Links: https://adm.orzu.pro/u/… и /c/… открывают приложение. Сервер отдаёт /.well-known/apple-app-site-association.
-        com.apple.developer.associated-domains: ["applinks:adm.orzu.pro"]
+        # Universal Links: https://api.tramble.site/u/… и /c/… (и прежний adm.orzu.pro) открывают приложение. Сервер отдаёт /.well-known/apple-app-site-association.
+        com.apple.developer.associated-domains: ["applinks:api.tramble.site", "applinks:adm.orzu.pro"]
         # Общие с расширением уведомлений: id вошедшего и ключи собеседников (App Group), приватный ключ (Keychain).
         com.apple.security.application-groups: [group.com.orzuapp.messenger]
         keychain-access-groups: ["$(AppIdentifierPrefix)com.orzuapp.messenger.shared"]
@@ -124,7 +124,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "Бо Хам"
+        INFOPLIST_KEY_CFBundleDisplayName: "Tramble"
     info:
       path: OrzuNotificationService/Info.plist
       properties:

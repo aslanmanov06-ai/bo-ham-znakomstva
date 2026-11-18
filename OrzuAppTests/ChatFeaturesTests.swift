@@ -106,6 +106,9 @@ final class ChatFeaturesTests: XCTestCase {
         XCTAssertEqual(DeepLink.parse(URL(string: "https://adm.orzu.pro/c/news_tj")!), .channel(username: "news_tj"))
         XCTAssertEqual(DeepLink.parse(URL(string: "boham://u/alisa")!), .user(username: "alisa"))
         XCTAssertEqual(DeepLink.parse(URL(string: "boham://c/news_tj/")!), .channel(username: "news_tj"))
+        // Tramble (с 18.11.2026): новый домен и схема; старые выше открываются по-прежнему.
+        XCTAssertEqual(DeepLink.parse(URL(string: "https://api.tramble.site/u/alisa")!), .user(username: "alisa"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "tramble://c/news_tj")!), .channel(username: "news_tj"))
     }
 
     func testRejectsForeignAndMalformedLinks() {
