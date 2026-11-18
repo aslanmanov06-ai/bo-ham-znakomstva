@@ -5,23 +5,19 @@ import os
 
 /// Ссылка, открывшая приложение: https://api.tramble.site/u/<username> — человек, /c/<username> — канал.
 /// Схема tramble:// — то же самое без веб-домена (для проверки и ссылок из других приложений).
-/// Старые адрес adm.orzu.pro и схема boham:// (до ребрендинга 18.11.2026) открываются по-прежнему.
 enum DeepLink: Equatable {
     case user(username: String)
     case channel(username: String)
 
     static let scheme = "tramble"
-    static let schemes: Set<String> = [scheme, "boham"]
-    static let webHosts: Set<String> = ["api.tramble.site", "adm.orzu.pro"]
 
     static func parse(_ url: URL) -> DeepLink? {
         let parts: [String]
         switch url.scheme?.lowercased() {
         case "https", "http":
-            guard let host = url.host?.lowercased(),
-                  host == AppConfig.apiBaseURL.host?.lowercased() || webHosts.contains(host) else { return nil }
+            guard url.host?.lowercased() == AppConfig.apiBaseURL.host?.lowercased() else { return nil }
             parts = url.pathComponents.filter { $0 != "/" }
-        case let scheme? where schemes.contains(scheme):
+        case scheme:
             // tramble://u/alisa: «u» — это host, имя — путь.
             parts = [url.host ?? ""] + url.pathComponents.filter { $0 != "/" }
         default:

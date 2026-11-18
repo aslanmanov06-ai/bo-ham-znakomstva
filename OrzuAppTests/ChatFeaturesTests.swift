@@ -102,21 +102,21 @@ final class ChatFeaturesTests: XCTestCase {
     // MARK: - Ссылки на людей и каналы
 
     func testParsesUniversalAndSchemeLinks() {
-        XCTAssertEqual(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/Alisa")!), .user(username: "alisa"))
-        XCTAssertEqual(DeepLink.parse(URL(string: "https://adm.orzu.pro/c/news_tj")!), .channel(username: "news_tj"))
-        XCTAssertEqual(DeepLink.parse(URL(string: "boham://u/alisa")!), .user(username: "alisa"))
-        XCTAssertEqual(DeepLink.parse(URL(string: "boham://c/news_tj/")!), .channel(username: "news_tj"))
-        // Tramble (с 18.11.2026): новый домен и схема; старые выше открываются по-прежнему.
-        XCTAssertEqual(DeepLink.parse(URL(string: "https://api.tramble.site/u/alisa")!), .user(username: "alisa"))
-        XCTAssertEqual(DeepLink.parse(URL(string: "tramble://c/news_tj")!), .channel(username: "news_tj"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "https://api.tramble.site/u/Alisa")!), .user(username: "alisa"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "https://api.tramble.site/c/news_tj")!), .channel(username: "news_tj"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "tramble://u/alisa")!), .user(username: "alisa"))
+        XCTAssertEqual(DeepLink.parse(URL(string: "tramble://c/news_tj/")!), .channel(username: "news_tj"))
     }
 
     func testRejectsForeignAndMalformedLinks() {
         XCTAssertNil(DeepLink.parse(URL(string: "https://evil.example/u/alisa")!))
-        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/")!))
-        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/x/alisa")!))
-        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/a")!))
-        XCTAssertNil(DeepLink.parse(URL(string: "boham://u/alisa/extra")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "https://api.tramble.site/u/")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "https://api.tramble.site/x/alisa")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "https://api.tramble.site/u/a")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "tramble://u/alisa/extra")!))
+        // Прежние адрес и схема (до 18.11.2026) выключены.
+        XCTAssertNil(DeepLink.parse(URL(string: "https://adm.orzu.pro/u/alisa")!))
+        XCTAssertNil(DeepLink.parse(URL(string: "boham://u/alisa")!))
         // Обратный адрес Google Sign-In ссылкой не считается — его разбирает GIDSignIn.
         XCTAssertNil(DeepLink.parse(URL(string: "com.googleusercontent.apps.123:/oauth2redirect")!))
     }
