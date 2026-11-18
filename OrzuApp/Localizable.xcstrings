@@ -97,6 +97,22 @@
         }
       }
     },
+    "%@ км" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ km"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ км"
+          }
+        }
+      }
+    },
     "%@ от вас" : {
       "localizations" : {
         "en" : {
@@ -297,6 +313,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld сол"
+          }
+        }
+      }
+    },
+    "%lld м" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld m"
+          }
+        },
+        "tg" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld м"
           }
         }
       }

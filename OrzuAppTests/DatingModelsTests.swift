@@ -90,6 +90,13 @@ final class DatingModelsTests: XCTestCase {
 
         let own = try decoder().decode(DatingProfilePublic.self, from: profile(""))
         XCTAssertNil(own.distanceKm)
+
+        let meters = try decoder().decode(DatingProfilePublic.self, from: profile(#","distanceKm":1,"distanceM":300"#))
+        XCTAssertEqual(meters.distanceText, "300 м")
+        let close = try decoder().decode(DatingProfilePublic.self, from: profile(#","distanceKm":2,"distanceM":2000"#))
+        XCTAssertEqual(close.distanceText, "2 км")
+        let far = try decoder().decode(DatingProfilePublic.self, from: profile(#","distanceKm":14,"distanceM":14300"#))
+        XCTAssertEqual(far.distanceText, "14 км")
     }
 
     /// Анкета партнёра и отправителя первого сообщения приходит с расстоянием; своя — без этого поля.

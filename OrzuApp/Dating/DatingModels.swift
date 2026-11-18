@@ -162,6 +162,8 @@ struct DatingProfilePublic: Codable, Identifiable, Hashable {
     let verified: Bool
     /// Сколько километров до этого человека. nil — у кого-то из двоих выключена геопозиция или это своя анкета.
     let distanceKm: Int?
+    /// То же с шагом 100 м (сервер с 18.11.2026). nil у старого сервера — тогда показываем целые км.
+    var distanceM: Int? = nil
     /// Ответы на вопросы анкеты (до трёх). nil — старый сервер.
     var prompts: [ProfilePromptAnswer]? = nil
     /// Голосовое приветствие (одобренное модератором) и его длительность.
@@ -191,9 +193,17 @@ struct DatingProfilePublic: Codable, Identifiable, Hashable {
         voiceId.map { Attachment(id: $0, kind: .voice, mimeType: "audio/mp4", fileName: "voice.m4a", size: 0, durationSec: voiceDurationSec) }
     }
 
-    /// «12 км» для подписи под именем; сервер уже округлил до километра.
+    /// «300 м», «1,2 км», «14 км» для подписи под именем; сервер уже округлил (до 100 м или до километра).
     var distanceText: String? {
-        distanceKm.map { String(localized: "\($0) км") }
+        guard let meters = distanceM else { return distanceKm.map { String(localized: "\($0) км") } }
+        if meters < 1000 { return String(localized: "\(meters) м") }
+        let tenths = Int((Double(meters) / 100).rounded())
+        if meters >= 10_000 || tenths % 10 == 0 {
+            let km = Int((Double(meters) / 1000).rounded())
+            return String(localized: "\(km) км")
+        }
+        let text = "\(tenths / 10)\(Locale.current.decimalSeparator ?? ",")\(tenths % 10)"
+        return String(localized: "\(text) км")
     }
 
     /// «Душанбе · 3 км» — подпись под именем в карточках анкет.
