@@ -123,7 +123,7 @@ final class ChatFeaturesTests: XCTestCase {
 
     func testShareLinkRoundTrips() {
         let link = DeepLink.user(username: "alisa")
-        XCTAssertEqual(link.url.absoluteString, "https://adm.orzu.pro/u/alisa")
+        XCTAssertEqual(link.url.absoluteString, "https://api.tramble.site/u/alisa")
         XCTAssertEqual(DeepLink.parse(link.url), link)
     }
 }
