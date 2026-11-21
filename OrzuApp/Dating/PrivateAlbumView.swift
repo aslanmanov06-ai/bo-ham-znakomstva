@@ -321,7 +321,7 @@ struct PartnerAlbumCard: View {
             }
         }
         .fullScreenCover(isPresented: $showViewer) {
-            ProfilePhotoViewer(photoIds: model.album?.theirs.photoIds ?? [], index: $viewedIndex)
+            ProfilePhotoViewer(photoIds: model.album?.theirs.photoIds ?? [], index: $viewedIndex, isPrivate: true)
         }
         .confirmationDialog("Закрыть альбом для \(displayName)?", isPresented: $confirmRevoke, titleVisibility: .visible) {
             Button("Отозвать доступ", role: .destructive) { model.revoke(userId: userId) }
@@ -346,6 +346,8 @@ struct PartnerAlbumCard: View {
                     }
                 }
             }
+            // Миниатюры чужого скрытого альбома тоже не должны попасть в снимок экрана.
+            .protectedFromScreenshots()
         case .pending:
             statusLine(String(localized: "Запрос отправлен. Фото появятся, когда \(displayName) откроет альбом."), systemImage: "clock")
         case .declined:

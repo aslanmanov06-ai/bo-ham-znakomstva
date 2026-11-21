@@ -134,7 +134,7 @@ struct ChatView: View {
                 TimedPhotoViewer(presentation: presentation)
             }
             .fullScreenCover(isPresented: $showAlbumViewer) {
-                ProfilePhotoViewer(photoIds: partnerAlbum.album?.theirs.photoIds ?? [], index: $albumViewerIndex)
+                ProfilePhotoViewer(photoIds: partnerAlbum.album?.theirs.photoIds ?? [], index: $albumViewerIndex, isPrivate: true)
             }
             .task(id: viewModel.lastAlbumEventId) { await loadPartnerAlbum() }
             .onReceive(WebSocketClient.shared.events.receive(on: DispatchQueue.main)) { event in

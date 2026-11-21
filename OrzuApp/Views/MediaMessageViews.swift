@@ -299,7 +299,7 @@ struct TimedPhotoViewer: View {
         ZStack {
             Color.black.ignoresSafeArea()
             if let image {
-                Image(uiImage: image).resizable().scaledToFit()
+                Image(uiImage: image).resizable().scaledToFit().protectedFromScreenshots()
             } else if failed {
                 Label("Не удалось загрузить фото", systemImage: "exclamationmark.triangle").foregroundStyle(.white)
             } else {
@@ -410,6 +410,82 @@ private struct ScreenCaptureShield: ViewModifier {
 extension View {
     func hiddenWhileScreenCaptured(_ isEnabled: Bool = true) -> some View {
         modifier(ScreenCaptureShield(isEnabled: isEnabled))
+    }
+}
+
+// MARK: - Снимок экрана
+
+/// Содержимое, которого нет на снимке и в записи экрана. Запретить снимок iOS не даёт, но слой поля пароля
+/// (UITextField с isSecureTextEntry) система сама вырезает из снимков, записи и AirPlay — в него и кладём фото.
+/// Не нашёлся такой слой (другая версия iOS) — фото показывается как обычно: запись экрана всё равно закроет
+/// hiddenWhileScreenCaptured, а о снимке исчезающего фото собеседник узнает по userDidTakeScreenshotNotification.
+struct ScreenshotProtected<Content: View>: UIViewRepresentable {
+    let content: Content
+
+    func makeCoordinator() -> UIHostingController<Content> {
+        let host = UIHostingController(rootView: content)
+        host.view.backgroundColor = .clear
+        return host
+    }
+
+    func makeUIView(context: Context) -> ScreenshotProtectedView {
+        let view = ScreenshotProtectedView()
+        view.embed(context.coordinator.view)
+        return view
+    }
+
+    func updateUIView(_ view: ScreenshotProtectedView, context: Context) {
+        context.coordinator.rootView = content
+    }
+}
+
+final class ScreenshotProtectedView: UIView {
+    // Поле живёт, пока жив контейнер: холст «секретен», только пока у поля включён isSecureTextEntry.
+    private let secureField: UITextField
+    private let container: UIView
+
+    override init(frame: CGRect) {
+        let field = UITextField()
+        field.isSecureTextEntry = true
+        // Холст поля: _UITextLayoutCanvasView (iOS 15+), раньше — _UITextFieldCanvasView.
+        let canvas = field.subviews.first { String(describing: type(of: $0)).contains("CanvasView") }
+        secureField = field
+        container = canvas ?? UIView()
+        super.init(frame: frame)
+        container.subviews.forEach { $0.removeFromSuperview() }
+        container.isUserInteractionEnabled = true
+        pin(container, to: self)
+    }
+
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func embed(_ content: UIView) {
+        pin(content, to: container)
+    }
+
+    private func pin(_ child: UIView, to parent: UIView) {
+        child.translatesAutoresizingMaskIntoConstraints = false
+        parent.addSubview(child)
+        NSLayoutConstraint.activate([
+            child.leadingAnchor.constraint(equalTo: parent.leadingAnchor),
+            child.trailingAnchor.constraint(equalTo: parent.trailingAnchor),
+            child.topAnchor.constraint(equalTo: parent.topAnchor),
+            child.bottomAnchor.constraint(equalTo: parent.bottomAnchor),
+        ])
+    }
+}
+
+extension View {
+    /// Скрытые и исчезающие фото: на снимке и в записи экрана вместо них пусто. false — как обычно (своё фото).
+    @ViewBuilder
+    func protectedFromScreenshots(_ isEnabled: Bool = true) -> some View {
+        if isEnabled {
+            ScreenshotProtected(content: self)
+        } else {
+            self
+        }
     }
 }
 

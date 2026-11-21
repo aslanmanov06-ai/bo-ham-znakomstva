@@ -6,6 +6,8 @@ struct ProfilePhotoViewer: View {
     let photoIds: [String]
     /// Общий с карточкой анкеты: закрыв просмотр, человек остаётся на том же фото.
     @Binding var index: Int
+    /// Чужой скрытый альбом: фото не попадают в снимок и запись экрана.
+    var isPrivate = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -19,6 +21,7 @@ struct ProfilePhotoViewer: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .protectedFromScreenshots(isPrivate)
             .ignoresSafeArea()
         }
         .overlay(alignment: .top) {
